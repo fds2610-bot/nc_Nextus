@@ -1,0 +1,5 @@
+# SQLite: keine eigene Datenbank, die Datei liegt im nc_data-Volume.
+services:
+  nextcloud:
+    environment:
+      SQLITE_DATABASE: nextcloud

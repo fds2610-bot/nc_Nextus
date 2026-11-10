@@ -1,0 +1,8 @@
+{
+  "name": "nc-nexus-e2e",
+  "private": true,
+  "description": "E2E-Tests für nc_nexus — laufen im e2e-runner-Container (Playwright-Version muss zum Image-Tag passen)",
+  "devDependencies": {
+    "@playwright/test": "1.61.1"
+  }
+}

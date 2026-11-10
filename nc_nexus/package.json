@@ -1,0 +1,47 @@
+{
+    "name": "nc_nexus",
+    "version": "0.1.0",
+    "description": "Project governance for Nextcloud",
+    "license": "GPL-3.0-or-later",
+    "private": true,
+    "scripts": {
+        "dev": "NODE_ENV=development webpack --config webpack.config.js --watch",
+        "build": "NODE_ENV=production webpack --config webpack.config.js",
+        "lint": "eslint --ext .js,.vue src/",
+        "lint:fix": "eslint --ext .js,.vue src/ --fix",
+        "test:e2e": "sh tests/e2e/run.sh"
+    },
+    "browserslist": [
+        "extends @nextcloud/browserslist-config"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
+    "dependencies": {
+        "@mdi/js": "^7.4.47",
+        "@nextcloud/auth": "^2.6.0",
+        "@nextcloud/axios": "^2.6.0",
+        "@nextcloud/dialogs": "^7.5.0",
+        "@nextcloud/initial-state": "^3.0.0",
+        "@nextcloud/l10n": "^3.4.1",
+        "@nextcloud/router": "^3.1.0",
+        "@nextcloud/vue": "^9.10.0",
+        "vue": "^3.5.42"
+    },
+    "devDependencies": {
+        "@nextcloud/browserslist-config": "^3.0.1",
+        "@nextcloud/eslint-config": "^8.4.1",
+        "@nextcloud/webpack-vue-config": "^7.0.4",
+        "babel-loader": "^10.0.0",
+        "css-loader": "^7.1.2",
+        "eslint": "^8.57.0",
+        "node-polyfill-webpack-plugin": "4.0.0",
+        "sass": "^1.93.2",
+        "sass-loader": "^17.0.0",
+        "style-loader": "^4.0.0",
+        "ts-loader": "^9.5.4",
+        "vue-loader": "^17.4.2",
+        "webpack": "^5.102.1",
+        "webpack-cli": "^6.0.1"
+    }
+}

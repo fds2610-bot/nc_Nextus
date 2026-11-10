@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NX_DB_PASSWORD:-nextcloud}
+      TZ: Europe/Berlin
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  nextcloud:
+    depends_on:
+      - db
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NX_DB_PASSWORD:-nextcloud}
+
+volumes:
+  db_data:

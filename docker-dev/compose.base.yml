@@ -1,0 +1,31 @@
+# Nextcloud-Dienst der DEV-Umgebungen für nc_nexus. Nicht direkt starten:
+#   - Standard (MariaDB): docker-compose.yml bindet diesen Dienst per `extends` ein
+#   - PostgreSQL/SQLite: ../dev.sh kombiniert diese Datei mit compose.<db>.yml
+name: ${NX_PROJECT:-nc-nexus-dev}
+
+services:
+  nextcloud:
+    image: ${NX_IMAGE:-nextcloud:35-apache}
+    restart: unless-stopped
+    ports:
+      - "${NX_PORT:-8092}:80"
+    environment:
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: ${NX_ADMIN_PASSWORD:-admin123}
+      NEXTCLOUD_TRUSTED_DOMAINS: localhost host.docker.internal
+      # Passwort der Testkonten e2e/e2e-other (Post-Install-Hook)
+      E2E_PASSWORD: ${E2E_PASSWORD:-e2e-test-Pass123!}
+      TZ: Europe/Berlin
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - nc_data:/var/www/html
+      - ../nc_nexus:/custom_apps/nc_nexus:ro
+      - ./hooks:/docker-entrypoint-hooks.d:ro
+      - ./opcache-dev.ini:/usr/local/etc/php/conf.d/zzz-opcache-dev.ini:ro
+      - ./apache-dev.conf:/etc/apache2/conf-enabled/zz-dev.conf:ro
+      # Image-Upgrade (rsync --delete) darf das schreibbare App-Verzeichnis nicht löschen
+      - ./upgrade.exclude:/upgrade.exclude:ro
+
+volumes:
+  nc_data:

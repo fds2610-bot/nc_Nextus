@@ -1,0 +1,9 @@
+parameters:
+    level: 6
+    phpVersion:
+        min: 80300
+        max: 80599
+    paths:
+        - lib
+    scanDirectories:
+        - vendor/nextcloud/ocp

@@ -1,0 +1,6 @@
+# DEV-Stack: von dev.sh erzeugte Dateien
+docker-dev/.generated/
+docker-dev/backups/
+
+# lokale Notizen für Claude Code
+CLAUDE.md

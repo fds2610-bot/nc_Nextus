@@ -1,0 +1,41 @@
+# Standard-DEV-Umgebung für nc_nexus: einfache Nextcloud 35 (PHP 8.5) mit MariaDB, nur nc_nexus.
+#
+#   cd docker-dev && docker compose up -d     → http://localhost:8092  (admin / admin123)
+#
+# Beim ersten Start installiert sich Nextcloud selbst; die Post-Install-Hooks aktivieren
+# nc_nexus und legen die Testkonten e2e/e2e-other an. Vorher die App bauen:
+#   cd ../nc_nexus && npm ci && npm run build
+#
+# Varianten (Shared-Apps, PostgreSQL, SQLite, NC 34, PHP 8.3/8.4) über ../dev.sh,
+# siehe ../README-dev.md. Der Nextcloud-Dienst selbst steht in compose.base.yml.
+name: ${NX_PROJECT:-nc-nexus-dev}
+
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
+    environment:
+      MYSQL_ROOT_PASSWORD: ${NX_DB_PASSWORD:-nextcloud}
+      MYSQL_DATABASE: nextcloud
+      MYSQL_USER: nextcloud
+      MYSQL_PASSWORD: ${NX_DB_PASSWORD:-nextcloud}
+      TZ: Europe/Berlin
+    volumes:
+      - db_data:/var/lib/mysql
+
+  nextcloud:
+    extends:
+      file: compose.base.yml
+      service: nextcloud
+    depends_on:
+      - db
+    environment:
+      MYSQL_HOST: db
+      MYSQL_DATABASE: nextcloud
+      MYSQL_USER: nextcloud
+      MYSQL_PASSWORD: ${NX_DB_PASSWORD:-nextcloud}
+
+volumes:
+  db_data:
+  nc_data:

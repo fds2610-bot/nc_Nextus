@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>nc_nexus</id>
+    <name>Nexus</name>
+    <summary>Project governance: strategy, demands, portfolio, resources and decisions in one place</summary>
+    <summary lang="de">Projekt-Governance: Strategie, Anträge, Portfolio, Ressourcen und Entscheidungen an einem Ort</summary>
+    <description><![CDATA[**Nexus** brings project portfolio governance into Nextcloud: one intake for all project demands, binding decisions, capacity-based prioritisation and transparent steering up to the benefits review.
+
+This is an early development version. Currently available:
+
+* **Demand intake**: record demands with type, problem statement and expected benefit, save drafts and submit them.
+* **Audit log**: every creation, change and status transition is recorded.]]></description>
+    <description lang="de"><![CDATA[**Nexus** bringt Projekt-Governance in die Nextcloud: ein Eingang für alle Projektanträge, verbindliche Entscheidungen, Priorisierung gegen die verfügbare Kapazität und transparente Steuerung bis zum Nutzenreview.
+
+Dies ist eine frühe Entwicklungsversion. Derzeit verfügbar:
+
+* **Antragseingang**: Anträge mit Typ, Problembeschreibung und erwartetem Nutzen erfassen, als Entwurf speichern und einreichen.
+* **Audit-Log**: Jedes Anlegen, jede Änderung und jeder Statuswechsel wird protokolliert.]]></description>
+    <version>0.1.0</version>
+    <licence>GPL-3.0-or-later</licence>
+    <author>fds2610</author>
+    <namespace>Nexus</namespace>
+    <category>organization</category>
+    <website>https://github.com/fds2610/nc_Nextus</website>
+    <bugs>https://github.com/fds2610/nc_Nextus/issues</bugs>
+    <repository type="git">https://github.com/fds2610/nc_Nextus.git</repository>
+    <dependencies>
+        <php min-version="8.3" max-version="8.5"/>
+        <database>sqlite</database>
+        <database>pgsql</database>
+        <database>mysql</database>
+        <nextcloud min-version="34" max-version="35"/>
+    </dependencies>
+    <navigations>
+        <navigation>
+            <name>Nexus</name>
+            <route>nc_nexus.page.index</route>
+            <icon>app.svg</icon>
+        </navigation>
+    </navigations>
+</info>
