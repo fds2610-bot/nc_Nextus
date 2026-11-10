@@ -168,6 +168,13 @@
 							</select>
 							<p v-if="!readonly" class="nx-hint">{{ t('nc_nexus', 'Determines who besides you can see the demand (sponsor, PMO, board of the area).') }}</p>
 						</label>
+						<label class="nx-field" data-test="field-deadline">
+							<span>{{ t('nc_nexus', 'Deadline (e.g. legal or contractual date)') }}</span>
+							<input v-model="form.deadline"
+								type="date"
+								class="nx-input editor__date"
+								:disabled="readonly">
+						</label>
 					</div>
 
 					<div class="nx-section">
@@ -222,6 +229,61 @@
 								:disabled="readonly"
 								:placeholder="readonly ? '' : t('nc_nexus', 'Scope, affected areas, desired time frame …')" />
 						</label>
+					</div>
+
+					<div v-if="demand && rating && (rating.assessments.length || rating.can.self || rating.can.review)"
+						class="nx-section"
+						data-test="demand-rating">
+						<h3>{{ t('nc_nexus', 'Assessment') }}</h3>
+						<div v-if="rating.current" class="nx-summary__facts editor__triage">
+							<div class="nx-fact">
+								{{ t('nc_nexus', 'Value density') }}
+								<b data-test="rating-density">{{ formatNumber2(rating.current.density) }}</b>
+							</div>
+							<div class="nx-fact">
+								{{ t('nc_nexus', 'Benefit') }}
+								<b>{{ formatNumber2(rating.current.benefit) }}</b>
+							</div>
+							<div class="nx-fact">
+								{{ t('nc_nexus', 'Urgency') }}
+								<b>{{ rating.current.urgency }}</b>
+							</div>
+							<div class="nx-fact">
+								{{ t('nc_nexus', 'Risk') }}
+								<b>{{ formatNumber2(rating.current.risk) }}</b>
+							</div>
+							<div class="nx-fact">
+								{{ t('nc_nexus', 'Effort class') }}
+								<b>{{ rating.current.effort }} · {{ qualityLabel(rating.current.estimateQuality) }}</b>
+							</div>
+							<div class="nx-fact">
+								{{ t('nc_nexus', 'Bucket') }}
+								<b>{{ rating.bucket }}</b>
+							</div>
+						</div>
+						<p v-else class="editor__muted">
+							{{ t('nc_nexus', 'Not assessed yet.') }}
+						</p>
+						<p v-if="rating.current" class="editor__next">
+							{{ assessmentKindLabel(rating.current.kind) }} · {{ rating.current.createdBy }} · {{ formatDay(rating.current.createdAt) }}
+							<template v-if="rating.current.selfDensity !== null && rating.current.reviewDensity !== null">
+								· {{ t('nc_nexus', 'self-assessment {s}, review {r}', { s: formatNumber2(rating.current.selfDensity), r: formatNumber2(rating.current.reviewDensity) }) }}
+							</template>
+						</p>
+						<div class="editor__rating-actions">
+							<NcButton v-if="rating.can.self"
+								variant="secondary"
+								data-test="assess-self"
+								@click="assessKind = 'self'">
+								{{ t('nc_nexus', 'Self-assessment') }}
+							</NcButton>
+							<NcButton v-if="rating.can.review"
+								variant="secondary"
+								data-test="assess-review"
+								@click="assessKind = 'review'">
+								{{ t('nc_nexus', 'Review assessment') }}
+							</NcButton>
+						</div>
 					</div>
 
 					<CommentThread v-if="demand"
@@ -317,6 +379,16 @@
 			@ready="el => trapElements = [el]"
 			@close="triageOpen = false; trapElements = []"
 			@decided="onDecided" />
+		<AssessmentDialog v-if="assessKind && scoring"
+			:demand="demand"
+			:kind="assessKind"
+			:model="scoring"
+			:suggested-effort="rating.suggestedEffort"
+			:bucket="rating.bucket"
+			:previous="previousAssessment"
+			@ready="el => trapElements = [el]"
+			@close="assessKind = null; trapElements = []"
+			@saved="onAssessed" />
 		<AnalysisDialog v-if="analysisOpen"
 			:demand="demand"
 			@ready="el => trapElements = [el]"
@@ -328,33 +400,35 @@
 <script>
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
-import { t } from '@nextcloud/l10n'
+import { getCanonicalLocale, t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
-import { createDemand, deleteDemand, demandHistory, demandNeeds, demandObjectives, errorMessage, getDemand, saveDemandNeeds, saveDemandObjectives, submitDemand, updateDemand } from '../api.js'
+import { createDemand, deleteDemand, demandAssessments, demandHistory, demandNeeds, demandObjectives, errorMessage, getDemand, saveDemandNeeds, saveDemandObjectives, submitDemand, updateDemand } from '../api.js'
 import AnalysisDialog from './AnalysisDialog.vue'
+import AssessmentDialog from './AssessmentDialog.vue'
 import CommentThread from './CommentThread.vue'
 import NeedsEditor from './NeedsEditor.vue'
 import SimilarDemands from './SimilarDemands.vue'
 import TriageDialog from './TriageDialog.vue'
-import { actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, indented, objectiveTree, orgTree, statusChip, statusLabel, typeLabel } from '../labels.js'
+import { actionLabel, assessmentKindLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, indented, objectiveTree, orgTree, qualityLabel, statusChip, statusLabel, typeLabel } from '../labels.js'
 
-const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, problemStatement: '', description: '', expectedBenefit: '' })
+const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, deadline: '', problemStatement: '', description: '', expectedBenefit: '' })
 
 export default {
 	name: 'DemandEditor',
-	components: { AnalysisDialog, CommentThread, NcButton, NeedsEditor, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
+	components: { AnalysisDialog, AssessmentDialog, CommentThread, NcButton, NeedsEditor, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
 	props: {
 		demandId: { type: Number, default: null },
 		orgUnits: { type: Array, default: () => [] },
 		demands: { type: Array, default: () => [] },
 		pools: { type: Array, default: () => [] },
 		objectives: { type: Array, default: () => [] },
+		scoring: { type: Object, default: null },
 	},
 	emits: ['close', 'changed'],
 	setup() {
-		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, statusChip, statusLabel, typeLabel }
+		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, statusChip, statusLabel, typeLabel, assessmentKindLabel, qualityLabel }
 	},
 	data() {
 		return {
@@ -368,6 +442,8 @@ export default {
 			triageOpen: false,
 			triageOverride: false,
 			needs: [],
+			rating: null,
+			assessKind: null,
 			objectiveIds: [],
 			objectivesSaved: '[]',
 			needsSaved: '[]',
@@ -381,6 +457,10 @@ export default {
 		}
 	},
 	computed: {
+		// letzte Bewertung derselben Art als Vorbelegung des Dialogs
+		previousAssessment() {
+			return [...(this.rating?.assessments ?? [])].reverse().find(a => a.kind === this.assessKind) ?? null
+		},
 		objectiveList() {
 			return objectiveTree(this.objectives)
 		},
@@ -457,6 +537,7 @@ export default {
 				this.setDemand(await getDemand(this.id))
 				this.setNeeds(await demandNeeds(this.id))
 				this.setObjectives(await demandObjectives(this.id))
+				this.rating = await demandAssessments(this.id)
 				this.history = await demandHistory(this.id)
 			} catch (e) {
 				showError(errorMessage(e))
@@ -471,6 +552,7 @@ export default {
 				title: demand.title,
 				demandType: demand.demandType,
 				orgUnitId: demand.orgUnitId ?? null,
+				deadline: demand.deadline ?? '',
 				problemStatement: demand.problemStatement ?? '',
 				description: demand.description ?? '',
 				expectedBenefit: demand.expectedBenefit ?? '',
@@ -486,13 +568,22 @@ export default {
 		changedFields(entry) {
 			return entry.action === 'update' && entry.fieldChanges ? Object.keys(entry.fieldChanges) : []
 		},
+		formatNumber2(value) {
+			return Number(value).toLocaleString(getCanonicalLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+		},
+		async onAssessed(rating) {
+			this.rating = rating
+			this.$emit('changed')
+			this.setDemand(await getDemand(this.id))
+			this.history = await demandHistory(this.id)
+		},
 		openTriage(override) {
 			this.triageOverride = override
 			this.triageOpen = true
 		},
 		onEscape() {
-			// Liegt der Triage-Dialog darüber, schließt Esc nur diesen
-			if (!this.triageOpen) {
+			// Liegt ein innerer Dialog darüber, schließt Esc nur diesen
+			if (!this.triageOpen && !this.analysisOpen && !this.assessKind) {
 				this.$emit('close')
 			}
 		},
@@ -654,6 +745,16 @@ export default {
 	&__objective-code,
 	&__muted {
 		color: var(--color-text-maxcontrast);
+	}
+
+	&__date.nx-input.nx-input {
+		width: 200px;
+	}
+
+	&__rating-actions {
+		display: flex;
+		gap: 8px;
+		margin-top: 12px;
 	}
 
 	&__next {

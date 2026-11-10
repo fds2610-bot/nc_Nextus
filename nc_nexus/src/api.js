@@ -77,3 +77,11 @@ export const updateObjective = async (id, o) => data(await axios.put(v1(`/object
 export const deleteObjective = async (id) => data(await axios.delete(v1(`/objectives/${id}`)))
 export const demandObjectives = async (id) => data(await axios.get(v1(`/demands/${id}/objectives`)))
 export const saveDemandObjectives = async (id, objectiveIds) => data(await axios.put(v1(`/demands/${id}/objectives`), { objectiveIds }))
+
+export const scoringModel = async () => data(await axios.get(v1('/scoring/model')))
+export const saveCriteria = async (criteria, note) => data(await axios.post(v1('/scoring/sets'), { criteria, note }))
+export const updateBucket = async (code, values) => data(await axios.put(v1(`/scoring/buckets/${code}`), values))
+export const demandAssessments = async (id) => data(await axios.get(v1(`/demands/${id}/assessments`)))
+export const assessDemand = async (id, assessment) => data(await axios.post(v1(`/demands/${id}/assessments`), assessment))
+export const getRanking = async () => data(await axios.get(v1('/ranking')))
+export const overrideRank = async (id, rank, reason) => data(await axios.put(v1(`/demands/${id}/rank-override`), { rank, reason }))

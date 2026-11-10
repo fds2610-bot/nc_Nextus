@@ -56,6 +56,14 @@ use OCP\AppFramework\Db\Entity;
  * @method void setTriagedAt(?int $triagedAt)
  * @method int|null getAnalysisDoneAt()
  * @method void setAnalysisDoneAt(?int $analysisDoneAt)
+ * @method string|null getBucket()
+ * @method void setBucket(?string $bucket)
+ * @method string|null getDeadline()
+ * @method void setDeadline(?string $deadline)
+ * @method int|null getRankOverride()
+ * @method void setRankOverride(?int $rankOverride)
+ * @method string|null getOverrideReason()
+ * @method void setOverrideReason(?string $overrideReason)
  * @method int|null getOrgUnitId()
  * @method void setOrgUnitId(?int $orgUnitId)
  * @method int|null getSubmittedAt()
@@ -63,7 +71,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class Demand extends Entity implements JsonSerializable {
 	/** Felder, die der Antragsteller im Entwurf bearbeiten darf (Audit-Vergleich). */
-	public const EDITABLE = ['title', 'description', 'problemStatement', 'expectedBenefit', 'demandType', 'orgUnitId'];
+	public const EDITABLE = ['title', 'description', 'problemStatement', 'expectedBenefit', 'demandType', 'orgUnitId', 'deadline'];
 
 	protected string $demandKey = '';
 	protected string $title = '';
@@ -79,6 +87,10 @@ class Demand extends Entity implements JsonSerializable {
 	protected int $updatedAt = 0;
 	protected ?int $submittedAt = null;
 	protected ?int $orgUnitId = null;
+	protected ?string $bucket = null;
+	protected ?string $deadline = null;
+	protected ?int $rankOverride = null;
+	protected ?string $overrideReason = null;
 	protected ?int $analysisDoneAt = null;
 	protected ?string $projectClass = null;
 	protected ?string $triageCode = null;
@@ -97,6 +109,7 @@ class Demand extends Entity implements JsonSerializable {
 		$this->addType('updatedAt', 'integer');
 		$this->addType('submittedAt', 'integer');
 		$this->addType('orgUnitId', 'integer');
+		$this->addType('rankOverride', 'integer');
 		$this->addType('duplicateOfId', 'integer');
 		$this->addType('triagedAt', 'integer');
 		$this->addType('analysisDoneAt', 'integer');
@@ -113,6 +126,10 @@ class Demand extends Entity implements JsonSerializable {
 			'expectedBenefit' => $this->expectedBenefit,
 			'demandType' => $this->demandType,
 			'orgUnitId' => $this->orgUnitId,
+			'bucket' => $this->bucket,
+			'deadline' => $this->deadline,
+			'rankOverride' => $this->rankOverride,
+			'overrideReason' => $this->overrideReason,
 			'analysisDoneAt' => $this->analysisDoneAt,
 			'projectClass' => $this->projectClass,
 			'triageCode' => $this->triageCode,

@@ -277,3 +277,27 @@ export function objectiveTree(objectives) {
 	walk(null, 0, '')
 	return result
 }
+
+export const dimensionLabel = (dimension) => ({
+	benefit: t('nc_nexus', 'Benefit'),
+	urgency: t('nc_nexus', 'Urgency'),
+	risk: t('nc_nexus', 'Risk'),
+})[dimension] || dimension
+
+export const effortLabel = (effort) => ({
+	1: t('nc_nexus', '1 – very small (under 5 PD)'),
+	3: t('nc_nexus', '3 – small (5–30 PD)'),
+	5: t('nc_nexus', '5 – medium (30–200 PD)'),
+	8: t('nc_nexus', '8 – large (over 200 PD)'),
+})[effort] || String(effort)
+
+export const qualityLabel = (quality) => ({
+	rough: t('nc_nexus', 'rough (±50 %)'),
+	plausible: t('nc_nexus', 'plausibility-checked (±25 %)'),
+	planned: t('nc_nexus', 'planned (±10 %)'),
+})[quality] || quality
+
+export const assessmentKindLabel = (kind) => ({
+	self: t('nc_nexus', 'Self-assessment'),
+	review: t('nc_nexus', 'Review by the portfolio office'),
+})[kind] || kind

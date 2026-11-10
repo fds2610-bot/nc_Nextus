@@ -72,13 +72,14 @@ class DemandApiController extends OCSController {
 	 * @param string|null $problemStatement Was passiert, wenn wir nichts tun?
 	 * @param string|null $expectedBenefit Erwarteter Nutzen
 	 * @param int|null $orgUnitId Org-Einheit
+	 * @param string|null $deadline Frist JJJJ-MM-TT (z. B. gesetzlicher Termin)
 	 * @return DataResponse<Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST, array<string, mixed>, array{}>
 	 *
 	 * 201: Antrag angelegt
 	 * 400: Eingaben ungültig
 	 */
 	#[NoAdminRequired]
-	public function create(string $title = '', string $demandType = '', ?string $description = null, ?string $problemStatement = null, ?string $expectedBenefit = null, ?int $orgUnitId = null): DataResponse {
+	public function create(string $title = '', string $demandType = '', ?string $description = null, ?string $problemStatement = null, ?string $expectedBenefit = null, ?int $orgUnitId = null, ?string $deadline = null): DataResponse {
 		return $this->handle(fn () => $this->out($this->service->create($this->uid(), [
 			'title' => $title,
 			'demandType' => $demandType,
@@ -86,6 +87,7 @@ class DemandApiController extends OCSController {
 			'problemStatement' => $problemStatement,
 			'expectedBenefit' => $expectedBenefit,
 			'orgUnitId' => $orgUnitId,
+			'deadline' => $deadline,
 		])), Http::STATUS_CREATED);
 	}
 
@@ -101,7 +103,7 @@ class DemandApiController extends OCSController {
 	 */
 	#[NoAdminRequired]
 	public function update(int $id): DataResponse {
-		$data = array_intersect_key($this->request->getParams(), array_flip(['title', 'demandType', 'description', 'problemStatement', 'expectedBenefit', 'orgUnitId']));
+		$data = array_intersect_key($this->request->getParams(), array_flip(['title', 'demandType', 'description', 'problemStatement', 'expectedBenefit', 'orgUnitId', 'deadline']));
 		return $this->handle(fn () => $this->out($this->service->update($this->uid(), $id, $data)));
 	}
 

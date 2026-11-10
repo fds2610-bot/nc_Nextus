@@ -13,6 +13,7 @@ use OCA\Nexus\Db\DemandMapper;
 use OCA\Nexus\Db\ObjectiveMapper;
 use OCA\Nexus\Db\OrgUnitMapper;
 use OCA\Nexus\Db\ResourceNeedMapper;
+use OCA\Nexus\Db\ScoringMapper;
 use OCA\Nexus\Exception\ForbiddenException;
 use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
@@ -53,6 +54,7 @@ class DemandService {
 		private CommentMapper $comments,
 		private ResourceNeedMapper $resourceNeeds,
 		private ObjectiveMapper $objectiveLinks,
+		private ScoringMapper $scoring,
 	) {
 	}
 
@@ -208,6 +210,7 @@ class DemandService {
 			$this->comments->deleteForDemand($id);
 			$this->resourceNeeds->deleteForDemand($id);
 			$this->objectiveLinks->deleteLinksOfDemand($id);
+			$this->scoring->deleteAssessmentsOfDemand($id);
 			$this->db->commit();
 		} catch (\Throwable $e) {
 			$this->db->rollBack();
@@ -293,6 +296,16 @@ class DemandService {
 				}
 			}
 			$demand->setOrgUnitId($orgUnitId);
+		}
+		if (array_key_exists('deadline', $data)) {
+			$deadline = trim((string)$data['deadline']);
+			if ($deadline !== '') {
+				$parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $deadline);
+				if ($parsed === false || $parsed->format('Y-m-d') !== $deadline) {
+					throw new ValidationException('Invalid date');
+				}
+			}
+			$demand->setDeadline($deadline === '' ? null : $deadline);
 		}
 		foreach (['description', 'problemStatement', 'expectedBenefit'] as $field) {
 			if (array_key_exists($field, $data)) {

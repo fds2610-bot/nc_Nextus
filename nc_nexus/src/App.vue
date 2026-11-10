@@ -62,6 +62,15 @@
 					</template>
 				</NcAppNavigationItem>
 				<NcAppNavigationItem v-if="poolInfo.canSee"
+					:name="t('nc_nexus', 'Prioritization')"
+					:active="view === 'ranking'"
+					data-test="nav-ranking"
+					@click="view = 'ranking'">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiSortNumericAscending" />
+					</template>
+				</NcAppNavigationItem>
+				<NcAppNavigationItem v-if="poolInfo.canSee"
 					:name="t('nc_nexus', 'Capacity')"
 					:active="view === 'capacity'"
 					data-test="nav-capacity"
@@ -140,9 +149,19 @@
 				</NcAppNavigationItem>
 			</NcAppNavigationList>
 
-			<template v-if="me.canManageOrg" #footer>
+			<template v-if="me.canManageOrg || poolInfo.canSee" #footer>
 				<ul class="app-navigation-entry__settings">
-					<NcAppNavigationItem :name="t('nc_nexus', 'Organization')"
+					<NcAppNavigationItem v-if="poolInfo.canSee"
+						:name="t('nc_nexus', 'Assessment model')"
+						:active="view === 'model'"
+						data-test="nav-model"
+						@click="view = 'model'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiTuneVariant" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="me.canManageOrg"
+						:name="t('nc_nexus', 'Organization')"
 						:active="view === 'org'"
 						data-test="nav-org"
 						@click="openOrg">
@@ -155,7 +174,13 @@
 		</NcAppNavigation>
 
 		<NcAppContent>
-			<ObjectivesView v-if="view === 'objectives'"
+			<RankingView v-if="view === 'ranking'"
+				:refresh-key="refresh"
+				@open="openEditor" />
+			<ScoringModelView v-else-if="view === 'model'"
+				:model="scoring"
+				@changed="loadOrg" />
+			<ObjectivesView v-else-if="view === 'objectives'"
 				:objectives="objectiveInfo.objectives"
 				:can-manage="objectiveInfo.canManage"
 				@changed="loadOrg" />
@@ -191,6 +216,7 @@
 				:demands="demands"
 				:pools="poolInfo.pools"
 				:objectives="objectiveInfo.objectives"
+				:scoring="scoring"
 				@close="editorOpen = false"
 				@changed="onChanged" />
 		</NcAppContent>
@@ -198,7 +224,7 @@
 </template>
 
 <script>
-import { mdiAccountQuestion, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiViewGridOutline } from '@mdi/js'
+import { mdiAccountQuestion, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -217,10 +243,12 @@ import DemandEditor from './components/DemandEditor.vue'
 import DemandList from './views/DemandList.vue'
 import CapacityView from './views/CapacityView.vue'
 import PortfolioView from './views/PortfolioView.vue'
+import RankingView from './views/RankingView.vue'
+import ScoringModelView from './views/ScoringModelView.vue'
 import DecisionRegister from './views/DecisionRegister.vue'
 import ObjectivesView from './views/ObjectivesView.vue'
 import OrgView from './views/OrgView.vue'
-import { errorMessage, getMe, listDemands, listObjectives, listOrgUnits, listPools, listRoleAssignments } from './api.js'
+import { errorMessage, getMe, listDemands, listObjectives, listOrgUnits, listPools, listRoleAssignments, scoringModel } from './api.js'
 import { PHASE_OF, phaseLabel, STATUSES, statusLabel, typeColor, typeLabel } from './labels.js'
 
 export default {
@@ -244,9 +272,11 @@ export default {
 		ObjectivesView,
 		OrgView,
 		PortfolioView,
+		RankingView,
+		ScoringModelView,
 	},
 	setup() {
-		return { mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
@@ -264,6 +294,7 @@ export default {
 			assignments: [],
 			poolInfo: { canSee: false, canManage: false, pools: [] },
 			objectiveInfo: { canManage: false, objectives: [] },
+			scoring: null,
 		}
 	},
 	computed: {
@@ -356,6 +387,7 @@ export default {
 				this.assignments = this.me.canManageOrg ? await listRoleAssignments() : []
 				this.poolInfo = await listPools()
 				this.objectiveInfo = await listObjectives()
+				this.scoring = await scoringModel()
 			} catch (e) {
 				showError(errorMessage(e))
 			}
