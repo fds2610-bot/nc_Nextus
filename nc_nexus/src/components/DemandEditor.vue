@@ -117,6 +117,9 @@
 								<b>{{ demand.triagedBy }} · {{ formatDay(demand.triagedAt) }}</b>
 							</div>
 						</div>
+						<p v-if="nextStep" class="editor__next" data-test="triage-next">
+							{{ nextStep }}
+						</p>
 						<p v-if="demand.triageReason" class="editor__reason">
 							{{ demand.triageReason }}
 						</p>
@@ -206,7 +209,6 @@
 									<span v-if="changedFields(entry).length" class="editor__changes">
 										· {{ changedFields(entry).map(fieldLabel).join(', ') }}
 									</span>
-									<span v-if="entry.comment" class="editor__comment">„{{ entry.comment }}“</span>
 								</span>
 							</li>
 						</ul>
@@ -224,16 +226,27 @@
 					{{ t('nc_nexus', 'Delete draft') }}
 				</NcButton>
 				<!-- „Abbrechen“ nur, wenn ungespeicherte Eingaben verworfen würden; sonst „Schließen“ -->
-				<NcButton variant="tertiary"
+				<!-- „Schließen“ ist die hervorgehobene Standardaktion, wenn es sonst nichts zu tun gibt -->
+				<NcButton ref="closeButton"
+					:variant="closeIsDefault ? 'primary' : 'tertiary'"
 					:disabled="busy"
 					data-test="close-demand"
 					@click="$emit('close')">
 					{{ dirty ? t('nc_nexus', 'Cancel') : t('nc_nexus', 'Close') }}
 				</NcButton>
-				<NcButton v-if="demand && demand.can.triage"
+				<NcButton v-if="demand && demand.can.completeAnalysis"
 					variant="primary"
-					data-test="open-triage"
+					data-test="open-analysis"
 					:disabled="busy"
+					@click="analysisOpen = true">
+					{{ t('nc_nexus', 'Complete analysis') }}
+				</NcButton>
+				<!-- Für das PMO sichtbar; ausgegraut, solange keine Triage fällig ist (Grund im Abschnitt „Triage“) -->
+				<NcButton v-if="demand && demand.can.triager"
+					:variant="demand.can.triage ? 'primary' : 'secondary'"
+					data-test="open-triage"
+					:disabled="busy || !demand.can.triage"
+					:title="demand.can.triage ? '' : nextStep"
 					@click="triageOpen = true">
 					{{ t('nc_nexus', 'Triage') }}
 				</NcButton>
@@ -258,6 +271,10 @@
 			:demands="demands"
 			@close="triageOpen = false"
 			@decided="onDecided" />
+		<AnalysisDialog v-if="analysisOpen"
+			:demand="demand"
+			@close="analysisOpen = false"
+			@done="onDecided" />
 	</NcModal>
 </template>
 
@@ -269,6 +286,7 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
 import { createDemand, deleteDemand, demandHistory, errorMessage, getDemand, submitDemand, updateDemand } from '../api.js'
+import AnalysisDialog from './AnalysisDialog.vue'
 import CommentThread from './CommentThread.vue'
 import SimilarDemands from './SimilarDemands.vue'
 import TriageDialog from './TriageDialog.vue'
@@ -278,7 +296,7 @@ const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, 
 
 export default {
 	name: 'DemandEditor',
-	components: { CommentThread, NcButton, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
+	components: { AnalysisDialog, CommentThread, NcButton, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
 	props: {
 		demandId: { type: Number, default: null },
 		orgUnits: { type: Array, default: () => [] },
@@ -298,6 +316,7 @@ export default {
 			loading: this.demandId !== null,
 			busy: false,
 			triageOpen: false,
+			analysisOpen: false,
 			answer: '',
 			commentRefresh: 0,
 			commentDirty: false,
@@ -319,6 +338,36 @@ export default {
 		},
 		canDelete() {
 			return !!this.demand && this.demand.can.delete
+		},
+		// Gibt es außer „Schließen“ eine Aktion (Einreichen, Triage, Analyse)? Sonst ist „Schließen“ Standard.
+		closeIsDefault() {
+			if (!this.demand) {
+				return false
+			}
+			return !this.demand.can.edit && !this.demand.can.triage && !this.demand.can.completeAnalysis
+		},
+		// Was als Nächstes passiert – führt Antragsteller, Analyse und PMO durch den Ablauf
+		nextStep() {
+			const d = this.demand
+			if (!d) {
+				return ''
+			}
+			switch (d.status) {
+			case 'further_analysis':
+				return d.analysisDoneAt
+					? t('nc_nexus', 'Analysis delivered – the demand is waiting for triage again.')
+					: t('nc_nexus', 'Waiting for the analysis by {user} until {date}; triage is possible again afterwards.', { user: d.analysisOwner, date: formatIsoDay(d.analysisDue) })
+			case 'deferred':
+				return d.can.triage
+					? t('nc_nexus', 'Resubmission is due – the demand is waiting for triage again.')
+					: t('nc_nexus', 'Deferred until {date}; triage is possible again from then on.', { date: formatIsoDay(d.resubmissionDate) })
+			case 'in_qualification':
+			case 'rejected':
+			case 'duplicate':
+				return t('nc_nexus', 'Triage completed.')
+			default:
+				return ''
+			}
 		},
 		duplicateLabel() {
 			const lead = this.demands.find(d => d.id === this.demand?.duplicateOfId)
@@ -380,6 +429,8 @@ export default {
 			this.setDemand(demand)
 			// zuerst melden: wird der Dialog vor dem Nachladen geschlossen, ginge das Ereignis sonst verloren
 			this.$emit('changed')
+			// nach der Entscheidung ist „Schließen“ die naheliegende Aktion
+			this.$nextTick(() => this.$refs.closeButton?.$el?.focus())
 			this.commentRefresh++
 			this.history = await demandHistory(this.id)
 		},
@@ -490,6 +541,12 @@ export default {
 		}
 	}
 
+	&__next {
+		margin: 12px 0 0;
+		color: var(--color-text-maxcontrast);
+		font-style: italic;
+	}
+
 	&__answer {
 		margin-top: 10px;
 	}
@@ -510,12 +567,6 @@ export default {
 	&__by {
 		margin-inline-start: 4px;
 		color: var(--color-text-maxcontrast);
-	}
-
-	&__comment {
-		display: block;
-		color: var(--color-text-maxcontrast);
-		white-space: pre-wrap;
 	}
 
 	&__changes {

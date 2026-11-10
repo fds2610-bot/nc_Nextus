@@ -177,6 +177,22 @@ class DemandApiController extends OCSController {
 	}
 
 	/**
+	 * Ergebnis der weiteren Analyse liefern.
+	 *
+	 * @param string|null $result Ergebnis (wird als Kommentar gespeichert)
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: Analyse abgeschlossen
+	 * 400: Ergebnis fehlt
+	 * 403: keine Analyse offen oder nicht beauftragt
+	 * 404: Antrag nicht gefunden
+	 */
+	#[NoAdminRequired]
+	public function completeAnalysis(int $id, ?string $result = null): DataResponse {
+		return $this->handle(fn () => $this->out($this->triage->completeAnalysis($this->uid(), $id, $result)));
+	}
+
+	/**
 	 * Rückfrage an den Antragsteller.
 	 *
 	 * @param string|null $question Frage
@@ -257,7 +273,11 @@ class DemandApiController extends OCSController {
 		return $demand->jsonSerialize() + ['can' => [
 			'edit' => $demand->getRequestorId() === $uid && in_array($demand->getStatus(), DemandService::EDITABLE_STATUSES, true),
 			'delete' => $demand->getRequestorId() === $uid && $demand->getStatus() === DemandService::STATUS_DRAFT,
-			'triage' => in_array($demand->getStatus(), TriageService::TRIAGEABLE, true) && $this->permissions->canTriage($uid, $demand),
+			// triage: jetzt möglich; triager: PMO des Bereichs (Button ausgegraut zeigen, wenn noch nicht fällig)
+			'triage' => $this->triage->isDue($demand) && $this->permissions->canTriage($uid, $demand),
+			'triager' => $this->permissions->canTriage($uid, $demand),
+			'completeAnalysis' => $demand->getStatus() === 'further_analysis' && $demand->getAnalysisDoneAt() === null
+				&& $demand->getAnalysisOwner() === $uid,
 		]];
 	}
 

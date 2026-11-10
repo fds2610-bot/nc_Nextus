@@ -76,6 +76,7 @@ class PermissionService {
 
 	public function canReadDemand(string $userId, Demand $demand): bool {
 		return $demand->getRequestorId() === $userId
+			|| ($demand->getStatus() === 'further_analysis' && $demand->getAnalysisOwner() === $userId)
 			|| $this->isAdmin($userId)
 			|| $this->hasRole($userId, self::READ_DEMANDS, $demand->getOrgUnitId());
 	}

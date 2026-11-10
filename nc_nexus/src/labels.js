@@ -80,6 +80,7 @@ export const fieldLabel = (field) => ({
 	projectClass: t('nc_nexus', 'Project class'),
 	queryText: t('nc_nexus', 'Query'),
 	queryDue: t('nc_nexus', 'Answer due'),
+	analysisDoneAt: t('nc_nexus', 'Analysis delivered'),
 	status: t('nc_nexus', 'Status'),
 })[field] || field
 
@@ -88,6 +89,7 @@ export const actionLabel = (action) => ({
 	update: t('nc_nexus', 'Changed'),
 	status_change: t('nc_nexus', 'Status changed'),
 	decision: t('nc_nexus', 'Triage decision'),
+	analysis: t('nc_nexus', 'Analysis completed'),
 	delete: t('nc_nexus', 'Deleted'),
 })[action] || action
 

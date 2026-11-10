@@ -83,12 +83,20 @@ test.describe('Triage', () => {
 			const result = pmo.locator('[data-test="triage-result"]')
 			await expect(result).toContainText('Bereits durch das Konzernprojekt abgedeckt.')
 			await expect(pmo.locator('[data-test="demand-status"]')).toHaveText(/Rejected|Abgelehnt/)
-			await expect(pmo.locator('[data-test="open-triage"]')).toHaveCount(0)
+			// Nach der Entscheidung: Triage ausgegraut, „Schließen“ ist die Standardaktion und hat den Fokus
+			await expect(pmo.locator('[data-test="open-triage"]')).toBeDisabled()
+			await expect(pmo.locator('[data-test="triage-next"]')).toHaveText(/Triage completed|Triage abgeschlossen/)
+			const close = pmo.locator('[data-test="close-demand"]')
+			await expect(close).toHaveText(/Close|Schließen/)
+			await expect(close).toHaveClass(/primary/)
+			await expect(close).toBeFocused()
 
 			// Verlauf in der Oberfläche: Statuswechsel mit „alt → neu“ und dem auslösenden Konto
 			const decision = pmo.locator('[data-test="demand-history"] [data-test="history-decision"]')
 			await expect(decision).toContainText(/Submitted → Rejected|Eingereicht → Abgelehnt/)
 			await expect(decision).toContainText(E2E_OTHER_USER)
+			// Begründung steht im Triage-Abschnitt, nicht im Verlauf
+			await expect(decision).not.toContainText('Bereits durch das Konzernprojekt abgedeckt.')
 			const changes = pmo.locator('[data-test="demand-history"] [data-test="history-status_change"]')
 			await expect(changes.nth(0)).toContainText(/Draft → Submitted|Entwurf → Eingereicht/)
 			await expect(changes.nth(0)).toContainText(E2E_USER)
@@ -124,6 +132,71 @@ test.describe('Triage', () => {
 			await expect(page.locator('[data-test="demand-status"]')).toHaveText(/In qualification|In Qualifizierung/)
 			await page.keyboard.press('Escape')
 			await expect(page.locator(`[data-test="demand-${demand.key}"]`)).toHaveCount(0)
+		} finally {
+			await context.close()
+			await own.dispose()
+			await other.dispose()
+		}
+	})
+
+	test('Weitere Analyse: Triage erst wieder nach geliefertem Ergebnis', async ({ page, browser }) => {
+		test.setTimeout(90000)
+		const own = await apiAs(E2E_USER)
+		const other = await apiAs(E2E_OTHER_USER)
+		const demand = await submitted(own, unique('E2E-Analyse'))
+		await call(other, 'post', `/demands/${demand.id}/triage`, {
+			code: 'further_analysis', analysisOwner: E2E_USER, analysisDue: isoDay(14), reason: 'Aufwand unklar',
+		}, 200)
+		const { context, page: pmo } = await loginAs(browser, E2E_OTHER_USER, E2E_PASSWORD)
+		try {
+			// PMO: Triage ausgegraut, Hinweis auf die ausstehende Analyse, nicht im Arbeitsvorrat
+			await pmo.goto('/apps/nc_nexus/')
+			await pmo.locator('[data-test="nav-queue-triage"]').click()
+			await expect(pmo.locator(`[data-test="demand-${demand.key}"]`)).toHaveCount(0)
+			await pmo.locator('[data-test="nav-all"]').click()
+			await pmo.locator(`[data-test="demand-${demand.key}"]`).click()
+			await expect(pmo.locator('[data-test="open-triage"]')).toBeDisabled()
+			await expect(pmo.locator('[data-test="triage-next"]')).toContainText(E2E_USER)
+			await pmo.keyboard.press('Escape')
+
+			// Analyst: „Meine Analysen“ → Ergebnis liefern
+			await page.goto('/apps/nc_nexus/')
+			await page.locator('[data-test="nav-queue-analysis"]').click()
+			await page.locator(`[data-test="demand-${demand.key}"]`).click()
+			await page.locator('[data-test="open-analysis"]').click()
+			const dialog = page.locator('[data-test="analysis-dialog"]')
+			await dialog.locator('[data-test="field-analysis-result"] textarea').fill('Etwa 40 PT, betrifft SAP.')
+			await dialog.locator('[data-test="save-analysis"]').click()
+			await expect(page.locator('[data-test="comment-analysis"]')).toContainText('Etwa 40 PT, betrifft SAP.')
+			await expect(page.locator('[data-test="open-analysis"]')).toHaveCount(0)
+			await expect(page.locator('[data-test="close-demand"]')).toHaveClass(/primary/)
+
+			// PMO: jetzt wieder im Arbeitsvorrat und triagierbar
+			await pmo.reload()
+			await pmo.locator('[data-test="nav-queue-triage"]').click()
+			await pmo.locator(`[data-test="demand-${demand.key}"]`).click()
+			await expect(pmo.locator('[data-test="open-triage"]')).toBeEnabled()
+			await expect(pmo.locator('[data-test="triage-next"]')).toHaveText(/Analysis delivered|Analyse geliefert/)
+		} finally {
+			await context.close()
+			await own.dispose()
+			await other.dispose()
+		}
+	})
+
+	test('Zurückgestellt mit späterer Wiedervorlage ist noch nicht triagierbar', async ({ browser }) => {
+		const own = await apiAs(E2E_USER)
+		const other = await apiAs(E2E_OTHER_USER)
+		const demand = await submitted(own, unique('E2E-Spaeter'))
+		const decided = await call(other, 'post', `/demands/${demand.id}/triage`, { code: 'deferred', resubmissionDate: isoDay(30) }, 200)
+		expect(decided.can.triage).toBe(false)
+		expect((await other.post(`/ocs/v2.php/apps/nc_nexus/api/v1/demands/${demand.id}/triage`, { data: { code: 'accepted' } })).status()).toBe(403)
+		const { context, page } = await loginAs(browser, E2E_OTHER_USER, E2E_PASSWORD)
+		try {
+			await page.goto('/apps/nc_nexus/')
+			await page.locator(`[data-test="demand-${demand.key}"]`).click()
+			await expect(page.locator('[data-test="open-triage"]')).toBeDisabled()
+			await expect(page.locator('[data-test="triage-next"]')).toHaveText(/Deferred until|Zurückgestellt bis/)
 		} finally {
 			await context.close()
 			await own.dispose()

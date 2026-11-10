@@ -54,6 +54,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setTriagedBy(?string $triagedBy)
  * @method int|null getTriagedAt()
  * @method void setTriagedAt(?int $triagedAt)
+ * @method int|null getAnalysisDoneAt()
+ * @method void setAnalysisDoneAt(?int $analysisDoneAt)
  * @method int|null getOrgUnitId()
  * @method void setOrgUnitId(?int $orgUnitId)
  * @method int|null getSubmittedAt()
@@ -77,6 +79,7 @@ class Demand extends Entity implements JsonSerializable {
 	protected int $updatedAt = 0;
 	protected ?int $submittedAt = null;
 	protected ?int $orgUnitId = null;
+	protected ?int $analysisDoneAt = null;
 	protected ?string $projectClass = null;
 	protected ?string $triageCode = null;
 	protected ?string $triageReason = null;
@@ -96,6 +99,7 @@ class Demand extends Entity implements JsonSerializable {
 		$this->addType('orgUnitId', 'integer');
 		$this->addType('duplicateOfId', 'integer');
 		$this->addType('triagedAt', 'integer');
+		$this->addType('analysisDoneAt', 'integer');
 	}
 
 	/** @return array<string, mixed> */
@@ -109,6 +113,7 @@ class Demand extends Entity implements JsonSerializable {
 			'expectedBenefit' => $this->expectedBenefit,
 			'demandType' => $this->demandType,
 			'orgUnitId' => $this->orgUnitId,
+			'analysisDoneAt' => $this->analysisDoneAt,
 			'projectClass' => $this->projectClass,
 			'triageCode' => $this->triageCode,
 			'triageReason' => $this->triageReason,

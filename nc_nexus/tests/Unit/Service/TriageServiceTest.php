@@ -109,6 +109,44 @@ class TriageServiceTest extends TestCase {
 		$this->service->decide('pmo', 8, ['code' => 'rejected', 'reason' => 'x']);
 	}
 
+	public function testFurtherAnalysisIsNotTriagedBeforeTheResultIsDelivered(): void {
+		$demand = $this->service->decide('pmo', 7, ['code' => 'further_analysis', 'analysisOwner' => 'analyst', 'analysisDue' => '2026-11-20']);
+		$this->assertFalse($this->service->isDue($demand));
+		try {
+			$this->service->decide('pmo', 7, ['code' => 'accepted']);
+			$this->fail('Triage vor gelieferter Analyse');
+		} catch (ForbiddenException) {
+		}
+		$this->service->completeAnalysis('analyst', 7, 'Aufwand ca. 40 PT');
+		$this->assertTrue($this->service->isDue($this->store[7]));
+		$this->assertSame('in_qualification', $this->service->decide('pmo', 7, ['code' => 'accepted'])->getStatus());
+	}
+
+	public function testOnlyTheAssignedAccountCompletesTheAnalysis(): void {
+		$this->service->decide('pmo', 7, ['code' => 'further_analysis', 'analysisOwner' => 'analyst', 'analysisDue' => '2026-11-20']);
+		foreach (['alice', 'pmo'] as $uid) {
+			try {
+				$this->service->completeAnalysis($uid, 7, 'selbst erledigt');
+				$this->fail($uid . ' darf die Analyse nicht abschließen');
+			} catch (ForbiddenException) {
+			}
+		}
+		$this->assertNull($this->store[7]->getAnalysisDoneAt());
+	}
+
+	public function testAnalysisNeedsAResult(): void {
+		$this->service->decide('pmo', 7, ['code' => 'further_analysis', 'analysisOwner' => 'analyst', 'analysisDue' => '2026-11-20']);
+		$this->expectException(ValidationException::class);
+		$this->service->completeAnalysis('analyst', 7, ' ');
+	}
+
+	public function testDeferredDemandIsDueOnTheResubmissionDate(): void {
+		$demand = $this->service->decide('pmo', 7, ['code' => 'deferred', 'resubmissionDate' => '2026-11-11']);
+		$this->assertFalse($this->service->isDue($demand));
+		$demand->setResubmissionDate('2026-11-10');
+		$this->assertTrue($this->service->isDue($demand));
+	}
+
 	public function testQueryReopensDemandForRequestor(): void {
 		$demand = $this->service->query('pmo', 7, 'Welche Systeme?', '2026-11-30');
 		$this->assertSame('query', $demand->getStatus());

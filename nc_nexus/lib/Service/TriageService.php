@@ -30,8 +30,52 @@ class TriageService {
 	/** Vorhabensklassen (Kapitel 01, §6.1) */
 	public const CLASSES = ['XS', 'S', 'M', 'L'];
 
-	/** Status, aus denen heraus (erneut) triagiert werden darf */
-	public const TRIAGEABLE = ['submitted', 'further_analysis', 'deferred'];
+	/**
+	 * Wartet der Antrag gerade auf eine Triage? Eingereicht immer; weitere Analyse erst, wenn das
+	 * Ergebnis geliefert ist; zurückgestellt erst ab dem Wiedervorlagedatum (Kapitel 02 §4.1).
+	 */
+	public function isDue(Demand $demand): bool {
+		return match ($demand->getStatus()) {
+			'submitted' => true,
+			'further_analysis' => $demand->getAnalysisDoneAt() !== null,
+			'deferred' => $demand->getResubmissionDate() !== null && $demand->getResubmissionDate() <= date('Y-m-d', $this->time->getTime()),
+			default => false,
+		};
+	}
+
+	/**
+	 * Ergebnis der weiteren Analyse liefern – nur das beauftragte Konto (klare Zuständigkeit). Das Ergebnis
+	 * steht im Kommentarfaden; danach ist der Antrag wieder triagierbar.
+	 *
+	 * @throws NotFoundException|ForbiddenException|ValidationException
+	 */
+	public function completeAnalysis(string $userId, int $id, ?string $result): Demand {
+		$demand = $this->demands->findReadable($userId, $id);
+		if ($demand->getStatus() !== 'further_analysis' || $demand->getAnalysisDoneAt() !== null) {
+			throw new ForbiddenException('No analysis is pending for this demand');
+		}
+		if ($demand->getAnalysisOwner() !== $userId) {
+			throw new ForbiddenException('Only the assigned account may complete the analysis');
+		}
+		$result = $this->text($result);
+		if ($result === null) {
+			throw new ValidationException('Please describe the result of the analysis');
+		}
+		$now = $this->time->getTime();
+		$demand->setAnalysisDoneAt($now);
+		$demand->setUpdatedAt($now);
+		$this->db->beginTransaction();
+		try {
+			$demand = $this->mapper->update($demand);
+			$this->audit->log(DemandService::ENTITY, $id, 'analysis', $userId, ['analysisDoneAt' => [null, $now]], $result);
+			$this->db->commit();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
+		}
+		$this->comments->add($userId, $id, $result, 'analysis');
+		return $demand;
+	}
 
 	public function __construct(
 		private DemandService $demands,
@@ -116,6 +160,8 @@ class TriageService {
 		}
 		$demand->setQueryText(null);
 		$demand->setQueryDue(null);
+		// eine neue Analyse beginnt ohne geliefertes Ergebnis
+		$demand->setAnalysisDoneAt(null);
 		return $this->store($userId, $demand, 'decision', $before, $reason);
 	}
 
@@ -148,7 +194,7 @@ class TriageService {
 				? 'You cannot triage your own demand'
 				: 'Only the portfolio office of the area may triage');
 		}
-		if (!in_array($demand->getStatus(), self::TRIAGEABLE, true)) {
+		if (!$this->isDue($demand)) {
 			throw new ForbiddenException('The demand is not waiting for triage');
 		}
 		return $demand;

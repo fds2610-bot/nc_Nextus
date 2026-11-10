@@ -23,6 +23,7 @@ return [
 		['name' => 'org_api#assign', 'url' => '/api/v1/role-assignments', 'verb' => 'POST'],
 		['name' => 'org_api#unassign', 'url' => '/api/v1/role-assignments/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 		['name' => 'demand_api#decide', 'url' => '/api/v1/demands/{id}/triage', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+		['name' => 'demand_api#completeAnalysis', 'url' => '/api/v1/demands/{id}/analysis', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 		['name' => 'demand_api#query', 'url' => '/api/v1/demands/{id}/query', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 		['name' => 'demand_api#comments', 'url' => '/api/v1/demands/{id}/comments', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 		['name' => 'demand_api#comment', 'url' => '/api/v1/demands/{id}/comments', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],

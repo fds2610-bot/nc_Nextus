@@ -18,7 +18,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
  * Kommentare sind unveränderlich (Nachvollziehbarkeit von Rückfragen und Antworten).
  */
 class CommentService {
-	public const KINDS = ['comment', 'query', 'answer'];
+	public const KINDS = ['comment', 'query', 'answer', 'analysis'];
 	private const MAX_LENGTH = 10000;
 
 	public function __construct(

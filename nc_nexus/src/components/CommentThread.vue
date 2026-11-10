@@ -76,7 +76,7 @@ export default {
 	},
 	methods: {
 		kindLabel(kind) {
-			return { query: t('nc_nexus', 'Query'), answer: t('nc_nexus', 'Answer') }[kind] || ''
+			return { query: t('nc_nexus', 'Query'), answer: t('nc_nexus', 'Answer'), analysis: t('nc_nexus', 'Analysis') }[kind] || ''
 		},
 		async load() {
 			try {
@@ -121,6 +121,11 @@ export default {
 		&--query .thread__kind {
 			background: rgba(var(--color-warning-rgb), 0.14);
 			color: var(--color-warning-text);
+		}
+
+		&--analysis .thread__kind {
+			background: var(--color-primary-element-light);
+			color: var(--color-primary-element-light-text);
 		}
 
 		&--answer .thread__kind {

@@ -24,6 +24,7 @@ export const listComments = async (id) => data(await axios.get(`${base}/${id}/co
 export const addComment = async (id, message) => data(await axios.post(`${base}/${id}/comments`, { message }))
 export const deleteDemand = async (id) => data(await axios.delete(`${base}/${id}`))
 export const triageDemand = async (id, decision) => data(await axios.post(`${base}/${id}/triage`, decision))
+export const completeAnalysis = async (id, result) => data(await axios.post(`${base}/${id}/analysis`, { result }))
 export const queryDemand = async (id, query) => data(await axios.post(`${base}/${id}/query`, query))
 export const similarDemands = async (params) => data(await axios.get(`${base}/similar`, { params }))
 export const demandHistory = async (id) => data(await axios.get(`${base}/${id}/history`))

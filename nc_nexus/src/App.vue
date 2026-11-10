@@ -61,6 +61,19 @@
 					</NcAppNavigationItem>
 				</template>
 
+				<NcAppNavigationItem v-if="queue('analysis').length"
+					:name="t('nc_nexus', 'My analyses')"
+					:active="view === 'demands' && filter.kind === 'queue' && filter.value === 'analysis'"
+					data-test="nav-queue-analysis"
+					@click="setFilter('queue', 'analysis')">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiMagnifyScan" />
+					</template>
+					<template #counter>
+						<NcCounterBubble :count="queue('analysis').length" type="highlighted" />
+					</template>
+				</NcAppNavigationItem>
+
 				<NcAppNavigationCaption :name="t('nc_nexus', 'Status')" />
 				<NcAppNavigationItem v-for="status in shownStatuses"
 					:key="status"
@@ -150,7 +163,7 @@ import DemandEditor from './components/DemandEditor.vue'
 import DemandList from './views/DemandList.vue'
 import OrgView from './views/OrgView.vue'
 import { errorMessage, getMe, listDemands, listOrgUnits, listRoleAssignments } from './api.js'
-import { STATUSES, statusLabel, today, typeColor, typeLabel } from './labels.js'
+import { STATUSES, statusLabel, typeColor, typeLabel } from './labels.js'
 
 export default {
 	name: 'App',
@@ -171,7 +184,7 @@ export default {
 		OrgView,
 	},
 	setup() {
-		return { mdiCalendarClock, mdiGavel, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiCalendarClock, mdiGavel, mdiMagnifyScan, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
@@ -217,7 +230,11 @@ export default {
 				return typeLabel(this.filter.value)
 			}
 			if (this.filter.kind === 'queue') {
-				return this.filter.value === 'triage' ? t('nc_nexus', 'To triage') : t('nc_nexus', 'Resubmission due')
+				return {
+					triage: t('nc_nexus', 'To triage'),
+					resubmission: t('nc_nexus', 'Resubmission due'),
+					analysis: t('nc_nexus', 'My analyses'),
+				}[this.filter.value]
 			}
 			return t('nc_nexus', 'Demands')
 		},
@@ -237,11 +254,14 @@ export default {
 			}
 		},
 		queue(name) {
+			// Fälligkeit berechnet der Server (can.triage); hier nur nach Art des Vorrats trennen
 			if (name === 'triage') {
-				return this.demands.filter(d => d.can?.triage && ['submitted', 'further_analysis'].includes(d.status))
+				return this.demands.filter(d => d.can?.triage && d.status !== 'deferred')
 			}
-			const day = today()
-			return this.demands.filter(d => d.can?.triage && d.status === 'deferred' && d.resubmissionDate && d.resubmissionDate <= day)
+			if (name === 'analysis') {
+				return this.demands.filter(d => d.can?.completeAnalysis && d.analysisOwner === this.me.userId)
+			}
+			return this.demands.filter(d => d.can?.triage && d.status === 'deferred')
 		},
 		statusIcon(status) {
 			return {
