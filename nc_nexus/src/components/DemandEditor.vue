@@ -149,8 +149,12 @@
 					@click="remove">
 					{{ t('nc_nexus', 'Delete draft') }}
 				</NcButton>
-				<NcButton variant="tertiary" :disabled="busy" @click="$emit('close')">
-					{{ readonly ? t('nc_nexus', 'Close') : t('nc_nexus', 'Cancel') }}
+				<!-- „Abbrechen“ nur, wenn ungespeicherte Eingaben verworfen würden; sonst „Schließen“ -->
+				<NcButton variant="tertiary"
+					:disabled="busy"
+					data-test="close-demand"
+					@click="$emit('close')">
+					{{ dirty ? t('nc_nexus', 'Cancel') : t('nc_nexus', 'Close') }}
 				</NcButton>
 				<template v-if="!readonly">
 					<NcButton variant="secondary"
@@ -200,6 +204,7 @@ export default {
 			id: this.demandId,
 			demand: null,
 			form: emptyForm(),
+			saved: JSON.stringify(emptyForm()),
 			history: [],
 			loading: this.demandId !== null,
 			busy: false,
@@ -224,6 +229,9 @@ export default {
 		},
 		canDelete() {
 			return !!this.demand && !this.readonly
+		},
+		dirty() {
+			return !this.readonly && JSON.stringify(this.form) !== this.saved
 		},
 		valid() {
 			return this.form.title.trim() !== '' && !!this.form.demandType
@@ -256,6 +264,7 @@ export default {
 				description: demand.description ?? '',
 				expectedBenefit: demand.expectedBenefit ?? '',
 			}
+			this.saved = JSON.stringify(this.form)
 		},
 		async persist() {
 			const demand = this.id === null ? await createDemand(this.form) : await updateDemand(this.id, this.form)

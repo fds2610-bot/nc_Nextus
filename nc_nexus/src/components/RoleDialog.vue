@@ -51,7 +51,7 @@
 		</form>
 		<template #actions>
 			<NcButton variant="tertiary" :disabled="busy" @click="$emit('close')">
-				{{ t('nc_nexus', 'Cancel') }}
+				{{ dirty ? t('nc_nexus', 'Cancel') : t('nc_nexus', 'Close') }}
 			</NcButton>
 			<NcButton variant="primary"
 				:disabled="busy || !principal"
@@ -94,6 +94,11 @@ export default {
 		}
 	},
 	computed: {
+		// ungespeicherte Eingaben → „Abbrechen“, sonst „Schließen“
+		dirty() {
+			return this.principal !== null || this.form.validFrom !== '' || this.form.validTo !== ''
+				|| this.form.role !== 'portfolio_manager' || this.scope !== (this.scopeId === null ? 'global' : String(this.scopeId))
+		},
 		tree() {
 			return orgTree(this.units)
 		},

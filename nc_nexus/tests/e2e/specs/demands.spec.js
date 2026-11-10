@@ -28,8 +28,11 @@ test.describe('Antragseingang', () => {
 		await editor.locator('[data-test="field-title"] input').fill(title)
 		// Einreichen ohne Problembeschreibung ist gesperrt
 		await expect(editor.locator('[data-test="submit-demand"]')).toBeDisabled()
+		// ungespeicherte Eingabe → „Abbrechen“, nach dem Speichern → „Schließen“
+		await expect(editor.locator('[data-test="close-demand"]')).toHaveText(/Cancel|Abbrechen/)
 		await editor.locator('[data-test="save-demand"]').click()
 		await expect(editor.locator('[data-test="demand-status"]')).toBeVisible()
+		await expect(editor.locator('[data-test="close-demand"]')).toHaveText(/Close|Schließen/)
 		const key = await editor.locator('[data-test="demand-key"]').innerText()
 		expect(key).toMatch(/^DEM-\d{4}-\d{4}$/)
 

@@ -32,7 +32,7 @@
 				{{ t('nc_nexus', 'Delete') }}
 			</NcButton>
 			<NcButton variant="tertiary" :disabled="busy" @click="$emit('close')">
-				{{ t('nc_nexus', 'Cancel') }}
+				{{ dirty ? t('nc_nexus', 'Cancel') : t('nc_nexus', 'Close') }}
 			</NcButton>
 			<NcButton variant="primary"
 				:disabled="busy || !form.name.trim()"
@@ -64,16 +64,18 @@ export default {
 		return { indented, t }
 	},
 	data() {
-		return {
-			busy: false,
-			form: {
-				name: this.unit?.name ?? '',
-				parentId: this.unit?.parentId ?? null,
-				costCenter: this.unit?.costCenter ?? '',
-			},
+		const form = {
+			name: this.unit?.name ?? '',
+			parentId: this.unit?.parentId ?? null,
+			costCenter: this.unit?.costCenter ?? '',
 		}
+		return { busy: false, form, initial: JSON.stringify(form) }
 	},
 	computed: {
+		// ungespeicherte Eingaben → „Abbrechen“, sonst „Schließen“
+		dirty() {
+			return JSON.stringify(this.form) !== this.initial
+		},
 		tree() {
 			return orgTree(this.units)
 		},
