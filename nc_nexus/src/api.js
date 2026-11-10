@@ -70,3 +70,10 @@ export const poolLoad = async (id, period) => data(await axios.get(v1(`/pools/${
 export const demandNeeds = async (id) => data(await axios.get(v1(`/demands/${id}/needs`)))
 export const saveDemandNeeds = async (id, needs) => data(await axios.put(v1(`/demands/${id}/needs`), { needs }))
 export const portfolioOverview = async () => data(await axios.get(v1('/portfolio')))
+
+export const listObjectives = async () => data(await axios.get(v1('/objectives')))
+export const createObjective = async (o) => data(await axios.post(v1('/objectives'), o))
+export const updateObjective = async (id, o) => data(await axios.put(v1(`/objectives/${id}`), o))
+export const deleteObjective = async (id) => data(await axios.delete(v1(`/objectives/${id}`)))
+export const demandObjectives = async (id) => data(await axios.get(v1(`/demands/${id}/objectives`)))
+export const saveDemandObjectives = async (id, objectiveIds) => data(await axios.put(v1(`/demands/${id}/objectives`), { objectiveIds }))

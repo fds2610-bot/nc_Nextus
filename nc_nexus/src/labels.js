@@ -250,3 +250,30 @@ export const phaseLabel = (phase) => ({
 
 // Phasen, die erst mit Projekten (Stufe 2) belegt werden
 export const FUTURE_PHASES = ['planned', 'active', 'review']
+
+/**
+ * Ziele als Baum in Anzeige-Reihenfolge (nach Code), mit Tiefe und Pfad.
+ *
+ * @param {Array} objectives flache Liste mit id, code, title, parentId
+ * @return {Array<object>}
+ */
+export function objectiveTree(objectives) {
+	const children = new Map()
+	for (const o of objectives) {
+		const key = objectives.some(x => x.id === o.parentId) ? o.parentId : null
+		if (!children.has(key)) {
+			children.set(key, [])
+		}
+		children.get(key).push(o)
+	}
+	const result = []
+	const walk = (parentId, depth, path) => {
+		for (const o of (children.get(parentId) || []).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))) {
+			const fullPath = path ? `${path} › ${o.code}` : o.code
+			result.push({ ...o, depth, path: fullPath })
+			walk(o.id, depth + 1, fullPath)
+		}
+	}
+	walk(null, 0, '')
+	return result
+}

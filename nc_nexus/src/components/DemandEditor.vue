@@ -186,6 +186,31 @@
 						</label>
 					</div>
 
+					<div v-if="objectives.length" class="nx-section" data-test="demand-objectives">
+						<h3>{{ t('nc_nexus', 'Strategic objectives') }}</h3>
+						<p v-if="!readonly" class="nx-hint editor__objectives-hint">
+							{{ t('nc_nexus', 'Which objectives does the demand contribute to?') }}
+						</p>
+						<p v-if="readonly && !objectiveIds.length" class="editor__muted">
+							{{ t('nc_nexus', 'Not assigned to any objective.') }}
+						</p>
+						<ul class="editor__objectives">
+							<li v-for="o in objectiveList"
+								v-show="!readonly || objectiveIds.includes(o.id)"
+								:key="o.id"
+								:style="{ paddingInlineStart: (readonly ? 0 : o.depth * 20) + 'px' }">
+								<label>
+									<input v-if="!readonly"
+										v-model="objectiveIds"
+										type="checkbox"
+										:value="o.id"
+										:data-test="'objective-check-' + o.code">
+									<span class="editor__objective-code">{{ o.code }}</span> {{ o.title }}
+								</label>
+							</li>
+						</ul>
+					</div>
+
 					<NeedsEditor v-model="needs" :pools="pools" :readonly="readonly" />
 
 					<div class="nx-section">
@@ -307,13 +332,13 @@ import { t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
-import { createDemand, deleteDemand, demandHistory, demandNeeds, errorMessage, getDemand, saveDemandNeeds, submitDemand, updateDemand } from '../api.js'
+import { createDemand, deleteDemand, demandHistory, demandNeeds, demandObjectives, errorMessage, getDemand, saveDemandNeeds, saveDemandObjectives, submitDemand, updateDemand } from '../api.js'
 import AnalysisDialog from './AnalysisDialog.vue'
 import CommentThread from './CommentThread.vue'
 import NeedsEditor from './NeedsEditor.vue'
 import SimilarDemands from './SimilarDemands.vue'
 import TriageDialog from './TriageDialog.vue'
-import { actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, indented, orgTree, statusChip, statusLabel, typeLabel } from '../labels.js'
+import { actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, indented, objectiveTree, orgTree, statusChip, statusLabel, typeLabel } from '../labels.js'
 
 const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, problemStatement: '', description: '', expectedBenefit: '' })
 
@@ -325,6 +350,7 @@ export default {
 		orgUnits: { type: Array, default: () => [] },
 		demands: { type: Array, default: () => [] },
 		pools: { type: Array, default: () => [] },
+		objectives: { type: Array, default: () => [] },
 	},
 	emits: ['close', 'changed'],
 	setup() {
@@ -342,6 +368,8 @@ export default {
 			triageOpen: false,
 			triageOverride: false,
 			needs: [],
+			objectiveIds: [],
+			objectivesSaved: '[]',
 			needsSaved: '[]',
 			// Elemente innerer Dialoge, die zur Fokusfalle dieses Modals gehören
 			trapElements: [],
@@ -353,6 +381,9 @@ export default {
 		}
 	},
 	computed: {
+		objectiveList() {
+			return objectiveTree(this.objectives)
+		},
 		orgTreeList() {
 			return orgTree(this.orgUnits)
 		},
@@ -376,7 +407,7 @@ export default {
 			return !this.dirty && !this.demand.can.submit && !this.demand.can.triage && !this.demand.can.completeAnalysis
 		},
 		dirtyForm() {
-			return !this.readonly && (JSON.stringify(this.form) !== this.saved || JSON.stringify(this.needs) !== this.needsSaved)
+			return !this.readonly && (JSON.stringify(this.form) !== this.saved || JSON.stringify(this.needs) !== this.needsSaved || this.objectivesChanged())
 		},
 		// Was als Nächstes passiert – führt Antragsteller, Analyse und PMO durch den Ablauf
 		nextStep() {
@@ -425,6 +456,7 @@ export default {
 			try {
 				this.setDemand(await getDemand(this.id))
 				this.setNeeds(await demandNeeds(this.id))
+				this.setObjectives(await demandObjectives(this.id))
 				this.history = await demandHistory(this.id)
 			} catch (e) {
 				showError(errorMessage(e))
@@ -473,6 +505,13 @@ export default {
 			this.commentRefresh++
 			this.history = await demandHistory(this.id)
 		},
+		setObjectives(ids) {
+			this.objectiveIds = [...ids].sort((a, b) => a - b)
+			this.objectivesSaved = JSON.stringify(this.objectiveIds)
+		},
+		objectivesChanged() {
+			return JSON.stringify([...this.objectiveIds].sort((a, b) => a - b)) !== this.objectivesSaved
+		},
 		setNeeds(needs) {
 			this.needs = needs.map(n => ({ poolId: n.poolId, period: n.period, personDays: n.personDays }))
 			this.needsSaved = JSON.stringify(this.needs)
@@ -483,6 +522,9 @@ export default {
 			// Ressourcenbedarf gehört zum Antrag und wird mit ihm gespeichert
 			if (JSON.stringify(this.needs) !== this.needsSaved) {
 				this.setNeeds(await saveDemandNeeds(this.id, this.needs.filter(n => Number(n.personDays) > 0)))
+			}
+			if (this.objectivesChanged()) {
+				this.setObjectives(await saveDemandObjectives(this.id, this.objectiveIds))
 			}
 			this.$emit('changed')
 		},
@@ -586,6 +628,32 @@ export default {
 			margin: 4px 0 0;
 			white-space: pre-wrap;
 		}
+	}
+
+	&__objectives {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+
+		li {
+			padding: 2px 0;
+		}
+
+		label {
+			display: flex;
+			align-items: baseline;
+			gap: 8px;
+			cursor: pointer;
+		}
+	}
+
+	&__objectives-hint {
+		margin: -8px 0 8px;
+	}
+
+	&__objective-code,
+	&__muted {
+		color: var(--color-text-maxcontrast);
 	}
 
 	&__next {

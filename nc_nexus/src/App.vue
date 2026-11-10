@@ -44,6 +44,14 @@
 					</template>
 				</NcAppNavigationItem>
 
+				<NcAppNavigationItem :name="t('nc_nexus', 'Strategic objectives')"
+					:active="view === 'objectives'"
+					data-test="nav-objectives"
+					@click="view = 'objectives'">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiBullseyeArrow" />
+					</template>
+				</NcAppNavigationItem>
 				<NcAppNavigationItem v-if="poolInfo.canSee"
 					:name="t('nc_nexus', 'Portfolio')"
 					:active="view === 'portfolio'"
@@ -147,7 +155,11 @@
 		</NcAppNavigation>
 
 		<NcAppContent>
-			<PortfolioView v-if="view === 'portfolio'"
+			<ObjectivesView v-if="view === 'objectives'"
+				:objectives="objectiveInfo.objectives"
+				:can-manage="objectiveInfo.canManage"
+				@changed="loadOrg" />
+			<PortfolioView v-else-if="view === 'portfolio'"
 				:org-units="orgUnits"
 				:refresh-key="refresh"
 				@filter="filterPortfolio" />
@@ -178,6 +190,7 @@
 				:org-units="orgUnits"
 				:demands="demands"
 				:pools="poolInfo.pools"
+				:objectives="objectiveInfo.objectives"
 				@close="editorOpen = false"
 				@changed="onChanged" />
 		</NcAppContent>
@@ -185,7 +198,7 @@
 </template>
 
 <script>
-import { mdiAccountQuestion, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiViewGridOutline } from '@mdi/js'
+import { mdiAccountQuestion, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiViewGridOutline } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -205,8 +218,9 @@ import DemandList from './views/DemandList.vue'
 import CapacityView from './views/CapacityView.vue'
 import PortfolioView from './views/PortfolioView.vue'
 import DecisionRegister from './views/DecisionRegister.vue'
+import ObjectivesView from './views/ObjectivesView.vue'
 import OrgView from './views/OrgView.vue'
-import { errorMessage, getMe, listDemands, listOrgUnits, listPools, listRoleAssignments } from './api.js'
+import { errorMessage, getMe, listDemands, listObjectives, listOrgUnits, listPools, listRoleAssignments } from './api.js'
 import { PHASE_OF, phaseLabel, STATUSES, statusLabel, typeColor, typeLabel } from './labels.js'
 
 export default {
@@ -227,11 +241,12 @@ export default {
 		NcTextField,
 		CapacityView,
 		DecisionRegister,
+		ObjectivesView,
 		OrgView,
 		PortfolioView,
 	},
 	setup() {
-		return { mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
@@ -248,6 +263,7 @@ export default {
 			orgUnits: [],
 			assignments: [],
 			poolInfo: { canSee: false, canManage: false, pools: [] },
+			objectiveInfo: { canManage: false, objectives: [] },
 		}
 	},
 	computed: {
@@ -339,6 +355,7 @@ export default {
 				this.orgUnits = await listOrgUnits()
 				this.assignments = this.me.canManageOrg ? await listRoleAssignments() : []
 				this.poolInfo = await listPools()
+				this.objectiveInfo = await listObjectives()
 			} catch (e) {
 				showError(errorMessage(e))
 			}

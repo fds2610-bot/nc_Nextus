@@ -33,7 +33,7 @@ Dies ist eine frühe Entwicklungsversion. Derzeit verfügbar:
 * **Kommentare**: Kommentarfaden an jedem Antrag für alle, die ihn lesen dürfen; Rückfragen des Portfolio-Office und die Antworten des Antragstellers stehen dort als Gespräch.
 * **Triage**: Das Portfolio-Office des Bereichs entscheidet mit verbindlichen Codes – annehmen (mit Vorhabensklasse), weitere Analyse (Verantwortlicher und Frist), zurückstellen (Wiedervorlage), ablehnen (Begründung Pflicht) oder Dublette – oder stellt dem Antragsteller eine Rückfrage; Arbeitsvorrat für offene Triage und fällige Wiedervorlagen. Den eigenen Antrag triagiert niemand selbst.
 * **Audit-Log**: Jedes Anlegen, jede Änderung und jeder Statuswechsel wird mit dem auslösenden Konto protokolliert.]]></description>
-    <version>0.7.0</version>
+    <version>0.8.0</version>
     <licence>GPL-3.0-or-later</licence>
     <author>fds2610</author>
     <namespace>Nexus</namespace>

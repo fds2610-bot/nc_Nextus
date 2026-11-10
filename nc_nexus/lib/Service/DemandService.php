@@ -10,6 +10,7 @@ use OCA\Nexus\Db\CommentMapper;
 use OCA\Nexus\Db\CounterMapper;
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\DemandMapper;
+use OCA\Nexus\Db\ObjectiveMapper;
 use OCA\Nexus\Db\OrgUnitMapper;
 use OCA\Nexus\Db\ResourceNeedMapper;
 use OCA\Nexus\Exception\ForbiddenException;
@@ -51,6 +52,7 @@ class DemandService {
 		private CounterMapper $counters,
 		private CommentMapper $comments,
 		private ResourceNeedMapper $resourceNeeds,
+		private ObjectiveMapper $objectiveLinks,
 	) {
 	}
 
@@ -205,6 +207,7 @@ class DemandService {
 			$this->mapper->delete($demand);
 			$this->comments->deleteForDemand($id);
 			$this->resourceNeeds->deleteForDemand($id);
+			$this->objectiveLinks->deleteLinksOfDemand($id);
 			$this->db->commit();
 		} catch (\Throwable $e) {
 			$this->db->rollBack();
