@@ -11,6 +11,7 @@ use OCA\Nexus\Exception\ForbiddenException;
 use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
 use OCA\Nexus\Service\AuditService;
+use OCA\Nexus\Service\CommentService;
 use OCA\Nexus\Service\DemandService;
 use OCA\Nexus\Service\PermissionService;
 use OCA\Nexus\Service\TriageService;
@@ -42,7 +43,7 @@ class TriageServiceTest extends TestCase {
 		$users->method('userExists')->willReturnCallback(fn (string $uid) => $uid === 'analyst');
 		$time = $this->createMock(ITimeFactory::class);
 		$time->method('getTime')->willReturn(1794268800); // 10.11.2026
-		$this->service = new TriageService($this->demands, $mapper, $this->permissions, $this->audit, $this->createMock(IDBConnection::class), $users, $time);
+		$this->service = new TriageService($this->demands, $mapper, $this->permissions, $this->audit, $this->createMock(IDBConnection::class), $users, $time, $this->createMock(CommentService::class));
 
 		$this->store[7] = $this->demand(7, 'submitted');
 		$this->store[8] = $this->demand(8, 'in_qualification');

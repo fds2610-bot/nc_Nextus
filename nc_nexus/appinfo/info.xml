@@ -13,6 +13,7 @@ This is an early development version. Currently available:
 * **Organization and roles**: hierarchical organizational units; context-bound roles (portfolio office, board, sponsor, pool manager, auditor …) for accounts or groups, globally or per unit including subunits, optionally for a limited period (deputies).
 * **Visibility by role**: requestors see their own demands, roles see the demands of their area.
 * **Duplicate suggestion**: while typing, similar open or deferred demands are shown; demands the account may not read appear only as a count. The portfolio office sees possible duplicates during triage.
+* **Comments**: a comment thread on every demand for everyone who can read it; queries of the portfolio office and the requestor's answers appear there as a conversation.
 * **Triage**: the portfolio office of the area decides with binding codes – accept (with project class), further analysis (owner and due date), defer (resubmission date), reject (reason required) or duplicate – or sends a query back to the requestor; work queues for open triage and due resubmissions. Nobody triages their own demand.
 * **Audit log**: every creation, change and status transition is recorded with the account that made it.]]></description>
     <description lang="de"><![CDATA[**Nexus** bringt Projekt-Governance in die Nextcloud: ein Eingang für alle Projektanträge, verbindliche Entscheidungen, Priorisierung gegen die verfügbare Kapazität und transparente Steuerung bis zum Nutzenreview.
@@ -23,9 +24,10 @@ Dies ist eine frühe Entwicklungsversion. Derzeit verfügbar:
 * **Organisation und Rollen**: hierarchische Org-Einheiten; kontextgebundene Rollen (Portfolio-Office, Board, Sponsor, Pool-Management, Revision …) für Konten oder Gruppen, global oder je Einheit samt Untereinheiten, auf Wunsch befristet (Vertretungen).
 * **Sichtbarkeit nach Rolle**: Antragsteller sehen ihre eigenen Anträge, Rollen die Anträge ihres Bereichs.
 * **Dublettenvorschlag**: Beim Tippen erscheinen ähnliche offene oder zurückgestellte Anträge; Anträge ohne Leserecht nur als Anzahl. Das Portfolio-Office sieht mögliche Dubletten bei der Triage.
+* **Kommentare**: Kommentarfaden an jedem Antrag für alle, die ihn lesen dürfen; Rückfragen des Portfolio-Office und die Antworten des Antragstellers stehen dort als Gespräch.
 * **Triage**: Das Portfolio-Office des Bereichs entscheidet mit verbindlichen Codes – annehmen (mit Vorhabensklasse), weitere Analyse (Verantwortlicher und Frist), zurückstellen (Wiedervorlage), ablehnen (Begründung Pflicht) oder Dublette – oder stellt dem Antragsteller eine Rückfrage; Arbeitsvorrat für offene Triage und fällige Wiedervorlagen. Den eigenen Antrag triagiert niemand selbst.
 * **Audit-Log**: Jedes Anlegen, jede Änderung und jeder Statuswechsel wird mit dem auslösenden Konto protokolliert.]]></description>
-    <version>0.3.1</version>
+    <version>0.4.0</version>
     <licence>GPL-3.0-or-later</licence>
     <author>fds2610</author>
     <namespace>Nexus</namespace>

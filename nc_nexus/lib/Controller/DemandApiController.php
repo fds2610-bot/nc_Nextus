@@ -9,6 +9,7 @@ use OCA\Nexus\Exception\ForbiddenException;
 use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
 use OCA\Nexus\Db\Demand;
+use OCA\Nexus\Service\CommentService;
 use OCA\Nexus\Service\DemandService;
 use OCA\Nexus\Service\PermissionService;
 use OCA\Nexus\Service\SimilarityService;
@@ -30,6 +31,7 @@ class DemandApiController extends OCSController {
 		private TriageService $triage,
 		private PermissionService $permissions,
 		private SimilarityService $similarity,
+		private CommentService $comments,
 		private IL10N $l10n,
 		private ?string $userId,
 	) {
@@ -104,8 +106,9 @@ class DemandApiController extends OCSController {
 	}
 
 	/**
-	 * Entwurf einreichen.
+	 * Entwurf einreichen (auch nach einer Rückfrage erneut).
 	 *
+	 * @param string|null $answer Antwort auf eine Rückfrage (optional)
 	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<string, mixed>, array{}>
 	 *
 	 * 200: Antrag eingereicht
@@ -114,8 +117,8 @@ class DemandApiController extends OCSController {
 	 * 404: Antrag nicht gefunden
 	 */
 	#[NoAdminRequired]
-	public function submit(int $id): DataResponse {
-		return $this->handle(fn () => $this->out($this->service->submit($this->uid(), $id)));
+	public function submit(int $id, ?string $answer = null): DataResponse {
+		return $this->handle(fn () => $this->out($this->service->submit($this->uid(), $id, $answer)));
 	}
 
 	/**
@@ -188,6 +191,34 @@ class DemandApiController extends OCSController {
 	#[NoAdminRequired]
 	public function query(int $id, ?string $question = null, ?string $due = null): DataResponse {
 		return $this->handle(fn () => $this->out($this->triage->query($this->uid(), $id, $question, $due)));
+	}
+
+	/**
+	 * Kommentarfaden eines Antrags.
+	 *
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: Kommentare
+	 * 404: Antrag nicht gefunden
+	 */
+	#[NoAdminRequired]
+	public function comments(int $id): DataResponse {
+		return $this->handle(fn () => array_map(static fn ($c) => $c->jsonSerialize(), $this->comments->list($this->uid(), $id)));
+	}
+
+	/**
+	 * Kommentar schreiben.
+	 *
+	 * @param string $message Text
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 201: Kommentar angelegt
+	 * 400: leer oder zu lang
+	 * 404: Antrag nicht gefunden
+	 */
+	#[NoAdminRequired]
+	public function comment(int $id, string $message = ''): DataResponse {
+		return $this->handle(fn () => $this->comments->add($this->uid(), $id, $message)->jsonSerialize(), Http::STATUS_CREATED);
 	}
 
 	/**

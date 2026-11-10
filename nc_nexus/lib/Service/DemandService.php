@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace OCA\Nexus\Service;
 
 use OCA\Nexus\Db\AuditEntry;
+use OCA\Nexus\Db\Comment;
+use OCA\Nexus\Db\CommentMapper;
 use OCA\Nexus\Db\CounterMapper;
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\DemandMapper;
@@ -46,6 +48,7 @@ class DemandService {
 		private PermissionService $permissions,
 		private OrgUnitMapper $orgUnits,
 		private CounterMapper $counters,
+		private CommentMapper $comments,
 	) {
 	}
 
@@ -148,7 +151,7 @@ class DemandService {
 	 *
 	 * @throws NotFoundException|ForbiddenException|ValidationException
 	 */
-	public function submit(string $userId, int $id): Demand {
+	public function submit(string $userId, int $id, ?string $answer = null): Demand {
 		$demand = $this->editable($userId, $id);
 		if (trim((string)$demand->getProblemStatement()) === '') {
 			throw new ValidationException('A problem statement is required before submitting');
@@ -164,7 +167,18 @@ class DemandService {
 		$this->db->beginTransaction();
 		try {
 			$demand = $this->mapper->update($demand);
-			$this->audit->log(self::ENTITY, $id, 'status_change', $userId, ['status' => [$from, self::STATUS_SUBMITTED]]);
+			$answer = trim((string)$answer);
+			$this->audit->log(self::ENTITY, $id, 'status_change', $userId, ['status' => [$from, self::STATUS_SUBMITTED]], $answer === '' ? null : $answer);
+			// Antwort auf eine Rückfrage steht auch im Kommentarfaden (DEM-003)
+			if ($from === self::STATUS_QUERY && $answer !== '') {
+				$comment = new Comment();
+				$comment->setDemandId($id);
+				$comment->setUserId($userId);
+				$comment->setKind('answer');
+				$comment->setMessage(mb_substr($answer, 0, 10000));
+				$comment->setCreatedAt($now);
+				$this->comments->insert($comment);
+			}
 			$this->db->commit();
 		} catch (\Throwable $e) {
 			$this->db->rollBack();
@@ -187,6 +201,7 @@ class DemandService {
 		try {
 			$this->audit->log(self::ENTITY, $id, 'delete', $userId, array_map(static fn ($v) => [$v, null], $this->snapshot($demand)));
 			$this->mapper->delete($demand);
+			$this->comments->deleteForDemand($id);
 			$this->db->commit();
 		} catch (\Throwable $e) {
 			$this->db->rollBack();

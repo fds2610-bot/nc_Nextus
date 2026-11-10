@@ -55,13 +55,26 @@ test.describe('Triage', () => {
 			const editor = page.locator('[data-test="demand-editor"]')
 			await expect(editor.locator('[data-test="query-notice"]')).toContainText('Welche Systeme sind betroffen?')
 			await editor.locator('[data-test="field-description"] textarea').fill('SAP und Ticketsystem')
+			await editor.locator('[data-test="field-answer"] textarea').fill('SAP und das Ticketsystem.')
 			await editor.locator('[data-test="submit-demand"]').click()
 			await expect(editor.locator('[data-test="demand-status"]')).toHaveText(/Submitted|Eingereicht/)
+			// Rückfrage und Antwort stehen als Gespräch im Kommentarfaden
+			const thread = editor.locator('[data-test="comments"]')
+			await expect(thread.locator('[data-test="comment-query"]')).toContainText('Welche Systeme sind betroffen?')
+			await expect(thread.locator('[data-test="comment-query"]')).toContainText(E2E_OTHER_USER)
+			await expect(thread.locator('[data-test="comment-answer"]')).toContainText('SAP und das Ticketsystem.')
 			await expect(editor.locator('[data-test="open-triage"]')).toHaveCount(0)
 
-			// PMO: Ablehnen ist ohne Begründung gesperrt
+			// PMO: Kommentar schreiben, Antragsteller sieht ihn
 			await pmo.reload()
 			await pmo.locator(`[data-test="demand-${demand.key}"]`).click()
+			await pmo.locator('[data-test="field-comment"] textarea').fill('Danke, wird im Board besprochen.')
+			await pmo.locator('[data-test="send-comment"]').click()
+			await expect(pmo.locator('[data-test="comment-comment"]')).toContainText('Danke, wird im Board besprochen.')
+			const seen = await call(own, 'get', `/demands/${demand.id}/comments`)
+			expect(seen.map(c => c.kind)).toEqual(['query', 'answer', 'comment'])
+
+			// PMO: Ablehnen ist ohne Begründung gesperrt
 			await pmo.locator('[data-test="open-triage"]').click()
 			await dialog.locator('[data-test="code-rejected"]').click()
 			await expect(dialog.locator('[data-test="save-triage"]')).toBeDisabled()

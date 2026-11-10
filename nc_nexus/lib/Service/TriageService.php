@@ -41,6 +41,7 @@ class TriageService {
 		private IDBConnection $db,
 		private IUserManager $userManager,
 		private ITimeFactory $time,
+		private CommentService $comments,
 	) {
 	}
 
@@ -133,7 +134,10 @@ class TriageService {
 		$demand->setStatus(DemandService::STATUS_QUERY);
 		$demand->setQueryText($question);
 		$demand->setQueryDue($this->futureDate($due, 'A query needs a due date'));
-		return $this->store($userId, $demand, 'status_change', $before, $question);
+		$demand = $this->store($userId, $demand, 'status_change', $before, $question);
+		// Rückfrage auch im Kommentarfaden, damit Frage und Antwort zusammen stehen (DEM-003)
+		$this->comments->add($userId, $id, $question, 'query');
+		return $demand;
 	}
 
 	/** @throws NotFoundException|ForbiddenException */

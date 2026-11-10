@@ -71,9 +71,15 @@
 						<strong>{{ t('nc_nexus', 'Query from the portfolio office') }}</strong>
 						<span v-if="demand.queryDue"> · {{ t('nc_nexus', 'answer by {date}', { date: formatIsoDay(demand.queryDue) }) }}</span>
 						<p>{{ demand.queryText }}</p>
-						<p v-if="demand.can.edit" class="nx-hint">
-							{{ t('nc_nexus', 'Complete the demand and submit it again.') }}
-						</p>
+						<template v-if="demand.can.edit">
+							<label class="nx-field editor__answer" data-test="field-answer">
+								<span>{{ t('nc_nexus', 'Your answer (optional)') }}</span>
+								<textarea v-model="answer" class="nx-input" />
+							</label>
+							<p class="nx-hint">
+								{{ t('nc_nexus', 'Complete the demand and submit it again; the answer appears in the comments.') }}
+							</p>
+						</template>
 					</div>
 
 					<!-- Für das PMO: mögliche Dubletten vor der Triage -->
@@ -180,6 +186,11 @@
 						</label>
 					</div>
 
+					<CommentThread v-if="demand"
+						:demand-id="demand.id"
+						:refresh-key="commentRefresh"
+						@dirty="commentDirty = $event" />
+
 					<div v-if="history.length" class="nx-section" data-test="demand-history">
 						<h3>{{ t('nc_nexus', 'History') }}</h3>
 						<ul class="editor__history">
@@ -258,6 +269,7 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
 import { createDemand, deleteDemand, demandHistory, errorMessage, getDemand, submitDemand, updateDemand } from '../api.js'
+import CommentThread from './CommentThread.vue'
 import SimilarDemands from './SimilarDemands.vue'
 import TriageDialog from './TriageDialog.vue'
 import { actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, indented, orgTree, statusChip, statusLabel, typeLabel } from '../labels.js'
@@ -266,7 +278,7 @@ const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, 
 
 export default {
 	name: 'DemandEditor',
-	components: { NcButton, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
+	components: { CommentThread, NcButton, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
 	props: {
 		demandId: { type: Number, default: null },
 		orgUnits: { type: Array, default: () => [] },
@@ -286,6 +298,9 @@ export default {
 			loading: this.demandId !== null,
 			busy: false,
 			triageOpen: false,
+			answer: '',
+			commentRefresh: 0,
+			commentDirty: false,
 			types: loadState('nc_nexus', 'demand_types', []),
 		}
 	},
@@ -309,8 +324,9 @@ export default {
 			const lead = this.demands.find(d => d.id === this.demand?.duplicateOfId)
 			return lead ? `${lead.key} · ${lead.title}` : `#${this.demand?.duplicateOfId}`
 		},
+		// ungespeicherte Eingaben (Formular, Antwort, begonnener Kommentar) → „Abbrechen“
 		dirty() {
-			return !this.readonly && JSON.stringify(this.form) !== this.saved
+			return this.commentDirty || this.answer.trim() !== '' || (!this.readonly && JSON.stringify(this.form) !== this.saved)
 		},
 		valid() {
 			return this.form.title.trim() !== '' && !!this.form.demandType
@@ -364,6 +380,7 @@ export default {
 			this.setDemand(demand)
 			// zuerst melden: wird der Dialog vor dem Nachladen geschlossen, ginge das Ereignis sonst verloren
 			this.$emit('changed')
+			this.commentRefresh++
 			this.history = await demandHistory(this.id)
 		},
 		async persist() {
@@ -395,7 +412,9 @@ export default {
 		async submit() {
 			const ok = await this.run(async () => {
 				await this.persist()
-				this.setDemand(await submitDemand(this.id))
+				this.setDemand(await submitDemand(this.id, this.answer.trim() || null))
+				this.answer = ''
+				this.commentRefresh++
 				this.$emit('changed')
 			}, t('nc_nexus', 'Demand submitted'))
 			if (ok) {
@@ -469,6 +488,10 @@ export default {
 			margin: 4px 0 0;
 			white-space: pre-wrap;
 		}
+	}
+
+	&__answer {
+		margin-top: 10px;
 	}
 
 	&__triage {
