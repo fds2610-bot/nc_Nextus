@@ -186,6 +186,8 @@
 						</label>
 					</div>
 
+					<NeedsEditor v-model="needs" :pools="pools" :readonly="readonly" />
+
 					<div class="nx-section">
 						<h3>{{ t('nc_nexus', 'Description') }}</h3>
 						<label class="nx-field" data-test="field-description">
@@ -305,9 +307,10 @@ import { t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
-import { createDemand, deleteDemand, demandHistory, errorMessage, getDemand, submitDemand, updateDemand } from '../api.js'
+import { createDemand, deleteDemand, demandHistory, demandNeeds, errorMessage, getDemand, saveDemandNeeds, submitDemand, updateDemand } from '../api.js'
 import AnalysisDialog from './AnalysisDialog.vue'
 import CommentThread from './CommentThread.vue'
+import NeedsEditor from './NeedsEditor.vue'
 import SimilarDemands from './SimilarDemands.vue'
 import TriageDialog from './TriageDialog.vue'
 import { actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, indented, orgTree, statusChip, statusLabel, typeLabel } from '../labels.js'
@@ -316,11 +319,12 @@ const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, 
 
 export default {
 	name: 'DemandEditor',
-	components: { AnalysisDialog, CommentThread, NcButton, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
+	components: { AnalysisDialog, CommentThread, NcButton, NeedsEditor, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
 	props: {
 		demandId: { type: Number, default: null },
 		orgUnits: { type: Array, default: () => [] },
 		demands: { type: Array, default: () => [] },
+		pools: { type: Array, default: () => [] },
 	},
 	emits: ['close', 'changed'],
 	setup() {
@@ -337,6 +341,8 @@ export default {
 			busy: false,
 			triageOpen: false,
 			triageOverride: false,
+			needs: [],
+			needsSaved: '[]',
 			// Elemente innerer Dialoge, die zur Fokusfalle dieses Modals gehören
 			trapElements: [],
 			analysisOpen: false,
@@ -370,7 +376,7 @@ export default {
 			return !this.dirty && !this.demand.can.submit && !this.demand.can.triage && !this.demand.can.completeAnalysis
 		},
 		dirtyForm() {
-			return !this.readonly && JSON.stringify(this.form) !== this.saved
+			return !this.readonly && (JSON.stringify(this.form) !== this.saved || JSON.stringify(this.needs) !== this.needsSaved)
 		},
 		// Was als Nächstes passiert – führt Antragsteller, Analyse und PMO durch den Ablauf
 		nextStep() {
@@ -403,7 +409,7 @@ export default {
 		},
 		// ungespeicherte Eingaben (Formular, Antwort, begonnener Kommentar) → „Abbrechen“
 		dirty() {
-			return this.commentDirty || this.answer.trim() !== '' || (!this.readonly && JSON.stringify(this.form) !== this.saved)
+			return this.commentDirty || this.answer.trim() !== '' || this.dirtyForm
 		},
 		valid() {
 			return this.form.title.trim() !== '' && !!this.form.demandType
@@ -418,6 +424,7 @@ export default {
 		async load() {
 			try {
 				this.setDemand(await getDemand(this.id))
+				this.setNeeds(await demandNeeds(this.id))
 				this.history = await demandHistory(this.id)
 			} catch (e) {
 				showError(errorMessage(e))
@@ -466,9 +473,17 @@ export default {
 			this.commentRefresh++
 			this.history = await demandHistory(this.id)
 		},
+		setNeeds(needs) {
+			this.needs = needs.map(n => ({ poolId: n.poolId, period: n.period, personDays: n.personDays }))
+			this.needsSaved = JSON.stringify(this.needs)
+		},
 		async persist() {
 			const demand = this.id === null ? await createDemand(this.form) : await updateDemand(this.id, this.form)
 			this.setDemand(demand)
+			// Ressourcenbedarf gehört zum Antrag und wird mit ihm gespeichert
+			if (JSON.stringify(this.needs) !== this.needsSaved) {
+				this.setNeeds(await saveDemandNeeds(this.id, this.needs.filter(n => Number(n.personDays) > 0)))
+			}
 			this.$emit('changed')
 		},
 		async run(action, message) {

@@ -10,6 +10,7 @@ use OCA\Nexus\Db\CounterMapper;
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\DemandMapper;
 use OCA\Nexus\Db\OrgUnitMapper;
+use OCA\Nexus\Db\ResourceNeedMapper;
 use OCA\Nexus\Exception\ForbiddenException;
 use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
@@ -35,7 +36,7 @@ class DemandServiceTest extends TestCase {
 		$permissions = $this->createMock(PermissionService::class);
 		// Lesen darf nur der Antragsteller (genügt für diese Tests)
 		$permissions->method('canReadDemand')->willReturnCallback(fn (string $uid, Demand $d) => $d->getRequestorId() === $uid);
-		$this->service = new DemandService($this->mapper, $this->audit, $this->createMock(IDBConnection::class), $time, $permissions, $this->createMock(OrgUnitMapper::class), $this->counters = $this->createMock(CounterMapper::class), $this->createMock(CommentMapper::class));
+		$this->service = new DemandService($this->mapper, $this->audit, $this->createMock(IDBConnection::class), $time, $permissions, $this->createMock(OrgUnitMapper::class), $this->counters = $this->createMock(CounterMapper::class), $this->createMock(CommentMapper::class), $this->createMock(ResourceNeedMapper::class));
 	}
 
 	private function draft(string $requestor = 'alice', string $status = 'draft'): Demand {

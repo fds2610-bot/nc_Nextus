@@ -44,6 +44,16 @@
 					</template>
 				</NcAppNavigationItem>
 
+				<NcAppNavigationItem v-if="poolInfo.canSee"
+					:name="t('nc_nexus', 'Capacity')"
+					:active="view === 'capacity'"
+					data-test="nav-capacity"
+					@click="view = 'capacity'">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiChartBox" />
+					</template>
+				</NcAppNavigationItem>
+
 				<template v-if="me.canTriage">
 					<NcAppNavigationCaption :name="t('nc_nexus', 'Triage')" />
 					<NcAppNavigationItem :name="t('nc_nexus', 'To triage')"
@@ -128,7 +138,11 @@
 		</NcAppNavigation>
 
 		<NcAppContent>
-			<DecisionRegister v-if="view === 'decisions'"
+			<CapacityView v-if="view === 'capacity'"
+				:org-units="orgUnits"
+				:refresh-key="refresh"
+				@open="openEditor" />
+			<DecisionRegister v-else-if="view === 'decisions'"
 				:org-units="orgUnits"
 				:refresh-key="refresh"
 				@open="openEditor" />
@@ -150,6 +164,7 @@
 				:demand-id="editorId"
 				:org-units="orgUnits"
 				:demands="demands"
+				:pools="poolInfo.pools"
 				@close="editorOpen = false"
 				@changed="onChanged" />
 		</NcAppContent>
@@ -157,7 +172,7 @@
 </template>
 
 <script>
-import { mdiAccountQuestion, mdiCalendarClock, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend } from '@mdi/js'
+import { mdiAccountQuestion, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -174,9 +189,10 @@ import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 import DemandEditor from './components/DemandEditor.vue'
 import DemandList from './views/DemandList.vue'
+import CapacityView from './views/CapacityView.vue'
 import DecisionRegister from './views/DecisionRegister.vue'
 import OrgView from './views/OrgView.vue'
-import { errorMessage, getMe, listDemands, listOrgUnits, listRoleAssignments } from './api.js'
+import { errorMessage, getMe, listDemands, listOrgUnits, listPools, listRoleAssignments } from './api.js'
 import { STATUSES, statusLabel, typeColor, typeLabel } from './labels.js'
 
 export default {
@@ -195,11 +211,12 @@ export default {
 		NcCounterBubble,
 		NcIconSvgWrapper,
 		NcTextField,
+		CapacityView,
 		DecisionRegister,
 		OrgView,
 	},
 	setup() {
-		return { mdiCalendarClock, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiCalendarClock, mdiChartBox, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
@@ -215,6 +232,7 @@ export default {
 			me: { canManageOrg: false, canTriage: false, roles: [] },
 			orgUnits: [],
 			assignments: [],
+			poolInfo: { canSee: false, canManage: false, pools: [] },
 		}
 	},
 	computed: {
@@ -299,6 +317,7 @@ export default {
 				this.me = await getMe()
 				this.orgUnits = await listOrgUnits()
 				this.assignments = this.me.canManageOrg ? await listRoleAssignments() : []
+				this.poolInfo = await listPools()
 			} catch (e) {
 				showError(errorMessage(e))
 			}
@@ -313,6 +332,7 @@ export default {
 		},
 		onChanged() {
 			this.load()
+			this.loadOrg()
 			this.refresh++
 		},
 		openEditor(id) {

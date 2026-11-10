@@ -11,6 +11,7 @@ use OCA\Nexus\Db\CounterMapper;
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\DemandMapper;
 use OCA\Nexus\Db\OrgUnitMapper;
+use OCA\Nexus\Db\ResourceNeedMapper;
 use OCA\Nexus\Exception\ForbiddenException;
 use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
@@ -49,6 +50,7 @@ class DemandService {
 		private OrgUnitMapper $orgUnits,
 		private CounterMapper $counters,
 		private CommentMapper $comments,
+		private ResourceNeedMapper $resourceNeeds,
 	) {
 	}
 
@@ -202,6 +204,7 @@ class DemandService {
 			$this->audit->log(self::ENTITY, $id, 'delete', $userId, array_map(static fn ($v) => [$v, null], $this->snapshot($demand)));
 			$this->mapper->delete($demand);
 			$this->comments->deleteForDemand($id);
+			$this->resourceNeeds->deleteForDemand($id);
 			$this->db->commit();
 		} catch (\Throwable $e) {
 			$this->db->rollBack();

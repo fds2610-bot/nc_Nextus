@@ -58,3 +58,14 @@ export async function searchPrincipals(search) {
 }
 
 export const listDecisions = async () => data(await axios.get(v1('/decisions')))
+
+export const listPools = async () => data(await axios.get(v1('/pools')))
+export const createPool = async (pool) => data(await axios.post(v1('/pools'), pool))
+export const updatePool = async (id, pool) => data(await axios.put(v1(`/pools/${id}`), pool))
+export const deletePool = async (id) => data(await axios.delete(v1(`/pools/${id}`)))
+export const poolCapacity = async (id, from, months = 12) => data(await axios.get(v1(`/pools/${id}/capacity`), { params: { from, months } }))
+export const setPoolCapacity = async (id, period, values) => data(await axios.put(v1(`/pools/${id}/capacity/${period}`), values))
+export const capacityHeatmap = async (from, months = 12) => data(await axios.get(v1('/capacity/heatmap'), { params: { from, months } }))
+export const poolLoad = async (id, period) => data(await axios.get(v1(`/pools/${id}/load/${period}`)))
+export const demandNeeds = async (id) => data(await axios.get(v1(`/demands/${id}/needs`)))
+export const saveDemandNeeds = async (id, needs) => data(await axios.put(v1(`/demands/${id}/needs`), { needs }))

@@ -194,3 +194,36 @@ export function orgTree(units) {
  * @return {string}
  */
 export const indented = (unit) => '\u00a0\u00a0\u00a0'.repeat(unit.depth) + unit.name
+
+// Aktueller Monat als JJJJ-MM
+export const thisMonth = () => today().slice(0, 7)
+
+// Monat JJJJ-MM kurz in der Sprache von Nextcloud (z. B. „Nov. 26“)
+export const formatMonth = (period) => period
+	? new Date(period + '-15T12:00:00').toLocaleDateString(getCanonicalLocale(), { month: 'short', year: '2-digit' })
+	: ''
+
+// Zahl mit höchstens einer Nachkommastelle in der Sprache von Nextcloud
+export const formatNumber = (value) => value === null || value === undefined
+	? ''
+	: Number(value).toLocaleString(getCanonicalLocale(), { maximumFractionDigits: 1 })
+
+export const poolTypeLabel = (type) => ({
+	internal: t('nc_nexus', 'Internal'),
+	external: t('nc_nexus', 'External'),
+	business: t('nc_nexus', 'Business department'),
+})[type] || type
+
+// Farbstufe der Auslastung (Text steht immer dabei)
+export const loadLevel = (cell) => {
+	if (cell.load === null) {
+		return 'over'
+	}
+	if (cell.load > 100) {
+		return 'over'
+	}
+	if (cell.load >= 80) {
+		return 'high'
+	}
+	return cell.demand > 0 ? 'ok' : 'empty'
+}
