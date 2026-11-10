@@ -12,7 +12,7 @@ use OCA\Nexus\Db\DemandMapper;
  * zurückgestellte Anträge über Titel und Problembeschreibung finden.
  *
  * Bewusst einfach und datenbankunabhängig (SQLite/PostgreSQL/MariaDB): Wortstämme vergleichen
- * statt Volltextindex. Anträge, die das Konto nicht lesen darf, werden nur gezählt.
+ * statt Volltextindex. Anträge, die das Konto nicht lesen darf, erscheinen nicht – auch nicht als Anzahl.
  */
 class SimilarityService {
 	/** Status, in denen ein Antrag als mögliche Dublette gilt */
@@ -37,31 +37,25 @@ class SimilarityService {
 	}
 
 	/**
-	 * @return array{matches: list<array{demand: Demand, score: float}>, hidden: int}
+	 * @return list<array{demand: Demand, score: float}>
 	 */
 	public function similar(string $userId, string $title, string $problem = '', ?int $excludeId = null): array {
 		$query = $this->stems($title . ' ' . $title . ' ' . $problem);
 		if ($query === []) {
-			return ['matches' => [], 'hidden' => 0];
+			return [];
 		}
 		$matches = [];
-		$hidden = 0;
 		foreach ($this->mapper->findAll() as $demand) {
 			if ($demand->getId() === $excludeId || !in_array($demand->getStatus(), self::OPEN_STATUSES, true)) {
 				continue;
 			}
 			$score = $this->score($query, $this->stems($demand->getTitle() . ' ' . $demand->getTitle() . ' ' . $demand->getProblemStatement()));
-			if ($score < self::MIN_SCORE) {
-				continue;
-			}
-			if ($this->permissions->canReadDemand($userId, $demand)) {
+			if ($score >= self::MIN_SCORE && $this->permissions->canReadDemand($userId, $demand)) {
 				$matches[] = ['demand' => $demand, 'score' => $score];
-			} else {
-				$hidden++;
 			}
 		}
 		usort($matches, static fn ($a, $b) => $b['score'] <=> $a['score']);
-		return ['matches' => array_slice($matches, 0, self::LIMIT), 'hidden' => $hidden];
+		return array_slice($matches, 0, self::LIMIT);
 	}
 
 	/**

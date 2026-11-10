@@ -75,8 +75,14 @@ class PermissionService {
 	}
 
 	public function canReadDemand(string $userId, Demand $demand): bool {
-		return $demand->getRequestorId() === $userId
-			|| ($demand->getStatus() === 'further_analysis' && $demand->getAnalysisOwner() === $userId)
+		if ($demand->getRequestorId() === $userId) {
+			return true;
+		}
+		// Entwürfe sind privat: erst das Einreichen ist eine bewusste Handlung (Kapitel 02 §2)
+		if ($demand->getStatus() === 'draft') {
+			return false;
+		}
+		return ($demand->getStatus() === 'further_analysis' && $demand->getAnalysisOwner() === $userId)
 			|| $this->isAdmin($userId)
 			|| $this->hasRole($userId, self::READ_DEMANDS, $demand->getOrgUnitId());
 	}

@@ -58,7 +58,9 @@ test.describe('Organisation und Rollen', () => {
 		const admin = await adminApi()
 		const other = await apiAs(E2E_OTHER_USER)
 		const unit = await call(admin, 'post', '/org-units', { name: unique('E2E-Sicht') })
-		const demand = await createDemand(other, { title: unique('E2E-Fremd'), demandType: 'innovation', orgUnitId: unit.id })
+		// eingereicht: Entwürfe sind privat und für niemanden sonst sichtbar
+		const draft = await createDemand(other, { title: unique('E2E-Fremd'), demandType: 'innovation', problemStatement: 'Test', orgUnitId: unit.id })
+		const demand = await call(other, 'post', `/demands/${draft.id}/submit`, undefined, 200)
 		let role = null
 		try {
 			// ohne Rolle: weder in der Liste noch einzeln abrufbar
@@ -85,8 +87,7 @@ test.describe('Organisation und Rollen', () => {
 			if (role) {
 				await call(admin, 'delete', `/role-assignments/${role.id}`)
 			}
-			await call(other, 'delete', `/demands/${demand.id}`)
-			await call(admin, 'delete', `/org-units/${unit.id}`)
+			// Eingereichte Anträge sind nicht löschbar; Antrag und Einheit bleiben als Testdaten stehen
 			await admin.dispose()
 			await other.dispose()
 		}

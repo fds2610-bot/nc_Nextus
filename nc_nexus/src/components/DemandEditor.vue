@@ -89,6 +89,13 @@
 						:problem="demand.problemStatement || ''"
 						:exclude-id="demand.id" />
 
+					<!-- Nächster Schritt für das PMO, solange noch keine Triage-Entscheidung vorliegt (z. B. Rückfrage) -->
+					<p v-if="demand && !demand.triageCode && demand.can.triager && nextStep"
+						class="editor__next"
+						data-test="triage-next">
+						{{ nextStep }}
+					</p>
+
 					<div v-if="demand && demand.triageCode" class="nx-section" data-test="triage-result">
 						<h3>{{ t('nc_nexus', 'Triage') }}</h3>
 						<div class="nx-summary__facts editor__triage">
@@ -353,6 +360,8 @@ export default {
 				return ''
 			}
 			switch (d.status) {
+			case 'query':
+				return t('nc_nexus', 'Waiting for the answer of {user} until {date}; triage is possible again after resubmission.', { user: d.requestorId, date: formatIsoDay(d.queryDue) })
 			case 'further_analysis':
 				return d.analysisDoneAt
 					? t('nc_nexus', 'Analysis delivered – the demand is waiting for triage again.')

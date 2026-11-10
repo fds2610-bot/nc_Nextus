@@ -238,19 +238,18 @@ class DemandApiController extends OCSController {
 	}
 
 	/**
-	 * Mögliche Dubletten: ähnliche offene oder zurückgestellte Anträge. Anträge ohne Leserecht
-	 * werden nur gezählt.
+	 * Mögliche Dubletten: ähnliche offene oder zurückgestellte Anträge, die das Konto lesen darf.
 	 *
 	 * @param string $title Titel (Suchtext)
 	 * @param string $problem Problembeschreibung (optional)
 	 * @param int|null $excludeId eigener Antrag, der nicht vorgeschlagen werden soll
-	 * @return DataResponse<Http::STATUS_OK, array{matches: list<array{id: int, key: string, title: string, status: string, score: float}>, hidden: int}, array{}>
+	 * @return DataResponse<Http::STATUS_OK, array{matches: list<array{id: int, key: string, title: string, status: string, score: float}>}, array{}>
 	 *
 	 * 200: Vorschläge
 	 */
 	#[NoAdminRequired]
 	public function similar(string $title = '', string $problem = '', ?int $excludeId = null): DataResponse {
-		$result = $this->similarity->similar($this->uid(), $title, $problem, $excludeId);
+		$matches = $this->similarity->similar($this->uid(), $title, $problem, $excludeId);
 		return new DataResponse([
 			'matches' => array_map(static fn ($m) => [
 				'id' => $m['demand']->getId(),
@@ -258,8 +257,7 @@ class DemandApiController extends OCSController {
 				'title' => $m['demand']->getTitle(),
 				'status' => $m['demand']->getStatus(),
 				'score' => $m['score'],
-			], $result['matches']),
-			'hidden' => $result['hidden'],
+			], $matches),
 		]);
 	}
 

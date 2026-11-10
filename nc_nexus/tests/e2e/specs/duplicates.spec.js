@@ -7,7 +7,7 @@ const { E2E_OTHER_USER, E2E_USER } = require('../helpers/env')
 const word = () => 'Zq' + Math.random().toString(36).slice(2, 9)
 
 test.describe('Dublettenvorschlag', () => {
-	test('Ähnliche offene Anträge erscheinen beim Tippen, fremde nur als Anzahl', async ({ page }) => {
+	test('Ähnliche offene Anträge erscheinen beim Tippen, fremde gar nicht', async ({ page }) => {
 		// zwei Kunstwörter: gemeinsame Alltagswörter mit Anträgen früherer Testläufe zählen so nicht
 		const marker = `${word()} ${word()}`
 		const own = await apiAs(E2E_USER)
@@ -28,7 +28,8 @@ test.describe('Dublettenvorschlag', () => {
 			const box = editor.locator('[data-test="similar-demands"]')
 			await expect(box.locator(`[data-test="similar-${mine.key}"]`)).toBeVisible()
 			await expect(box).not.toContainText(foreign.key)
-			await expect(box.locator('[data-test="similar-hidden"]')).toContainText('1')
+			// nicht lesbare Treffer werden weder genannt noch gezählt
+			await expect(box).not.toContainText(/other areas|anderen Bereich/)
 
 			// ohne Treffer verschwindet der Hinweis wieder
 			await editor.locator('[data-test="field-title"] input').fill(word() + ' Kantine')

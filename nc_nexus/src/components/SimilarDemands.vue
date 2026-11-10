@@ -1,19 +1,16 @@
 <template>
-	<div v-if="matches.length || hidden" class="similar" data-test="similar-demands">
+	<div v-if="matches.length" class="similar" data-test="similar-demands">
 		<div class="similar__head">
 			<NcIconSvgWrapper :path="mdiContentDuplicate" :size="18" />
 			<strong>{{ heading }}</strong>
 		</div>
-		<ul v-if="matches.length">
+		<ul>
 			<li v-for="m in matches" :key="m.id" :data-test="'similar-' + m.key">
 				<span class="similar__key">{{ m.key }}</span>
 				<span class="similar__title">{{ m.title }}</span>
 				<span class="nx-chip" :class="'nx-chip--' + statusChip(m.status)">{{ statusLabel(m.status) }}</span>
 			</li>
 		</ul>
-		<p v-if="hidden" class="similar__hidden" data-test="similar-hidden">
-			{{ n('nc_nexus', '%n similar demand in another area – the portfolio office will see it during triage.', '%n similar demands in other areas – the portfolio office will see them during triage.', hidden) }}
-		</p>
 		<p v-if="hint" class="nx-hint">
 			{{ hint }}
 		</p>
@@ -22,7 +19,7 @@
 
 <script>
 import { mdiContentDuplicate } from '@mdi/js'
-import { n, t } from '@nextcloud/l10n'
+import { t } from '@nextcloud/l10n'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import { similarDemands } from '../api.js'
 import { statusChip, statusLabel } from '../labels.js'
@@ -41,10 +38,10 @@ export default {
 	},
 	emits: ['loaded'],
 	setup() {
-		return { mdiContentDuplicate, n, t, statusChip, statusLabel }
+		return { mdiContentDuplicate, t, statusChip, statusLabel }
 	},
 	data() {
-		return { matches: [], hidden: 0, timer: null }
+		return { matches: [], timer: null }
 	},
 	computed: {
 		heading() {
@@ -77,18 +74,15 @@ export default {
 		async load() {
 			if (this.title.trim().length < 4) {
 				this.matches = []
-				this.hidden = 0
 				return
 			}
 			try {
 				const result = await similarDemands({ title: this.title, problem: this.problem, excludeId: this.excludeId ?? undefined })
 				this.matches = result.matches
-				this.hidden = result.hidden
 				this.$emit('loaded', result)
 			} catch (e) {
 				// Vorschläge sind eine Hilfe; ein Fehler hier darf die Erfassung nicht stören
 				this.matches = []
-				this.hidden = 0
 			}
 		},
 	},
@@ -134,9 +128,5 @@ export default {
 		text-overflow: ellipsis;
 	}
 
-	&__hidden {
-		margin: 6px 0 0;
-		color: var(--color-text-maxcontrast);
-	}
 }
 </style>

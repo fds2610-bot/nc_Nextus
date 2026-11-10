@@ -48,6 +48,9 @@ test.describe('Triage', () => {
 			await dialog.locator('[data-test="save-triage"]').click()
 			await expect(dialog).toHaveCount(0)
 			await expect(pmo.locator('[data-test="demand-status"]')).toHaveText(/Query|Rückfrage/)
+			// während der Rückfrage: Triage ausgegraut mit Hinweis, auf wen gewartet wird
+			await expect(pmo.locator('[data-test="open-triage"]')).toBeDisabled()
+			await expect(pmo.locator('[data-test="triage-next"]')).toContainText(E2E_USER)
 
 			// Antragsteller: Hinweis sehen, ergänzen, erneut einreichen
 			await page.goto('/apps/nc_nexus/')
@@ -199,6 +202,21 @@ test.describe('Triage', () => {
 			await expect(page.locator('[data-test="triage-next"]')).toHaveText(/Deferred until|Zurückgestellt bis/)
 		} finally {
 			await context.close()
+			await own.dispose()
+			await other.dispose()
+		}
+	})
+
+	test('Fremde Entwürfe sieht auch das PMO nicht', async () => {
+		const own = await apiAs(E2E_USER)
+		const other = await apiAs(E2E_OTHER_USER)
+		const draft = await createDemand(own, { title: unique('E2E-Privat'), demandType: 'innovation' })
+		try {
+			expect((await other.get(`/ocs/v2.php/apps/nc_nexus/api/v1/demands/${draft.id}`)).status()).toBe(404)
+			const list = await call(other, 'get', '/demands')
+			expect(list.some(d => d.id === draft.id)).toBe(false)
+		} finally {
+			await call(own, 'delete', `/demands/${draft.id}`)
 			await own.dispose()
 			await other.dispose()
 		}

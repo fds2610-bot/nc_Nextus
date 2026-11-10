@@ -44,25 +44,26 @@ class SimilarityServiceTest extends TestCase {
 
 	public function testFindsOpenSimilarDemandsOnly(): void {
 		$result = $this->service->similar('alice', 'Ticketsystem ablösen');
-		$ids = array_map(static fn ($m) => $m['demand']->getId(), $result['matches']);
+		$ids = array_map(static fn ($m) => $m['demand']->getId(), $result);
 		// 1 passt, 3 ist abgelehnt, 4 ist ein Entwurf, 5 passt nicht
 		$this->assertSame([1], $ids);
 	}
 
-	public function testUnreadableMatchesAreOnlyCounted(): void {
+	public function testUnreadableMatchesDoNotAppear(): void {
+		// Antrag 2 (bob) passt am besten, ist für alice aber nicht lesbar
 		$result = $this->service->similar('alice', 'Ticketsystem für den Service Desk');
-		$this->assertSame(1, $result['hidden']);
-		foreach ($result['matches'] as $match) {
+		$this->assertNotEmpty($result);
+		foreach ($result as $match) {
 			$this->assertSame('alice', $match['demand']->getRequestorId());
 		}
 	}
 
 	public function testExcludesTheDemandItself(): void {
 		$result = $this->service->similar('alice', 'Ticketsystem ablösen', '', 1);
-		$this->assertSame([], $result['matches']);
+		$this->assertSame([], $result);
 	}
 
 	public function testShortOrEmptyInputFindsNothing(): void {
-		$this->assertSame(['matches' => [], 'hidden' => 0], $this->service->similar('alice', 'IT'));
+		$this->assertSame([], $this->service->similar('alice', 'IT'));
 	}
 }

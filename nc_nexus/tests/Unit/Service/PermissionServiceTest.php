@@ -59,6 +59,7 @@ class PermissionServiceTest extends TestCase {
 
 	private function demand(string $requestor, ?int $orgUnitId): Demand {
 		$d = new Demand();
+		$d->setStatus('submitted');
 		$d->setRequestorId($requestor);
 		$d->setOrgUnitId($orgUnitId);
 		return $d;
@@ -91,6 +92,15 @@ class PermissionServiceTest extends TestCase {
 	public function testExpiredDeputyRoleIsIgnored(): void {
 		$this->roles->method('findForPrincipal')->willReturn([$this->role('board_member', 'global', null, '2026-10-01', '2026-10-31')]);
 		$this->assertFalse($this->service->canReadDemand('alice', $this->demand('bob', 1)));
+	}
+
+	public function testDraftsArePrivateEvenForGlobalPmoAndAdmin(): void {
+		$this->roles->method('findForPrincipal')->willReturn([$this->role('portfolio_manager', 'global', null)]);
+		$this->admin = true;
+		$draft = $this->demand('bob', 1);
+		$draft->setStatus('draft');
+		$this->assertFalse($this->service->canReadDemand('alice', $draft));
+		$this->assertTrue($this->service->canReadDemand('bob', $draft));
 	}
 
 	public function testViewerDoesNotReadDemands(): void {
