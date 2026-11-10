@@ -32,12 +32,14 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedAt(int $createdAt)
  * @method int getUpdatedAt()
  * @method void setUpdatedAt(int $updatedAt)
+ * @method int|null getOrgUnitId()
+ * @method void setOrgUnitId(?int $orgUnitId)
  * @method int|null getSubmittedAt()
  * @method void setSubmittedAt(?int $submittedAt)
  */
 class Demand extends Entity implements JsonSerializable {
 	/** Felder, die der Antragsteller im Entwurf bearbeiten darf (Audit-Vergleich). */
-	public const EDITABLE = ['title', 'description', 'problemStatement', 'expectedBenefit', 'demandType'];
+	public const EDITABLE = ['title', 'description', 'problemStatement', 'expectedBenefit', 'demandType', 'orgUnitId'];
 
 	protected string $demandKey = '';
 	protected string $title = '';
@@ -45,17 +47,20 @@ class Demand extends Entity implements JsonSerializable {
 	protected ?string $problemStatement = null;
 	protected ?string $expectedBenefit = null;
 	protected string $demandType = '';
-	protected string $status = 'draft';
-	protected string $intakeChannel = 'form';
+	// Startwerte bewusst leer: Entity markiert nur geänderte Werte als zu speichern
+	protected string $status = '';
+	protected string $intakeChannel = '';
 	protected string $requestorId = '';
 	protected int $createdAt = 0;
 	protected int $updatedAt = 0;
 	protected ?int $submittedAt = null;
+	protected ?int $orgUnitId = null;
 
 	public function __construct() {
 		$this->addType('createdAt', 'integer');
 		$this->addType('updatedAt', 'integer');
 		$this->addType('submittedAt', 'integer');
+		$this->addType('orgUnitId', 'integer');
 	}
 
 	/** @return array<string, mixed> */
@@ -68,6 +73,7 @@ class Demand extends Entity implements JsonSerializable {
 			'problemStatement' => $this->problemStatement,
 			'expectedBenefit' => $this->expectedBenefit,
 			'demandType' => $this->demandType,
+			'orgUnitId' => $this->orgUnitId,
 			'status' => $this->status,
 			'intakeChannel' => $this->intakeChannel,
 			'requestorId' => $this->requestorId,

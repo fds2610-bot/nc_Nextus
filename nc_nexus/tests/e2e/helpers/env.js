@@ -5,4 +5,7 @@ module.exports = {
 	E2E_USER: process.env.E2E_USER || 'e2e',
 	E2E_OTHER_USER: process.env.E2E_OTHER_USER || 'e2e-other',
 	E2E_PASSWORD: process.env.E2E_PASSWORD || 'e2e-test-Pass123!',
+	// Admin-Zugang der DEV-Umgebung (docker-dev/compose.base.yml)
+	ADMIN_USER: process.env.E2E_ADMIN_USER || 'admin',
+	ADMIN_PASSWORD: process.env.E2E_ADMIN_PASSWORD || 'admin123',
 }

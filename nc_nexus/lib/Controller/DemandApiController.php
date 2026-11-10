@@ -38,7 +38,7 @@ class DemandApiController extends OCSController {
 	 */
 	#[NoAdminRequired]
 	public function index(): DataResponse {
-		return new DataResponse(array_map(static fn ($d) => $d->jsonSerialize(), $this->service->findAll()));
+		return new DataResponse(array_map(static fn ($d) => $d->jsonSerialize(), $this->service->findAll($this->uid())));
 	}
 
 	/**
@@ -51,7 +51,7 @@ class DemandApiController extends OCSController {
 	 */
 	#[NoAdminRequired]
 	public function show(int $id): DataResponse {
-		return $this->handle(fn () => $this->service->find($id)->jsonSerialize());
+		return $this->handle(fn () => $this->service->findReadable($this->uid(), $id)->jsonSerialize());
 	}
 
 	/**
@@ -62,19 +62,21 @@ class DemandApiController extends OCSController {
 	 * @param string|null $description Beschreibung
 	 * @param string|null $problemStatement Was passiert, wenn wir nichts tun?
 	 * @param string|null $expectedBenefit Erwarteter Nutzen
+	 * @param int|null $orgUnitId Org-Einheit
 	 * @return DataResponse<Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST, array<string, mixed>, array{}>
 	 *
 	 * 201: Antrag angelegt
 	 * 400: Eingaben ungültig
 	 */
 	#[NoAdminRequired]
-	public function create(string $title = '', string $demandType = '', ?string $description = null, ?string $problemStatement = null, ?string $expectedBenefit = null): DataResponse {
+	public function create(string $title = '', string $demandType = '', ?string $description = null, ?string $problemStatement = null, ?string $expectedBenefit = null, ?int $orgUnitId = null): DataResponse {
 		return $this->handle(fn () => $this->service->create($this->uid(), [
 			'title' => $title,
 			'demandType' => $demandType,
 			'description' => $description,
 			'problemStatement' => $problemStatement,
 			'expectedBenefit' => $expectedBenefit,
+			'orgUnitId' => $orgUnitId,
 		])->jsonSerialize(), Http::STATUS_CREATED);
 	}
 
@@ -90,7 +92,7 @@ class DemandApiController extends OCSController {
 	 */
 	#[NoAdminRequired]
 	public function update(int $id): DataResponse {
-		$data = array_intersect_key($this->request->getParams(), array_flip(['title', 'demandType', 'description', 'problemStatement', 'expectedBenefit']));
+		$data = array_intersect_key($this->request->getParams(), array_flip(['title', 'demandType', 'description', 'problemStatement', 'expectedBenefit', 'orgUnitId']));
 		return $this->handle(fn () => $this->service->update($this->uid(), $id, $data)->jsonSerialize());
 	}
 
@@ -136,7 +138,7 @@ class DemandApiController extends OCSController {
 	 */
 	#[NoAdminRequired]
 	public function history(int $id): DataResponse {
-		return $this->handle(fn () => array_map(static fn ($e) => $e->jsonSerialize(), $this->service->history($id)));
+		return $this->handle(fn () => array_map(static fn ($e) => $e->jsonSerialize(), $this->service->history($this->uid(), $id)));
 	}
 
 	private function uid(): string {

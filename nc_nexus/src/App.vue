@@ -24,7 +24,7 @@
 
 			<NcAppNavigationList>
 				<NcAppNavigationItem :name="t('nc_nexus', 'All demands')"
-					:active="filter.kind === 'all'"
+					:active="view === 'demands' && filter.kind === 'all'"
 					data-test="nav-all"
 					@click="setFilter('all')">
 					<template #icon>
@@ -39,7 +39,7 @@
 				<NcAppNavigationItem v-for="status in statuses"
 					:key="status"
 					:name="statusLabel(status)"
-					:active="filter.kind === 'status' && filter.value === status"
+					:active="view === 'demands' && filter.kind === 'status' && filter.value === status"
 					:data-test="'nav-status-' + status"
 					@click="setFilter('status', status)">
 					<template #icon>
@@ -54,7 +54,7 @@
 				<NcAppNavigationItem v-for="type in types"
 					:key="type"
 					:name="typeLabel(type)"
-					:active="filter.kind === 'type' && filter.value === type"
+					:active="view === 'demands' && filter.kind === 'type' && filter.value === type"
 					@click="setFilter('type', type)">
 					<template #icon>
 						<NcAppNavigationIconBullet :color="typeColor(type)" />
@@ -64,19 +64,39 @@
 					</template>
 				</NcAppNavigationItem>
 			</NcAppNavigationList>
+
+			<template v-if="me.canManageOrg" #footer>
+				<ul class="app-navigation-entry__settings">
+					<NcAppNavigationItem :name="t('nc_nexus', 'Organization')"
+						:active="view === 'org'"
+						data-test="nav-org"
+						@click="openOrg">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiDomain" />
+						</template>
+					</NcAppNavigationItem>
+				</ul>
+			</template>
 		</NcAppNavigation>
 
 		<NcAppContent>
-			<DemandList :demands="visibleDemands"
+			<OrgView v-if="view === 'org'"
+				:units="orgUnits"
+				:assignments="assignments"
+				@changed="loadOrg" />
+			<DemandList v-else
+				:demands="visibleDemands"
 				:all-demands="demands"
 				:title="listTitle"
 				:loading="loading"
+				:org-units="orgUnits"
 				:filtered="filter.kind !== 'all' || search !== ''"
 				@open="openEditor"
 				@create="openEditor(null)"
 				@changed="load" />
 			<DemandEditor v-if="editorOpen"
 				:demand-id="editorId"
+				:org-units="orgUnits"
 				@close="editorOpen = false"
 				@changed="load" />
 		</NcAppContent>
@@ -84,7 +104,7 @@
 </template>
 
 <script>
-import { mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend } from '@mdi/js'
+import { mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -101,7 +121,8 @@ import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 import DemandEditor from './components/DemandEditor.vue'
 import DemandList from './views/DemandList.vue'
-import { errorMessage, listDemands } from './api.js'
+import OrgView from './views/OrgView.vue'
+import { errorMessage, getMe, listDemands, listOrgUnits, listRoleAssignments } from './api.js'
 import { statusLabel, typeColor, typeLabel } from './labels.js'
 
 export default {
@@ -120,9 +141,10 @@ export default {
 		NcCounterBubble,
 		NcIconSvgWrapper,
 		NcTextField,
+		OrgView,
 	},
 	setup() {
-		return { mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
@@ -134,6 +156,10 @@ export default {
 			filter: { kind: 'all', value: null },
 			statuses: ['draft', 'submitted'],
 			types: loadState('nc_nexus', 'demand_types', []),
+			view: 'demands',
+			me: { canManageOrg: false, roles: [] },
+			orgUnits: [],
+			assignments: [],
 		}
 	},
 	computed: {
@@ -162,6 +188,7 @@ export default {
 	},
 	mounted() {
 		this.load()
+		this.loadOrg()
 	},
 	methods: {
 		async load() {
@@ -176,8 +203,22 @@ export default {
 		countBy(field, value) {
 			return this.demands.filter(demand => demand[field] === value).length
 		},
+		async loadOrg() {
+			try {
+				this.me = await getMe()
+				this.orgUnits = await listOrgUnits()
+				this.assignments = this.me.canManageOrg ? await listRoleAssignments() : []
+			} catch (e) {
+				showError(errorMessage(e))
+			}
+		},
 		setFilter(kind, value = null) {
 			this.filter = { kind, value }
+			this.view = 'demands'
+		},
+		openOrg() {
+			this.view = 'org'
+			this.loadOrg()
 		},
 		openEditor(id) {
 			this.editorId = id

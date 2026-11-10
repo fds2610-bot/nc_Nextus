@@ -82,6 +82,7 @@
 			<DemandListItem v-for="demand in demands"
 				:key="demand.id"
 				:demand="demand"
+				:org-units="orgUnits"
 				@open="$emit('open', demand.id)"
 				@changed="$emit('changed')" />
 		</div>
@@ -108,6 +109,7 @@ export default {
 		title: { type: String, required: true },
 		loading: { type: Boolean, default: false },
 		filtered: { type: Boolean, default: false },
+		orgUnits: { type: Array, default: () => [] },
 	},
 	emits: ['open', 'create', 'changed'],
 	setup() {

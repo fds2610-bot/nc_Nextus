@@ -74,27 +74,22 @@ test.describe('Antragseingang', () => {
 		await page.locator('[data-test="delete-demand"]').click()
 		await expect(page.locator(`[data-test="demand-${demand.key}"]`)).toHaveCount(0)
 		expect((await api.get(`${PATH}/${demand.id}`)).status()).toBe(404)
+
+		// Die Nummer des gelöschten Entwurfs wird nicht erneut vergeben, der Verlauf beginnt neu
+		const next = await createDemand(api, { title: unique('E2E-Nachfolger'), demandType: 'efficiency' })
+		expect(next.key).not.toBe(demand.key)
+		const history = (await (await api.get(`${PATH}/${next.id}/history`)).json()).ocs.data
+		expect(history.map(e => e.action)).toEqual(['create'])
+		expect((await api.delete(`${PATH}/${next.id}`)).status()).toBe(200)
 		await api.dispose()
 	})
 
-	test('Antrag eines anderen Kontos ist schreibgeschützt', async ({ page }) => {
-		const other = await apiAs(E2E_OTHER_USER)
-		const demand = await createDemand(other, { title: unique('E2E-Fremd'), demandType: 'innovation' })
-		await page.reload()
-		await page.locator(`[data-test="demand-${demand.key}"]`).click()
+	test('Esc schließt den Dialog auch mit Fokus im Eingabefeld', async ({ page }) => {
+		await page.locator('[data-test="new-demand"]').click()
 		const editor = page.locator('[data-test="demand-editor"]')
-		await expect(editor.locator('[data-test="field-title"] input')).toBeDisabled()
-		await expect(editor.locator('[data-test="save-demand"]')).toHaveCount(0)
-		await expect(editor.locator('[data-test="delete-demand"]')).toHaveCount(0)
-
-		// Auch die API verweigert die Änderung
-		const own = await apiAs(E2E_USER)
-		expect((await own.put(`${PATH}/${demand.id}`, { data: { title: 'gekapert' } })).status()).toBe(403)
-		await own.dispose()
-
-		// Aufräumen: Entwurf des anderen Kontos löschen
-		expect((await other.delete(`${PATH}/${demand.id}`)).status()).toBe(200)
-		await other.dispose()
+		await editor.locator('[data-test="field-title"] input').fill('nur getippt')
+		await editor.locator('[data-test="field-title"] input').press('Escape')
+		await expect(editor).toHaveCount(0)
 	})
 
 	test('Kopf- und Fußzeile des Dialogs bleiben beim Scrollen stehen', async ({ page }) => {

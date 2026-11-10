@@ -7,7 +7,10 @@
 		:close-on-click-outside="false"
 		@close="$emit('close')">
 		<!-- Kopf- und Fußzeile stehen fest, nur der Inhalt dazwischen scrollt. -->
-		<div class="editor" :class="{ 'editor--readonly': readonly }" data-test="demand-editor">
+		<div class="editor"
+			:class="{ 'editor--readonly': readonly }"
+			data-test="demand-editor"
+			@keydown.esc="$emit('close')">
 			<h2 id="nx-demand-editor-title" class="nx-hidden-visually">
 				{{ heading }}
 			</h2>
@@ -35,6 +38,10 @@
 					<div class="nx-fact">
 						{{ t('nc_nexus', 'Type') }}
 						<b>{{ typeLabel(demand.demandType) }}</b>
+					</div>
+					<div v-if="orgUnitPath" class="nx-fact">
+						{{ t('nc_nexus', 'Organizational unit') }}
+						<b>{{ orgUnitPath }}</b>
 					</div>
 					<div class="nx-fact">
 						{{ t('nc_nexus', 'Created') }}
@@ -76,6 +83,16 @@
 								</select>
 							</label>
 						</div>
+						<label class="nx-field" data-test="field-org-unit">
+							<span>{{ t('nc_nexus', 'Organizational unit') }}</span>
+							<select v-model="form.orgUnitId" class="nx-input" :disabled="readonly">
+								<option :value="null">{{ t('nc_nexus', '– none –') }}</option>
+								<option v-for="unit in orgTreeList" :key="unit.id" :value="unit.id">
+									{{ indented(unit) }}
+								</option>
+							</select>
+							<p v-if="!readonly" class="nx-hint">{{ t('nc_nexus', 'Determines who besides you can see the demand (sponsor, PMO, board of the area).') }}</p>
+						</label>
 					</div>
 
 					<div class="nx-section">
@@ -163,19 +180,20 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
 import { createDemand, deleteDemand, demandHistory, errorMessage, getDemand, submitDemand, updateDemand } from '../api.js'
-import { actionLabel, channelLabel, fieldLabel, formatDate, formatDay, statusLabel, typeLabel } from '../labels.js'
+import { actionLabel, channelLabel, fieldLabel, formatDate, formatDay, indented, orgTree, statusLabel, typeLabel } from '../labels.js'
 
-const emptyForm = () => ({ title: '', demandType: 'strategic', problemStatement: '', description: '', expectedBenefit: '' })
+const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, problemStatement: '', description: '', expectedBenefit: '' })
 
 export default {
 	name: 'DemandEditor',
 	components: { NcButton, NcLoadingIcon, NcModal },
 	props: {
 		demandId: { type: Number, default: null },
+		orgUnits: { type: Array, default: () => [] },
 	},
 	emits: ['close', 'changed'],
 	setup() {
-		return { t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, statusLabel, typeLabel }
+		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, statusLabel, typeLabel }
 	},
 	data() {
 		return {
@@ -189,6 +207,12 @@ export default {
 		}
 	},
 	computed: {
+		orgTreeList() {
+			return orgTree(this.orgUnits)
+		},
+		orgUnitPath() {
+			return this.orgTreeList.find(u => u.id === this.demand?.orgUnitId)?.path ?? ''
+		},
 		heading() {
 			return this.demand ? this.demand.title : t('nc_nexus', 'New demand')
 		},
@@ -227,6 +251,7 @@ export default {
 			this.form = {
 				title: demand.title,
 				demandType: demand.demandType,
+				orgUnitId: demand.orgUnitId ?? null,
 				problemStatement: demand.problemStatement ?? '',
 				description: demand.description ?? '',
 				expectedBenefit: demand.expectedBenefit ?? '',

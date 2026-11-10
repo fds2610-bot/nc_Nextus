@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace OCA\Nexus\Service;
 
 use OCA\Nexus\Db\AuditEntry;
+use OCA\Nexus\Db\CounterMapper;
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\DemandMapper;
+use OCA\Nexus\Db\OrgUnitMapper;
 use OCA\Nexus\Exception\ForbiddenException;
 use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
@@ -37,16 +39,39 @@ class DemandService {
 		private AuditService $audit,
 		private IDBConnection $db,
 		private ITimeFactory $time,
+		private PermissionService $permissions,
+		private OrgUnitMapper $orgUnits,
+		private CounterMapper $counters,
 	) {
 	}
 
-	/** @return list<Demand> */
-	public function findAll(): array {
-		return $this->mapper->findAll();
+	/**
+	 * Alle Anträge, die das Konto sehen darf (Berechtigungsmatrix, Kapitel 06 §3).
+	 *
+	 * @return list<Demand>
+	 */
+	public function findAll(string $userId): array {
+		return array_values(array_filter(
+			$this->mapper->findAll(),
+			fn (Demand $d) => $this->permissions->canReadDemand($userId, $d),
+		));
+	}
+
+	/**
+	 * Antrag lesen; ohne Leserecht wie „nicht vorhanden“, damit nichts über fremde Anträge verrät.
+	 *
+	 * @throws NotFoundException
+	 */
+	public function findReadable(string $userId, int $id): Demand {
+		$demand = $this->find($id);
+		if (!$this->permissions->canReadDemand($userId, $demand)) {
+			throw new NotFoundException('Demand not found');
+		}
+		return $demand;
 	}
 
 	/** @throws NotFoundException */
-	public function find(int $id): Demand {
+	private function find(int $id): Demand {
 		try {
 			return $this->mapper->find($id);
 		} catch (DoesNotExistException) {
@@ -70,9 +95,11 @@ class DemandService {
 
 		$prefix = 'DEM-' . date('Y', $now) . '-';
 		for ($attempt = 1; ; $attempt++) {
-			$demand->setDemandKey($prefix . str_pad((string)($this->mapper->maxSequence($prefix) + 1), 4, '0', STR_PAD_LEFT));
 			$this->db->beginTransaction();
 			try {
+				// Zähler je Jahr; Nummern gelöschter Entwürfe werden nicht erneut vergeben
+				$sequence = $this->counters->next('demand-' . date('Y', $now), $this->mapper->maxSequence($prefix));
+				$demand->setDemandKey($prefix . str_pad((string)$sequence, 4, '0', STR_PAD_LEFT));
 				$demand = $this->mapper->insert($demand);
 				$this->audit->log(self::ENTITY, $demand->getId(), 'create', $userId, $this->diff(array_fill_keys(Demand::EDITABLE, null), $this->snapshot($demand)));
 				$this->db->commit();
@@ -160,14 +187,14 @@ class DemandService {
 	 * @return list<AuditEntry>
 	 * @throws NotFoundException
 	 */
-	public function history(int $id): array {
-		$this->find($id);
+	public function history(string $userId, int $id): array {
+		$this->findReadable($userId, $id);
 		return $this->audit->history(self::ENTITY, $id);
 	}
 
 	/** @throws NotFoundException|ForbiddenException */
 	private function editable(string $userId, int $id): Demand {
-		$demand = $this->find($id);
+		$demand = $this->findReadable($userId, $id);
 		if ($demand->getRequestorId() !== $userId) {
 			throw new ForbiddenException('Only the requestor may change this demand');
 		}
@@ -198,6 +225,17 @@ class DemandService {
 				throw new ValidationException('Unknown demand type');
 			}
 			$demand->setDemandType($type);
+		}
+		if (array_key_exists('orgUnitId', $data)) {
+			$orgUnitId = $data['orgUnitId'] === null || $data['orgUnitId'] === '' ? null : (int)$data['orgUnitId'];
+			if ($orgUnitId !== null) {
+				try {
+					$this->orgUnits->find($orgUnitId);
+				} catch (DoesNotExistException) {
+					throw new ValidationException('Unknown organizational unit');
+				}
+			}
+			$demand->setOrgUnitId($orgUnitId);
 		}
 		foreach (['description', 'problemStatement', 'expectedBenefit'] as $field) {
 			if (array_key_exists($field, $data)) {

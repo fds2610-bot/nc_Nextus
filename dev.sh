@@ -136,6 +136,8 @@ wait_installed() {
 
 setup_apps() {
 	wait_installed
+	# Neue App-Versionen (Migrationen) aus dem Live-Mount übernehmen; ohne Änderung ein No-op
+	occ upgrade --no-interaction | grep -v "^No upgrade required" || true
 	occ app:disable firstrunwizard >/dev/null 2>&1 || true
 	occ config:system:set trusted_domains 1 --value=host.docker.internal >/dev/null
 	occ background:cron >/dev/null || true

@@ -249,8 +249,7 @@
 	}
 }
 
-select/* doppelte Klasse: schlägt die allgemeinen input-/select-Regeln von Nextcloud (Rahmen, blasse Sperre) */
-.nx-input.nx-input {
+select.nx-input.nx-input {
 	padding-inline-end: 32px;
 	cursor: pointer;
 	appearance: none;
@@ -260,8 +259,7 @@ select/* doppelte Klasse: schlägt die allgemeinen input-/select-Regeln von Next
 	background-size: 18px;
 }
 
-textarea/* doppelte Klasse: schlägt die allgemeinen input-/select-Regeln von Nextcloud (Rahmen, blasse Sperre) */
-.nx-input.nx-input {
+textarea.nx-input.nx-input {
 	min-height: 6em;
 	max-height: 50vh;
 	resize: vertical;

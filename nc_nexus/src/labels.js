@@ -19,6 +19,7 @@ export const fieldLabel = (field) => ({
 	description: t('nc_nexus', 'Description'),
 	problemStatement: t('nc_nexus', 'Problem statement'),
 	expectedBenefit: t('nc_nexus', 'Expected benefit'),
+	orgUnitId: t('nc_nexus', 'Organizational unit'),
 	status: t('nc_nexus', 'Status'),
 })[field] || field
 
@@ -48,3 +49,68 @@ export const channelLabel = (channel) => ({
 	mail: t('nc_nexus', 'E-mail'),
 	api: t('nc_nexus', 'Interface'),
 })[channel] || channel
+
+/** Rollen, die in der Oberfläche vergeben werden (Auswahl aus ROLE_ASSIGNMENT). */
+export const ASSIGNABLE_ROLES = ['portfolio_manager', 'board_member', 'sponsor', 'pool_manager', 'project_manager', 'auditor', 'viewer']
+
+export const roleLabel = (role) => ({
+	requestor: t('nc_nexus', 'Requestor'),
+	sponsor: t('nc_nexus', 'Sponsor'),
+	project_manager: t('nc_nexus', 'Project manager'),
+	pool_manager: t('nc_nexus', 'Resource pool manager'),
+	portfolio_manager: t('nc_nexus', 'Portfolio office (PMO)'),
+	board_member: t('nc_nexus', 'Board member'),
+	steering_member: t('nc_nexus', 'Steering committee member'),
+	benefit_owner: t('nc_nexus', 'Benefit owner'),
+	reviewer: t('nc_nexus', 'Reviewer'),
+	controller: t('nc_nexus', 'Controller'),
+	auditor: t('nc_nexus', 'Auditor'),
+	data_owner: t('nc_nexus', 'Data owner'),
+	viewer: t('nc_nexus', 'Viewer'),
+	admin: t('nc_nexus', 'Administrator'),
+})[role] || role
+
+export const roleHint = (role) => ({
+	portfolio_manager: t('nc_nexus', 'Sees all demands in scope; globally also maintains organization and roles'),
+	board_member: t('nc_nexus', 'Sees all demands in scope and decides'),
+	sponsor: t('nc_nexus', 'Sees the demands of their area'),
+	pool_manager: t('nc_nexus', 'Sees demands in scope to plan capacity'),
+	project_manager: t('nc_nexus', 'Sees demands in scope'),
+	auditor: t('nc_nexus', 'Read access for audits'),
+	viewer: t('nc_nexus', 'Reserved for released projects'),
+})[role] || ''
+
+/**
+ * Org-Einheiten als Baum in Anzeige-Reihenfolge, mit Tiefe und vollständigem Pfad.
+ *
+ * @param {Array} units flache Liste mit id, name, parentId
+ * @return {Array<object>}
+ */
+export function orgTree(units) {
+	const children = new Map()
+	for (const unit of units) {
+		const key = units.some(u => u.id === unit.parentId) ? unit.parentId : null
+		if (!children.has(key)) {
+			children.set(key, [])
+		}
+		children.get(key).push(unit)
+	}
+	const result = []
+	const walk = (parentId, depth, path) => {
+		for (const unit of (children.get(parentId) || []).sort((a, b) => a.name.localeCompare(b.name))) {
+			const fullPath = path ? `${path} › ${unit.name}` : unit.name
+			result.push({ ...unit, depth, path: fullPath })
+			walk(unit.id, depth + 1, fullPath)
+		}
+	}
+	walk(null, 0, '')
+	return result
+}
+
+/**
+ * Name einer Org-Einheit mit Einrückung nach Tiefe (für Auswahllisten).
+ *
+ * @param {{name: string, depth: number}} unit Eintrag aus orgTree()
+ * @return {string}
+ */
+export const indented = (unit) => '\u00a0\u00a0\u00a0'.repeat(unit.depth) + unit.name

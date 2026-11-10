@@ -1,6 +1,6 @@
 {
     "name": "nc_nexus",
-    "version": "0.1.0",
+    "version": "0.2.1",
     "description": "Project governance for Nextcloud",
     "license": "GPL-3.0-or-later",
     "private": true,

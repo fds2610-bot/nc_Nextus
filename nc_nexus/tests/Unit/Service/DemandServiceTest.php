@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace OCA\Nexus\Tests\Unit\Service;
 
 use OCA\Nexus\Db\AuditEntry;
+use OCA\Nexus\Db\CounterMapper;
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\DemandMapper;
+use OCA\Nexus\Db\OrgUnitMapper;
 use OCA\Nexus\Exception\ForbiddenException;
+use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
 use OCA\Nexus\Service\AuditService;
 use OCA\Nexus\Service\DemandService;
+use OCA\Nexus\Service\PermissionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -19,6 +23,7 @@ use PHPUnit\Framework\TestCase;
 class DemandServiceTest extends TestCase {
 	private DemandMapper&MockObject $mapper;
 	private AuditService&MockObject $audit;
+	private CounterMapper&MockObject $counters;
 	private DemandService $service;
 
 	protected function setUp(): void {
@@ -26,7 +31,10 @@ class DemandServiceTest extends TestCase {
 		$this->audit = $this->createMock(AuditService::class);
 		$time = $this->createMock(ITimeFactory::class);
 		$time->method('getTime')->willReturn(1794268800); // 10.11.2026
-		$this->service = new DemandService($this->mapper, $this->audit, $this->createMock(IDBConnection::class), $time);
+		$permissions = $this->createMock(PermissionService::class);
+		// Lesen darf nur der Antragsteller (genügt für diese Tests)
+		$permissions->method('canReadDemand')->willReturnCallback(fn (string $uid, Demand $d) => $d->getRequestorId() === $uid);
+		$this->service = new DemandService($this->mapper, $this->audit, $this->createMock(IDBConnection::class), $time, $permissions, $this->createMock(OrgUnitMapper::class), $this->counters = $this->createMock(CounterMapper::class));
 	}
 
 	private function draft(string $requestor = 'alice', string $status = 'draft'): Demand {
@@ -41,6 +49,7 @@ class DemandServiceTest extends TestCase {
 
 	public function testCreateAssignsKeyAndLogs(): void {
 		$this->mapper->method('maxSequence')->with('DEM-2026-')->willReturn(146);
+		$this->counters->expects($this->once())->method('next')->with('demand-2026', 146)->willReturn(147);
 		$this->mapper->method('insert')->willReturnCallback(function (Demand $d) {
 			$d->setId(1);
 			return $d;
@@ -84,9 +93,9 @@ class DemandServiceTest extends TestCase {
 		$this->service->update('alice', 7, ['title' => 'Alt']);
 	}
 
-	public function testOnlyRequestorMayUpdate(): void {
+	public function testForeignDemandIsHiddenAsNotFound(): void {
 		$this->mapper->method('find')->willReturn($this->draft('bob'));
-		$this->expectException(ForbiddenException::class);
+		$this->expectException(NotFoundException::class);
 		$this->service->update('alice', 7, ['title' => 'Neu']);
 	}
 

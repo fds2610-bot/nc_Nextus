@@ -19,6 +19,9 @@ class AuditMapper extends QBMapper {
 	}
 
 	/**
+	 * Einträge eines Objekts, beginnend beim letzten „create“. Ältere Einträge gehören zu einem
+	 * früheren Objekt mit derselben ID (SQLite setzt den Zähler beim Tabellenumbau zurück).
+	 *
 	 * @return list<AuditEntry>
 	 */
 	public function findForEntity(string $entityType, int $entityId): array {
@@ -27,8 +30,14 @@ class AuditMapper extends QBMapper {
 			->from(self::TABLE)
 			->where($qb->expr()->eq('entity_type', $qb->createNamedParameter($entityType)))
 			->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter($entityId, IQueryBuilder::PARAM_INT)))
-			->orderBy('created_at', 'ASC')
-			->addOrderBy('id', 'ASC');
-		return $this->findEntities($qb);
+			->orderBy('id', 'ASC');
+		$entries = $this->findEntities($qb);
+		$start = 0;
+		foreach ($entries as $i => $entry) {
+			if ($entry->getAction() === 'create') {
+				$start = $i;
+			}
+		}
+		return array_slice($entries, $start);
 	}
 }

@@ -21,6 +21,10 @@
 					<span class="demand-row__bullet" :style="{ background: '#' + typeColor(demand.demandType) }" />
 					{{ typeLabel(demand.demandType) }}
 				</span>
+				<template v-if="orgUnitName">
+					<span class="sep">·</span>
+					<span>{{ orgUnitName }}</span>
+				</template>
 				<span class="sep">·</span>
 				<span>{{ demand.requestorId }}</span>
 			</div>
@@ -68,12 +72,16 @@ export default {
 	components: { NcActionButton, NcActions, NcAvatar, NcIconSvgWrapper },
 	props: {
 		demand: { type: Object, required: true },
+		orgUnits: { type: Array, default: () => [] },
 	},
 	emits: ['open', 'changed'],
 	setup() {
 		return { mdiDelete, mdiEye, mdiPencil, t, formatDay, statusLabel, typeColor, typeLabel }
 	},
 	computed: {
+		orgUnitName() {
+			return this.orgUnits.find(u => u.id === this.demand.orgUnitId)?.name ?? ''
+		},
 		canEdit() {
 			return this.demand.status === 'draft' && this.demand.requestorId === getCurrentUser()?.uid
 		},

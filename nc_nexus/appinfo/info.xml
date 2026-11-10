@@ -10,14 +10,18 @@
 This is an early development version. Currently available:
 
 * **Demand intake**: record demands with type, problem statement and expected benefit, save drafts and submit them.
+* **Organization and roles**: hierarchical organizational units; context-bound roles (portfolio office, board, sponsor, pool manager, auditor …) for accounts or groups, globally or per unit including subunits, optionally for a limited period (deputies).
+* **Visibility by role**: requestors see their own demands, roles see the demands of their area.
 * **Audit log**: every creation, change and status transition is recorded.]]></description>
     <description lang="de"><![CDATA[**Nexus** bringt Projekt-Governance in die Nextcloud: ein Eingang für alle Projektanträge, verbindliche Entscheidungen, Priorisierung gegen die verfügbare Kapazität und transparente Steuerung bis zum Nutzenreview.
 
 Dies ist eine frühe Entwicklungsversion. Derzeit verfügbar:
 
 * **Antragseingang**: Anträge mit Typ, Problembeschreibung und erwartetem Nutzen erfassen, als Entwurf speichern und einreichen.
+* **Organisation und Rollen**: hierarchische Org-Einheiten; kontextgebundene Rollen (Portfolio-Office, Board, Sponsor, Pool-Management, Revision …) für Konten oder Gruppen, global oder je Einheit samt Untereinheiten, auf Wunsch befristet (Vertretungen).
+* **Sichtbarkeit nach Rolle**: Antragsteller sehen ihre eigenen Anträge, Rollen die Anträge ihres Bereichs.
 * **Audit-Log**: Jedes Anlegen, jede Änderung und jeder Statuswechsel wird protokolliert.]]></description>
-    <version>0.1.0</version>
+    <version>0.2.1</version>
     <licence>GPL-3.0-or-later</licence>
     <author>fds2610</author>
     <namespace>Nexus</namespace>
