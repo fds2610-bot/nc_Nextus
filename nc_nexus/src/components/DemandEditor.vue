@@ -1,71 +1,126 @@
 <template>
+	<!-- label-id statt :name: NcModals :name rendert einen sichtbaren <h2>, der auf NC 34 die
+	     zentrierte Suchleiste überlagert (VertragsWerk #337). Der Titel steht deshalb nur für
+	     Screenreader im Body; sichtbar ist der Zusammenfassungskopf. -->
 	<NcModal size="large"
-		:name="heading"
+		label-id="nx-demand-editor-title"
 		:close-on-click-outside="false"
 		@close="$emit('close')">
 		<!-- Kopf- und Fußzeile stehen fest, nur der Inhalt dazwischen scrollt. -->
-		<div class="editor" data-test="demand-editor">
-			<header class="editor__head">
-				<div class="editor__title">
-					<h2>{{ heading }}</h2>
-					<p v-if="demand">
-						{{ demand.key }} · {{ t('nc_nexus', 'by {user}', { user: demand.requestorId }) }}
-					</p>
+		<div class="editor" :class="{ 'editor--readonly': readonly }" data-test="demand-editor">
+			<h2 id="nx-demand-editor-title" class="nx-hidden-visually">
+				{{ heading }}
+			</h2>
+			<header class="editor__head nx-summary">
+				<div class="nx-summary__top">
+					<div class="nx-summary__id">
+						<div class="nx-summary__title">
+							{{ heading }}
+						</div>
+						<div class="nx-summary__sub">
+							<template v-if="demand">
+								<span data-test="demand-key">{{ demand.key }}</span> · {{ t('nc_nexus', 'by {user}', { user: demand.requestorId }) }}
+							</template>
+							<template v-else>
+								{{ t('nc_nexus', 'Saved as a draft first; only submitting makes it binding.') }}
+							</template>
+						</div>
+					</div>
+					<span v-if="demand"
+						class="nx-chip"
+						:class="'nx-chip--' + demand.status"
+						data-test="demand-status">{{ statusLabel(demand.status) }}</span>
 				</div>
-				<span v-if="demand" class="editor__status" data-test="demand-status">{{ statusLabel(demand.status) }}</span>
+				<div v-if="demand" class="nx-summary__facts">
+					<div class="nx-fact">
+						{{ t('nc_nexus', 'Type') }}
+						<b>{{ typeLabel(demand.demandType) }}</b>
+					</div>
+					<div class="nx-fact">
+						{{ t('nc_nexus', 'Created') }}
+						<b>{{ formatDay(demand.createdAt) }}</b>
+					</div>
+					<div v-if="demand.submittedAt" class="nx-fact">
+						{{ t('nc_nexus', 'Submitted') }}
+						<b>{{ formatDay(demand.submittedAt) }}</b>
+					</div>
+					<div class="nx-fact">
+						{{ t('nc_nexus', 'Channel') }}
+						<b>{{ channelLabel(demand.intakeChannel) }}</b>
+					</div>
+				</div>
 			</header>
 
 			<div class="editor__body">
-				<NcLoadingIcon v-if="loading" :size="32" />
-				<form v-else class="editor__form" @submit.prevent="save">
-					<div data-test="field-title">
-						<NcTextField v-model="form.title"
-							:label="t('nc_nexus', 'Title') + ' *'"
-							:disabled="readonly"
-							:maxlength="255" />
+				<div v-if="loading" class="editor__loading">
+					<NcLoadingIcon :size="32" />
+				</div>
+				<form v-else @submit.prevent="save">
+					<div class="nx-section">
+						<h3>{{ t('nc_nexus', 'Basic data') }}</h3>
+						<div class="nx-field-row">
+							<label class="nx-field" data-test="field-title">
+								<span>{{ t('nc_nexus', 'Title') }} *</span>
+								<input v-model="form.title"
+									class="nx-input"
+									maxlength="255"
+									:disabled="readonly"
+									:placeholder="readonly ? '' : t('nc_nexus', 'e.g. Replace the ticket system')">
+							</label>
+							<label class="nx-field" data-test="field-type">
+								<span>{{ t('nc_nexus', 'Type') }} *</span>
+								<select v-model="form.demandType" class="nx-input" :disabled="readonly">
+									<option v-for="type in types" :key="type" :value="type">
+										{{ typeLabel(type) }}
+									</option>
+								</select>
+							</label>
+						</div>
 					</div>
-					<div data-test="field-type">
-						<NcSelect v-model="form.demandType"
-							:options="typeOptions"
-							:input-label="t('nc_nexus', 'Type') + ' *'"
-							:disabled="readonly"
-							:clearable="false"
-							:reduce="option => option.id"
-							label="label" />
+
+					<div class="nx-section">
+						<h3>{{ t('nc_nexus', 'Justification') }}</h3>
+						<label class="nx-field" data-test="field-problem">
+							<span>{{ t('nc_nexus', 'Problem statement') }} *</span>
+							<textarea v-model="form.problemStatement"
+								class="nx-input"
+								:disabled="readonly"
+								:placeholder="readonly ? '' : t('nc_nexus', 'What happens if we do nothing?')" />
+							<p v-if="!readonly" class="nx-hint">{{ t('nc_nexus', 'Required for submitting.') }}</p>
+						</label>
+						<label class="nx-field" data-test="field-benefit">
+							<span>{{ t('nc_nexus', 'Expected benefit') }}</span>
+							<textarea v-model="form.expectedBenefit" class="nx-input" :disabled="readonly" />
+						</label>
 					</div>
-					<div data-test="field-problem">
-						<NcTextArea v-model="form.problemStatement"
-							:label="t('nc_nexus', 'Problem statement') + ' *'"
-							:helper-text="t('nc_nexus', 'What happens if we do nothing? Required for submitting.')"
-							:disabled="readonly"
-							resize="vertical" />
+
+					<div class="nx-section">
+						<h3>{{ t('nc_nexus', 'Description') }}</h3>
+						<label class="nx-field" data-test="field-description">
+							<span class="nx-hidden-visually">{{ t('nc_nexus', 'Description') }}</span>
+							<textarea v-model="form.description"
+								class="nx-input"
+								:disabled="readonly"
+								:placeholder="readonly ? '' : t('nc_nexus', 'Scope, affected areas, desired time frame …')" />
+						</label>
 					</div>
-					<div data-test="field-description">
-						<NcTextArea v-model="form.description"
-							:label="t('nc_nexus', 'Description')"
-							:disabled="readonly"
-							resize="vertical" />
-					</div>
-					<div data-test="field-benefit">
-						<NcTextArea v-model="form.expectedBenefit"
-							:label="t('nc_nexus', 'Expected benefit')"
-							:disabled="readonly"
-							resize="vertical" />
+
+					<div v-if="history.length" class="nx-section" data-test="demand-history">
+						<h3>{{ t('nc_nexus', 'History') }}</h3>
+						<ul class="editor__history">
+							<li v-for="entry in history" :key="entry.id">
+								<span class="editor__history-when">{{ formatDate(entry.createdAt) }}</span>
+								<span>
+									<strong>{{ actionLabel(entry.action) }}</strong>
+									· {{ entry.userId }}
+									<span v-if="entry.action !== 'create' && entry.fieldChanges" class="editor__changes">
+										· {{ Object.keys(entry.fieldChanges).map(fieldLabel).join(', ') }}
+									</span>
+								</span>
+							</li>
+						</ul>
 					</div>
 				</form>
-
-				<section v-if="history.length" class="editor__history" data-test="demand-history">
-					<h3>{{ t('nc_nexus', 'History') }}</h3>
-					<ul>
-						<li v-for="entry in history" :key="entry.id">
-							<strong>{{ actionLabel(entry.action) }}</strong>
-							{{ formatDate(entry.createdAt) }} · {{ entry.userId }}
-							<span v-if="entry.action !== 'create' && entry.fieldChanges" class="editor__changes">
-								{{ Object.keys(entry.fieldChanges).map(fieldLabel).join(', ') }}
-							</span>
-						</li>
-					</ul>
-				</section>
 			</div>
 
 			<footer class="editor__actions">
@@ -107,23 +162,20 @@ import { t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
-import NcSelect from '@nextcloud/vue/components/NcSelect'
-import NcTextArea from '@nextcloud/vue/components/NcTextArea'
-import NcTextField from '@nextcloud/vue/components/NcTextField'
 import { createDemand, deleteDemand, demandHistory, errorMessage, getDemand, submitDemand, updateDemand } from '../api.js'
-import { actionLabel, fieldLabel, formatDate, statusLabel, typeLabel } from '../labels.js'
+import { actionLabel, channelLabel, fieldLabel, formatDate, formatDay, statusLabel, typeLabel } from '../labels.js'
 
 const emptyForm = () => ({ title: '', demandType: 'strategic', problemStatement: '', description: '', expectedBenefit: '' })
 
 export default {
 	name: 'DemandEditor',
-	components: { NcButton, NcLoadingIcon, NcModal, NcSelect, NcTextArea, NcTextField },
+	components: { NcButton, NcLoadingIcon, NcModal },
 	props: {
 		demandId: { type: Number, default: null },
 	},
 	emits: ['close', 'changed'],
 	setup() {
-		return { t, actionLabel, fieldLabel, formatDate, statusLabel }
+		return { t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, statusLabel, typeLabel }
 	},
 	data() {
 		return {
@@ -133,7 +185,7 @@ export default {
 			history: [],
 			loading: this.demandId !== null,
 			busy: false,
-			typeOptions: loadState('nc_nexus', 'demand_types', []).map(id => ({ id, label: typeLabel(id) })),
+			types: loadState('nc_nexus', 'demand_types', []),
 		}
 	},
 	computed: {
@@ -237,62 +289,40 @@ export default {
 	// Rechts Platz für den Schließen-Button von NcModal
 	&__head {
 		flex: none;
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		padding: 14px 56px 14px 20px;
+		padding: 18px 56px 16px 22px;
 		border-bottom: 1px solid var(--color-border);
-	}
-
-	&__title {
-		flex: 1;
-		min-width: 0;
-
-		h2 {
-			margin: 0;
-			font-size: 1.25em;
-			overflow-wrap: anywhere;
-		}
-
-		p {
-			margin: 0;
-			color: var(--color-text-maxcontrast);
-		}
-	}
-
-	&__status {
-		flex: none;
-		padding: 2px 10px;
-		border-radius: var(--border-radius-pill);
-		background: var(--color-primary-element-light);
-		color: var(--color-primary-element-light-text);
-		font-size: var(--font-size-small, 13px);
 	}
 
 	&__body {
 		flex: 1 1 auto;
 		min-height: 0;
 		overflow-y: auto;
-		padding: 16px 20px;
+		padding: 0 22px;
 	}
 
-	&__form {
+	&__loading {
 		display: flex;
-		flex-direction: column;
-		gap: 12px;
+		justify-content: center;
+		padding: 40px 0;
 	}
 
 	&__history {
-		margin-top: 24px;
-
-		h3 {
-			margin: 0 0 8px;
-			font-size: 1em;
-		}
+		margin: 0;
+		padding: 0;
+		list-style: none;
 
 		li {
+			display: grid;
+			grid-template-columns: 150px minmax(0, 1fr);
+			gap: 12px;
 			padding: 4px 0;
+			font-size: 13px;
 		}
+	}
+
+	&__history-when {
+		color: var(--color-text-maxcontrast);
+		font-variant-numeric: tabular-nums;
 	}
 
 	&__changes {
@@ -304,12 +334,18 @@ export default {
 		display: flex;
 		justify-content: flex-end;
 		gap: 8px;
-		padding: 12px 20px;
+		padding: 12px 22px;
 		border-top: 1px solid var(--color-border);
 	}
 
 	&__delete {
 		margin-inline-end: auto;
+	}
+}
+
+@media (max-width: 600px) {
+	.editor .nx-field-row {
+		grid-template-columns: 1fr;
 	}
 }
 </style>

@@ -30,18 +30,40 @@ test.describe('Antragseingang', () => {
 		await expect(editor.locator('[data-test="submit-demand"]')).toBeDisabled()
 		await editor.locator('[data-test="save-demand"]').click()
 		await expect(editor.locator('[data-test="demand-status"]')).toBeVisible()
-		const key = (await editor.locator('.editor__title p').innerText()).split(' ')[0]
+		const key = await editor.locator('[data-test="demand-key"]').innerText()
 		expect(key).toMatch(/^DEM-\d{4}-\d{4}$/)
 
 		await editor.locator('[data-test="field-problem"] textarea').fill('Ohne Antrag keine Entscheidung.')
 		await editor.locator('[data-test="submit-demand"]').click()
 		await expect(editor.locator('[data-test="field-title"] input')).toBeDisabled()
+		await expect(editor.locator('[data-test="field-type"] select')).toBeDisabled()
 		await expect(editor.locator('[data-test="demand-history"] li')).toHaveCount(3)
 		await page.keyboard.press('Escape')
 
 		const row = page.locator(`[data-test="demand-${key}"]`)
 		await expect(row).toContainText(title)
 		await expect(row).toContainText(/Submitted|Eingereicht/)
+	})
+
+	test('Filter nach Status und Suche in der Navigation', async ({ page }) => {
+		const api = await apiAs(E2E_USER)
+		const title = unique('E2E-Filter')
+		const demand = await createDemand(api, { title, demandType: 'lifecycle' })
+		await page.reload()
+		const row = page.locator(`[data-test="demand-${demand.key}"]`)
+
+		await page.locator('[data-test="nav-status-submitted"]').click()
+		await expect(row).toHaveCount(0)
+		await page.locator('[data-test="nav-status-draft"]').click()
+		await expect(row).toBeVisible()
+
+		await page.locator('[data-test="nav-all"]').click()
+		await page.getByRole('textbox', { name: /Search demands|Anträge durchsuchen/ }).fill(title)
+		await expect(page.locator('[data-test^="demand-DEM-"]')).toHaveCount(1)
+		await expect(page.locator('[data-test="kpis"]')).toBeVisible()
+
+		expect((await api.delete(`${PATH}/${demand.id}`)).status()).toBe(200)
+		await api.dispose()
 	})
 
 	test('Entwurf löschen', async ({ page }) => {

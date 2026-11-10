@@ -1,0 +1,288 @@
+/*
+ * Gemeinsame Stile von nc_nexus, übernommen aus dem Design von VertragsWerk (contractmanager 2.0.1):
+ * Status-Chips, Kennzahl-Kacheln, Listen-Karte, Formularabschnitte und einheitliche Eingabefelder.
+ * Farben nur aus den Nextcloud-Theme-Variablen, damit Dunkel- und Kontrast-Themes ohne eigene
+ * Regeln funktionieren. Alle Klassen tragen das Präfix nx-, damit nichts auf Nextcloud abfärbt.
+ */
+
+/* Status-Chips: Liste und Dialog teilen sich ein Aussehen; Text steht immer dabei. */
+.nx-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 24px;
+	padding: 0 10px 0 8px;
+	border-radius: var(--border-radius-pill, 100px);
+	font-size: 13px;
+	font-weight: 600;
+	white-space: nowrap;
+
+	&::before {
+		content: "";
+		flex: none;
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: currentColor;
+	}
+
+	&--draft {
+		background: var(--color-background-dark);
+		color: var(--color-text-maxcontrast);
+	}
+
+	&--submitted {
+		background: var(--color-primary-element-light);
+		color: var(--color-primary-element-light-text);
+	}
+
+	&--accepted {
+		background: rgba(var(--color-success-rgb), 0.12);
+		color: var(--color-success-text);
+	}
+
+	&--on-hold {
+		background: rgba(var(--color-warning-rgb), 0.14);
+		color: var(--color-warning-text);
+	}
+
+	&--rejected {
+		background: rgba(var(--color-error-rgb), 0.12);
+		color: var(--color-error-text);
+	}
+}
+
+/* Kennzahl-Kacheln über der Liste */
+.nx-kpis {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 12px;
+	margin-bottom: 18px;
+}
+
+.nx-kpi {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	margin: 0;
+	padding: 12px 14px;
+	background: var(--color-main-background);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-container-large, 12px);
+	color: var(--color-main-text);
+	font: inherit;
+	text-align: start;
+
+	&--button {
+		cursor: pointer;
+
+		&:hover {
+			background: var(--color-background-hover);
+		}
+	}
+
+	&--pressed {
+		background: var(--color-primary-element-light);
+		border-color: var(--color-primary-element);
+	}
+
+	&__lab {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 13px;
+		color: var(--color-text-maxcontrast);
+	}
+
+	&__num {
+		margin-top: 6px;
+		font-size: 22px;
+		font-weight: 700;
+		line-height: 1.2;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	&__sub {
+		margin-top: 2px;
+		font-size: 13px;
+		color: var(--color-text-maxcontrast);
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+}
+
+/* Formular im Dialog: Zusammenfassungskopf, Abschnitte, einheitliche Felder */
+.nx-summary {
+	&__top {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+	}
+
+	&__id {
+		flex: 1;
+		min-width: 0;
+	}
+
+	&__title {
+		margin: 0;
+		font-size: 19px;
+		font-weight: 700;
+		line-height: 1.2;
+		overflow-wrap: anywhere;
+	}
+
+	&__sub {
+		margin-top: 2px;
+		font-size: 13px;
+		color: var(--color-text-maxcontrast);
+	}
+
+	&__facts {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 26px;
+		margin-top: 14px;
+
+		.nx-fact {
+			font-size: 12px;
+			color: var(--color-text-maxcontrast);
+
+			b {
+				display: block;
+				margin-top: 2px;
+				font-size: 14px;
+				color: var(--color-main-text);
+				font-variant-numeric: tabular-nums;
+			}
+		}
+	}
+}
+
+.nx-section {
+	padding: 18px 0;
+	border-top: 1px solid var(--color-border-light, var(--color-border));
+
+	&:first-child {
+		border-top: none;
+	}
+
+	h3 {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		margin: 0 0 14px;
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--color-text-maxcontrast);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+}
+
+.nx-field {
+	display: block;
+	margin-bottom: 14px;
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+
+	> span {
+		display: block;
+		margin-bottom: 4px;
+		font-size: 13px;
+		color: var(--color-text-maxcontrast);
+	}
+}
+
+.nx-field-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 14px;
+	align-items: start;
+	margin-bottom: 14px;
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+
+	.nx-field {
+		margin-bottom: 0;
+	}
+}
+
+/* doppelte Klasse: schlägt die allgemeinen input-/select-Regeln von Nextcloud (Rahmen, blasse Sperre) */
+.nx-input.nx-input {
+	width: 100%;
+	min-height: 36px;
+	margin: 0;
+	padding: 6px 10px;
+	border: 1px solid var(--color-border-dark, var(--color-border));
+	border-radius: var(--border-radius, 8px);
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	font: inherit;
+	box-sizing: border-box;
+
+	&:hover:not(:disabled) {
+		border-color: var(--color-border-maxcontrast, var(--color-border-dark));
+	}
+
+	&:focus,
+	&:focus-visible {
+		outline: none;
+		border-color: var(--color-primary-element);
+		box-shadow: 0 0 0 2px var(--color-primary-element-light);
+	}
+
+	// Schreibgeschützte Ansicht: voller Kontrast statt der blassen Nextcloud-Darstellung
+	&:disabled {
+		cursor: default;
+		opacity: 1;
+		color: var(--color-main-text);
+		-webkit-text-fill-color: var(--color-main-text);
+		background: var(--color-background-hover);
+	}
+}
+
+select/* doppelte Klasse: schlägt die allgemeinen input-/select-Regeln von Nextcloud (Rahmen, blasse Sperre) */
+.nx-input.nx-input {
+	padding-inline-end: 32px;
+	cursor: pointer;
+	appearance: none;
+	background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238b8b8b'%3E%3Cpath d='M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 8px center;
+	background-size: 18px;
+}
+
+textarea/* doppelte Klasse: schlägt die allgemeinen input-/select-Regeln von Nextcloud (Rahmen, blasse Sperre) */
+.nx-input.nx-input {
+	min-height: 6em;
+	max-height: 50vh;
+	resize: vertical;
+	line-height: 1.5;
+}
+
+.nx-hint {
+	margin: 6px 0 0;
+	font-size: 13px;
+	color: var(--color-text-maxcontrast);
+}
+
+/* Nur für Screenreader sichtbar */
+.nx-hidden-visually {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
