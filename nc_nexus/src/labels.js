@@ -46,6 +46,23 @@ export const codeLabel = (code) => ({
 	query: t('nc_nexus', 'Query to requestor'),
 })[code] || code
 
+// Ergebnis eines Beschlusses (Entscheidungscode) als Text und Chip-Farbe
+export const outcomeLabel = (code) => ({
+	accepted: t('nc_nexus', 'Accepted'),
+	further_analysis: t('nc_nexus', 'Further analysis'),
+	deferred: t('nc_nexus', 'Deferred'),
+	rejected: t('nc_nexus', 'Rejected'),
+	duplicate: t('nc_nexus', 'Duplicate'),
+})[code] || code
+
+export const outcomeChip = (code) => ({
+	accepted: 'accepted',
+	further_analysis: 'on-hold',
+	deferred: 'on-hold',
+	rejected: 'rejected',
+	duplicate: 'draft',
+})[code] || 'draft'
+
 export const codeHint = (code) => ({
 	accepted: t('nc_nexus', 'Continue with qualification and business case.'),
 	further_analysis: t('nc_nexus', 'No decision possible without more information; assign an analysis with a due date.'),

@@ -4,6 +4,7 @@
 	     Screenreader im Body; sichtbar ist der Zusammenfassungskopf. -->
 	<NcModal size="large"
 		label-id="nx-demand-editor-title"
+		:additional-trap-elements="trapElements"
 		:close-on-click-outside="false"
 		@close="$emit('close')">
 		<!-- Kopf- und Fußzeile stehen fest, nur der Inhalt dazwischen scrollt. -->
@@ -249,22 +250,31 @@
 					{{ t('nc_nexus', 'Complete analysis') }}
 				</NcButton>
 				<!-- Für das PMO sichtbar; ausgegraut, solange keine Triage fällig ist (Grund im Abschnitt „Triage“) -->
+				<!-- PMO: außerplanmäßig neu entscheiden (Begründung Pflicht), bewusst zurückhaltend -->
+				<NcButton v-if="demand && demand.can.retriage"
+					variant="tertiary"
+					data-test="retriage"
+					:disabled="busy"
+					@click="openTriage(true)">
+					{{ t('nc_nexus', 'Decide again') }}
+				</NcButton>
 				<NcButton v-if="demand && demand.can.triager"
 					:variant="demand.can.triage ? 'primary' : 'secondary'"
 					data-test="open-triage"
 					:disabled="busy || !demand.can.triage"
 					:title="demand.can.triage ? '' : nextStep"
-					@click="triageOpen = true">
+					@click="openTriage(false)">
 					{{ t('nc_nexus', 'Triage') }}
 				</NcButton>
 				<template v-if="!readonly">
 					<NcButton variant="secondary"
-						:disabled="busy || !valid"
+						:disabled="busy || !valid || (demand && !dirtyForm)"
 						data-test="save-demand"
 						@click="save">
-						{{ t('nc_nexus', 'Save draft') }}
+						{{ !demand || demand.can.submit ? t('nc_nexus', 'Save draft') : t('nc_nexus', 'Save changes') }}
 					</NcButton>
-					<NcButton variant="primary"
+					<NcButton v-if="!demand || demand.can.submit"
+						variant="primary"
 						:disabled="busy || !valid || !form.problemStatement.trim()"
 						data-test="submit-demand"
 						@click="submit">
@@ -276,11 +286,14 @@
 		<TriageDialog v-if="triageOpen"
 			:demand="demand"
 			:demands="demands"
-			@close="triageOpen = false"
+			:override="triageOverride"
+			@ready="el => trapElements = [el]"
+			@close="triageOpen = false; trapElements = []"
 			@decided="onDecided" />
 		<AnalysisDialog v-if="analysisOpen"
 			:demand="demand"
-			@close="analysisOpen = false"
+			@ready="el => trapElements = [el]"
+			@close="analysisOpen = false; trapElements = []"
 			@done="onDecided" />
 	</NcModal>
 </template>
@@ -323,6 +336,9 @@ export default {
 			loading: this.demandId !== null,
 			busy: false,
 			triageOpen: false,
+			triageOverride: false,
+			// Elemente innerer Dialoge, die zur Fokusfalle dieses Modals gehören
+			trapElements: [],
 			analysisOpen: false,
 			answer: '',
 			commentRefresh: 0,
@@ -351,7 +367,10 @@ export default {
 			if (!this.demand) {
 				return false
 			}
-			return !this.demand.can.edit && !this.demand.can.triage && !this.demand.can.completeAnalysis
+			return !this.dirty && !this.demand.can.submit && !this.demand.can.triage && !this.demand.can.completeAnalysis
+		},
+		dirtyForm() {
+			return !this.readonly && JSON.stringify(this.form) !== this.saved
 		},
 		// Was als Nächstes passiert – führt Antragsteller, Analyse und PMO durch den Ablauf
 		nextStep() {
@@ -427,6 +446,10 @@ export default {
 		// geänderte Felder nur bei Bearbeitungen; Statuswechsel und Entscheidungen zeigen „alt → neu“ und den Kommentar
 		changedFields(entry) {
 			return entry.action === 'update' && entry.fieldChanges ? Object.keys(entry.fieldChanges) : []
+		},
+		openTriage(override) {
+			this.triageOverride = override
+			this.triageOpen = true
 		},
 		onEscape() {
 			// Liegt der Triage-Dialog darüber, schließt Esc nur diesen

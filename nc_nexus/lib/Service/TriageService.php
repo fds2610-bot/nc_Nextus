@@ -86,6 +86,7 @@ class TriageService {
 		private IUserManager $userManager,
 		private ITimeFactory $time,
 		private CommentService $comments,
+		private DecisionService $decisions,
 	) {
 	}
 
@@ -102,6 +103,12 @@ class TriageService {
 			throw new ValidationException('Unknown decision code');
 		}
 		$reason = $this->text($data['reason'] ?? null);
+		// Außerhalb des regulären Schritts (vorgezogen, Analyse nicht abgewartet, Entscheidung
+		// geändert) nur mit Begründung – das PMO darf alles, aber nachvollziehbar
+		$outOfSequence = !$this->isDue($demand);
+		if ($outOfSequence && $reason === null) {
+			throw new ValidationException('A reason is required when deciding outside the regular step');
+		}
 		$resubmission = null;
 		$analysisOwner = null;
 		$analysisDue = null;
@@ -162,7 +169,15 @@ class TriageService {
 		$demand->setQueryDue(null);
 		// eine neue Analyse beginnt ohne geliefertes Ergebnis
 		$demand->setAnalysisDoneAt(null);
-		return $this->store($userId, $demand, 'decision', $before, $reason);
+		$details = [
+			'projectClass' => $class,
+			'resubmissionDate' => $resubmission,
+			'analysisOwner' => $analysisOwner,
+			'analysisDue' => $analysisDue,
+			'duplicateOfId' => $duplicateOf,
+		];
+		return $this->store($userId, $demand, 'decision', $before, $reason,
+			fn (Demand $d) => $this->decisions->recordTriage($userId, $d, $code, $reason, $details, $outOfSequence));
 	}
 
 	/**
@@ -172,6 +187,9 @@ class TriageService {
 	 */
 	public function query(string $userId, int $id, ?string $question, ?string $due): Demand {
 		$demand = $this->triageable($userId, $id);
+		if ($demand->getStatus() === DemandService::STATUS_QUERY) {
+			throw new ForbiddenException('A query is already open');
+		}
 		$question = $this->text($question);
 		if ($question === null) {
 			throw new ValidationException('A query needs a question');
@@ -194,7 +212,8 @@ class TriageService {
 				? 'You cannot triage your own demand'
 				: 'Only the portfolio office of the area may triage');
 		}
-		if (!$this->isDue($demand)) {
+		// Entwürfe sind privat; sonst darf das PMO jederzeit entscheiden (außerplanmäßig mit Begründung)
+		if ($demand->getStatus() === DemandService::STATUS_DRAFT) {
 			throw new ForbiddenException('The demand is not waiting for triage');
 		}
 		return $demand;
@@ -203,7 +222,7 @@ class TriageService {
 	/**
 	 * @param array<string, mixed> $before
 	 */
-	private function store(string $userId, Demand $demand, string $action, array $before, ?string $comment): Demand {
+	private function store(string $userId, Demand $demand, string $action, array $before, ?string $comment, ?\Closure $within = null): Demand {
 		$now = $this->time->getTime();
 		$demand->setTriagedBy($userId);
 		$demand->setTriagedAt($now);
@@ -218,6 +237,9 @@ class TriageService {
 		try {
 			$demand = $this->mapper->update($demand);
 			$this->audit->log(DemandService::ENTITY, $demand->getId(), $action, $userId, $changes, $comment);
+			if ($within !== null) {
+				$within($demand);
+			}
 			$this->db->commit();
 		} catch (\Throwable $e) {
 			$this->db->rollBack();

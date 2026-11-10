@@ -126,7 +126,7 @@ class DemandService {
 	 * @throws NotFoundException|ForbiddenException|ValidationException
 	 */
 	public function update(string $userId, int $id, array $data): Demand {
-		$demand = $this->editable($userId, $id);
+		$demand = $this->changeable($userId, $id);
 		$before = $this->snapshot($demand);
 		$this->apply($demand, $data, false);
 		$changes = $this->diff($before, $this->snapshot($demand));
@@ -218,7 +218,32 @@ class DemandService {
 		return $this->audit->history(self::ENTITY, $id);
 	}
 
-	/** @throws NotFoundException|ForbiddenException */
+	/**
+	 * Inhalt ändern: der Antragsteller im Entwurf und bei Rückfrage, das PMO des Bereichs in jedem
+	 * eingereichten Status (Matrix 06 §3: Demand fremd = S). Jede Änderung steht im Verlauf.
+	 *
+	 * @throws NotFoundException|ForbiddenException
+	 */
+	public function changeable(string $userId, int $id): Demand {
+		$demand = $this->findReadable($userId, $id);
+		if ($this->canChange($userId, $demand)) {
+			return $demand;
+		}
+		throw new ForbiddenException($demand->getRequestorId() === $userId ? 'Only drafts can be changed' : 'Only the requestor may change this demand');
+	}
+
+	public function canChange(string $userId, Demand $demand): bool {
+		if ($demand->getRequestorId() === $userId) {
+			return in_array($demand->getStatus(), self::EDITABLE_STATUSES, true);
+		}
+		return $demand->getStatus() !== self::STATUS_DRAFT && $this->permissions->canTriage($userId, $demand);
+	}
+
+	/**
+	 * Einreichen und Löschen: nur der Antragsteller.
+	 *
+	 * @throws NotFoundException|ForbiddenException
+	 */
 	private function editable(string $userId, int $id): Demand {
 		$demand = $this->findReadable($userId, $id);
 		if ($demand->getRequestorId() !== $userId) {

@@ -193,7 +193,8 @@ test.describe('Triage', () => {
 		const demand = await submitted(own, unique('E2E-Spaeter'))
 		const decided = await call(other, 'post', `/demands/${demand.id}/triage`, { code: 'deferred', resubmissionDate: isoDay(30) }, 200)
 		expect(decided.can.triage).toBe(false)
-		expect((await other.post(`/ocs/v2.php/apps/nc_nexus/api/v1/demands/${demand.id}/triage`, { data: { code: 'accepted' } })).status()).toBe(403)
+		// vorziehen ohne Begründung: abgelehnt (außerplanmäßig braucht eine Begründung)
+		expect((await other.post(`/ocs/v2.php/apps/nc_nexus/api/v1/demands/${demand.id}/triage`, { data: { code: 'accepted' } })).status()).toBe(400)
 		const { context, page } = await loginAs(browser, E2E_OTHER_USER, E2E_PASSWORD)
 		try {
 			await page.goto('/apps/nc_nexus/')

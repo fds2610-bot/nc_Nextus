@@ -12,6 +12,7 @@ use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
 use OCA\Nexus\Service\AuditService;
 use OCA\Nexus\Service\CommentService;
+use OCA\Nexus\Service\DecisionService;
 use OCA\Nexus\Service\DemandService;
 use OCA\Nexus\Service\PermissionService;
 use OCA\Nexus\Service\TriageService;
@@ -43,7 +44,7 @@ class TriageServiceTest extends TestCase {
 		$users->method('userExists')->willReturnCallback(fn (string $uid) => $uid === 'analyst');
 		$time = $this->createMock(ITimeFactory::class);
 		$time->method('getTime')->willReturn(1794268800); // 10.11.2026
-		$this->service = new TriageService($this->demands, $mapper, $this->permissions, $this->audit, $this->createMock(IDBConnection::class), $users, $time, $this->createMock(CommentService::class));
+		$this->service = new TriageService($this->demands, $mapper, $this->permissions, $this->audit, $this->createMock(IDBConnection::class), $users, $time, $this->createMock(CommentService::class), $this->createMock(DecisionService::class));
 
 		$this->store[7] = $this->demand(7, 'submitted');
 		$this->store[8] = $this->demand(8, 'in_qualification');
@@ -104,9 +105,21 @@ class TriageServiceTest extends TestCase {
 		$this->service->decide('alice', 7, ['code' => 'accepted']);
 	}
 
-	public function testDecidedDemandIsNotTriagedAgain(): void {
+	public function testDecidingOutsideTheRegularStepNeedsAReason(): void {
+		// Antrag 8 ist bereits in Qualifizierung: neu entscheiden geht, aber nur mit Begründung
+		try {
+			$this->service->decide('pmo', 8, ['code' => 'deferred', 'resubmissionDate' => '2027-01-15']);
+			$this->fail('außerplanmäßig ohne Begründung');
+		} catch (ValidationException) {
+		}
+		$demand = $this->service->decide('pmo', 8, ['code' => 'deferred', 'resubmissionDate' => '2027-01-15', 'reason' => 'Budget erst 2027']);
+		$this->assertSame('deferred', $demand->getStatus());
+	}
+
+	public function testDraftsAreNeverTriaged(): void {
+		$this->store[9] = $this->demand(9, 'draft');
 		$this->expectException(ForbiddenException::class);
-		$this->service->decide('pmo', 8, ['code' => 'rejected', 'reason' => 'x']);
+		$this->service->decide('pmo', 9, ['code' => 'accepted', 'reason' => 'x']);
 	}
 
 	public function testFurtherAnalysisIsNotTriagedBeforeTheResultIsDelivered(): void {
@@ -114,8 +127,8 @@ class TriageServiceTest extends TestCase {
 		$this->assertFalse($this->service->isDue($demand));
 		try {
 			$this->service->decide('pmo', 7, ['code' => 'accepted']);
-			$this->fail('Triage vor gelieferter Analyse');
-		} catch (ForbiddenException) {
+			$this->fail('Triage vor gelieferter Analyse ohne Begründung');
+		} catch (ValidationException) {
 		}
 		$this->service->completeAnalysis('analyst', 7, 'Aufwand ca. 40 PT');
 		$this->assertTrue($this->service->isDue($this->store[7]));

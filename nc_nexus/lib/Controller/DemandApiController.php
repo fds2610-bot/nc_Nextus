@@ -269,11 +269,15 @@ class DemandApiController extends OCSController {
 	private function out(Demand $demand): array {
 		$uid = $this->uid();
 		return $demand->jsonSerialize() + ['can' => [
-			'edit' => $demand->getRequestorId() === $uid && in_array($demand->getStatus(), DemandService::EDITABLE_STATUSES, true),
+			'edit' => $this->service->canChange($uid, $demand),
+			'submit' => $demand->getRequestorId() === $uid && in_array($demand->getStatus(), DemandService::EDITABLE_STATUSES, true),
 			'delete' => $demand->getRequestorId() === $uid && $demand->getStatus() === DemandService::STATUS_DRAFT,
 			// triage: jetzt möglich; triager: PMO des Bereichs (Button ausgegraut zeigen, wenn noch nicht fällig)
 			'triage' => $this->triage->isDue($demand) && $this->permissions->canTriage($uid, $demand),
 			'triager' => $this->permissions->canTriage($uid, $demand),
+			// außerplanmäßig neu entscheiden (Begründung Pflicht)
+			'retriage' => $demand->getStatus() !== DemandService::STATUS_DRAFT && !$this->triage->isDue($demand) && $this->permissions->canTriage($uid, $demand),
+			'query' => !in_array($demand->getStatus(), [DemandService::STATUS_DRAFT, DemandService::STATUS_QUERY], true) && $this->permissions->canTriage($uid, $demand),
 			'completeAnalysis' => $demand->getStatus() === 'further_analysis' && $demand->getAnalysisDoneAt() === null
 				&& $demand->getAnalysisOwner() === $uid,
 		]];

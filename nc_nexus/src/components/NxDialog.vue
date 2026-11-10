@@ -5,7 +5,10 @@
 		:label-id="titleId"
 		:close-on-click-outside="false"
 		@close="$emit('close')">
-		<div class="nx-dialog" :data-test="dataTest" @keydown.esc="onEscape">
+		<div ref="root"
+			class="nx-dialog"
+			:data-test="dataTest"
+			@keydown.esc="onEscape">
 			<h2 :id="titleId" class="nx-hidden-visually">
 				{{ title }}
 			</h2>
@@ -41,9 +44,19 @@ export default {
 		size: { type: String, default: 'normal' },
 		dataTest: { type: String, default: undefined },
 	},
-	emits: ['close'],
+	emits: ['close', 'ready'],
 	data() {
 		return { titleId: `nx-dialog-title-${++counter}` }
+	},
+	mounted() {
+		// Liegt der Dialog über einem anderen Modal, muss dessen Fokusfalle diesen Dialog einschließen,
+		// sonst blockiert sie Klicks und Eingaben hier (Muster aus VertragsWerk, NewContactDialog)
+		this.$nextTick(() => {
+			const mask = this.$refs.root?.closest('.modal-mask')
+			if (mask) {
+				this.$emit('ready', mask)
+			}
+		})
 	},
 	methods: {
 		onEscape(event) {

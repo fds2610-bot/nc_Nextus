@@ -56,3 +56,5 @@ export async function searchPrincipals(search) {
 		label: entry.label,
 	}))
 }
+
+export const listDecisions = async () => data(await axios.get(v1('/decisions')))

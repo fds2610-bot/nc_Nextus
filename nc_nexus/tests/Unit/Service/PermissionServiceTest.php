@@ -103,6 +103,22 @@ class PermissionServiceTest extends TestCase {
 		$this->assertTrue($this->service->canReadDemand('bob', $draft));
 	}
 
+	public function testMandateIsTheMostSpecificPmoRole(): void {
+		$this->roles->method('findForPrincipal')->willReturn([
+			$this->role('portfolio_manager', 'global', null),
+			$this->role('portfolio_manager', 'org_unit', 1),
+		]);
+		// Antrag in Infrastruktur (2) unter IT (1): die Rolle auf IT ist spezifischer als global
+		$this->assertSame(['role' => 'portfolio_manager', 'scopeType' => 'org_unit', 'scopeId' => 1], $this->service->mandateFor('alice', $this->demand('bob', 2)));
+		$this->assertSame(['role' => 'portfolio_manager', 'scopeType' => 'global', 'scopeId' => null], $this->service->mandateFor('alice', $this->demand('bob', 3)));
+	}
+
+	public function testAdminWithoutRoleDecidesAsNextcloudAdministration(): void {
+		$this->roles->method('findForPrincipal')->willReturn([]);
+		$this->admin = true;
+		$this->assertSame('nextcloud', $this->service->mandateFor('root', $this->demand('bob', 1))['scopeType']);
+	}
+
 	public function testViewerDoesNotReadDemands(): void {
 		$this->roles->method('findForPrincipal')->willReturn([$this->role('viewer', 'global', null)]);
 		$this->assertFalse($this->service->canReadDemand('alice', $this->demand('bob', 1)));

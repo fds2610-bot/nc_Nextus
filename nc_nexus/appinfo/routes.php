@@ -14,6 +14,7 @@ return [
 		['name' => 'demand_api#update', 'url' => '/api/v1/demands/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
 		['name' => 'demand_api#submit', 'url' => '/api/v1/demands/{id}/submit', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 		['name' => 'demand_api#destroy', 'url' => '/api/v1/demands/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+		['name' => 'decision_api#index', 'url' => '/api/v1/decisions', 'verb' => 'GET'],
 		['name' => 'org_api#me', 'url' => '/api/v1/me', 'verb' => 'GET'],
 		['name' => 'org_api#units', 'url' => '/api/v1/org-units', 'verb' => 'GET'],
 		['name' => 'org_api#createUnit', 'url' => '/api/v1/org-units', 'verb' => 'POST'],

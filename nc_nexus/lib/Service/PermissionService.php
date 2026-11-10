@@ -61,6 +61,36 @@ class PermissionService {
 			&& ($this->isAdmin($userId) || $this->hasRole($userId, self::MANAGE_ORG, $demand->getOrgUnitId()));
 	}
 
+	/**
+	 * Mandat, auf dessen Grundlage das Konto über den Antrag entscheidet: die spezifischste
+	 * PMO-Rolle (Org-Einheit vor global), sonst die Nextcloud-Administration.
+	 *
+	 * @return array{role: string, scopeType: string, scopeId: int|null}
+	 */
+	public function mandateFor(string $userId, Demand $demand): array {
+		$chain = $demand->getOrgUnitId() === null ? [] : $this->ancestorsInclusive($demand->getOrgUnitId());
+		$best = null;
+		$bestRank = PHP_INT_MAX;
+		foreach ($this->assignmentsOf($userId) as $a) {
+			if (!in_array($a->getRole(), self::MANAGE_ORG, true)) {
+				continue;
+			}
+			$rank = match ($a->getScopeType()) {
+				'org_unit' => ($i = array_search($a->getScopeId(), $chain, true)) === false ? null : $i,
+				'global' => PHP_INT_MAX - 1,
+				default => null,
+			};
+			if ($rank !== null && $rank < $bestRank) {
+				$best = $a;
+				$bestRank = $rank;
+			}
+		}
+		if ($best !== null) {
+			return ['role' => $best->getRole(), 'scopeType' => $best->getScopeType(), 'scopeId' => $best->getScopeId()];
+		}
+		return ['role' => 'admin', 'scopeType' => 'nextcloud', 'scopeId' => null];
+	}
+
 	/** Hat das Konto irgendwo eine PMO-Rolle (Arbeitsvorrat in der Navigation)? */
 	public function isTriager(string $userId): bool {
 		if ($this->isAdmin($userId)) {

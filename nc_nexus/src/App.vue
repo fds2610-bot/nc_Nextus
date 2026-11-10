@@ -35,6 +35,15 @@
 					</template>
 				</NcAppNavigationItem>
 
+				<NcAppNavigationItem :name="t('nc_nexus', 'Decision register')"
+					:active="view === 'decisions'"
+					data-test="nav-decisions"
+					@click="view = 'decisions'">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiScaleBalance" />
+					</template>
+				</NcAppNavigationItem>
+
 				<template v-if="me.canTriage">
 					<NcAppNavigationCaption :name="t('nc_nexus', 'Triage')" />
 					<NcAppNavigationItem :name="t('nc_nexus', 'To triage')"
@@ -119,7 +128,11 @@
 		</NcAppNavigation>
 
 		<NcAppContent>
-			<OrgView v-if="view === 'org'"
+			<DecisionRegister v-if="view === 'decisions'"
+				:org-units="orgUnits"
+				:refresh-key="refresh"
+				@open="openEditor" />
+			<OrgView v-else-if="view === 'org'"
 				:units="orgUnits"
 				:assignments="assignments"
 				@changed="loadOrg" />
@@ -138,13 +151,13 @@
 				:org-units="orgUnits"
 				:demands="demands"
 				@close="editorOpen = false"
-				@changed="load" />
+				@changed="onChanged" />
 		</NcAppContent>
 	</NcContent>
 </template>
 
 <script>
-import { mdiAccountQuestion, mdiCalendarClock, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiSend } from '@mdi/js'
+import { mdiAccountQuestion, mdiCalendarClock, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -161,6 +174,7 @@ import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 import DemandEditor from './components/DemandEditor.vue'
 import DemandList from './views/DemandList.vue'
+import DecisionRegister from './views/DecisionRegister.vue'
 import OrgView from './views/OrgView.vue'
 import { errorMessage, getMe, listDemands, listOrgUnits, listRoleAssignments } from './api.js'
 import { STATUSES, statusLabel, typeColor, typeLabel } from './labels.js'
@@ -181,10 +195,11 @@ export default {
 		NcCounterBubble,
 		NcIconSvgWrapper,
 		NcTextField,
+		DecisionRegister,
 		OrgView,
 	},
 	setup() {
-		return { mdiCalendarClock, mdiGavel, mdiMagnifyScan, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiCalendarClock, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
@@ -196,6 +211,7 @@ export default {
 			filter: { kind: 'all', value: null },
 			types: loadState('nc_nexus', 'demand_types', []),
 			view: 'demands',
+			refresh: 0,
 			me: { canManageOrg: false, canTriage: false, roles: [] },
 			orgUnits: [],
 			assignments: [],
@@ -294,6 +310,10 @@ export default {
 		openOrg() {
 			this.view = 'org'
 			this.loadOrg()
+		},
+		onChanged() {
+			this.load()
+			this.refresh++
 		},
 		openEditor(id) {
 			this.editorId = id

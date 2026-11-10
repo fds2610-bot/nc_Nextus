@@ -2,6 +2,7 @@
 	<NxDialog :title="t('nc_nexus', 'Complete analysis: {title}', { title: demand.title })"
 		:subtitle="t('nc_nexus', 'The result is added to the comments; the portfolio office then triages the demand again.')"
 		data-test="analysis-dialog"
+		@ready="$emit('ready', $event)"
 		@close="$emit('close')">
 		<label class="nx-field" data-test="field-analysis-result">
 			<span>{{ t('nc_nexus', 'Result of the analysis') }} *</span>
@@ -36,7 +37,7 @@ export default {
 	props: {
 		demand: { type: Object, required: true },
 	},
-	emits: ['close', 'done'],
+	emits: ['close', 'done', 'ready'],
 	setup() {
 		return { t }
 	},

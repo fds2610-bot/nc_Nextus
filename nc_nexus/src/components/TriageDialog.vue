@@ -2,8 +2,12 @@
 	<NxDialog :title="t('nc_nexus', 'Triage: {title}', { title: demand.title })"
 		:subtitle="demand.key + ' · ' + t('nc_nexus', 'by {user}', { user: demand.requestorId })"
 		data-test="triage-dialog"
+		@ready="$emit('ready', $event)"
 		@close="$emit('close')">
 		<form @submit.prevent="save">
+			<p v-if="override" class="triage__override" data-test="override-notice">
+				{{ t('nc_nexus', 'This decision is outside the regular step (e.g. resubmission brought forward, analysis not awaited, decision changed). Please give a reason; the new decision replaces the previous one in the register.') }}
+			</p>
 			<fieldset class="triage__codes">
 				<legend class="nx-hidden-visually">
 					{{ t('nc_nexus', 'Decision') }}
@@ -84,7 +88,7 @@
 				</template>
 
 				<label v-else class="nx-field" data-test="field-reason">
-					<span>{{ t('nc_nexus', 'Reason') }}{{ code === 'rejected' ? ' *' : '' }}</span>
+					<span>{{ t('nc_nexus', 'Reason') }}{{ reasonRequired ? ' *' : '' }}</span>
 					<textarea v-model="form.reason"
 						class="nx-input"
 						:placeholder="code === 'rejected' ? t('nc_nexus', 'Why is the demand not accepted?') : ''" />
@@ -121,8 +125,10 @@ export default {
 	props: {
 		demand: { type: Object, required: true },
 		demands: { type: Array, default: () => [] },
+		/** außerhalb des regulären Schritts: Begründung für jeden Code Pflicht */
+		override: { type: Boolean, default: false },
 	},
-	emits: ['close', 'decided'],
+	emits: ['close', 'decided', 'ready'],
 	setup() {
 		return { t, codeHint, codeLabel, today: today(), classes: loadState('nc_nexus', 'project_classes', []) }
 	},
@@ -139,7 +145,10 @@ export default {
 	},
 	computed: {
 		options() {
-			return [...TRIAGE_CODES, 'query']
+			return this.demand.can?.query ? [...TRIAGE_CODES, 'query'] : TRIAGE_CODES
+		},
+		reasonRequired() {
+			return this.override || this.code === 'rejected'
 		},
 		dirty() {
 			return this.code !== null
@@ -154,6 +163,9 @@ export default {
 			return [...candidates].sort((a, b) => rank(a) - rank(b))
 		},
 		complete() {
+			if (this.code !== 'query' && this.reasonRequired && !this.form.reason.trim()) {
+				return false
+			}
 			switch (this.code) {
 			case 'accepted': return true
 			case 'further_analysis': return !!this.owner && !!this.form.analysisDue
@@ -230,6 +242,13 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.triage__override {
+	margin: 0 0 12px;
+	padding: 8px 12px;
+	border-radius: var(--border-radius-large, 10px);
+	background: rgba(var(--color-warning-rgb), 0.12);
+}
+
 .triage__codes {
 	display: grid;
 	gap: 6px;
