@@ -6,6 +6,7 @@ namespace OCA\Nexus\Controller;
 
 use OCA\Nexus\AppInfo\Application;
 use OCA\Nexus\Service\DemandService;
+use OCA\Nexus\Service\TriageService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -32,6 +33,7 @@ class PageController extends Controller {
 	#[OpenAPI(OpenAPI::SCOPE_IGNORE)]
 	public function index(): TemplateResponse {
 		$this->initialState->provideInitialState('demand_types', DemandService::TYPES);
+		$this->initialState->provideInitialState('project_classes', TriageService::CLASSES);
 		Util::addTranslations(Application::APP_ID);
 		Util::addScript(Application::APP_ID, Application::APP_ID . '-main');
 		return new TemplateResponse(Application::APP_ID, 'main');

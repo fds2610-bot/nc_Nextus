@@ -44,6 +44,7 @@ class OrgApiController extends OCSController {
 		return new DataResponse([
 			'userId' => $uid,
 			'canManageOrg' => $this->permissions->canManageOrg($uid),
+			'canTriage' => $this->permissions->isTriager($uid),
 			'roles' => array_map(static fn ($a) => $a->jsonSerialize(), $this->permissions->assignmentsOf($uid)),
 		]);
 	}

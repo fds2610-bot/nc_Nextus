@@ -30,7 +30,7 @@
 			</div>
 		</div>
 		<div class="demand-row__status">
-			<span class="nx-chip" :class="'nx-chip--' + demand.status">{{ statusLabel(demand.status) }}</span>
+			<span class="nx-chip" :class="'nx-chip--' + statusChip(demand.status)">{{ statusLabel(demand.status) }}</span>
 		</div>
 		<div class="demand-row__date">
 			<span class="demand-row__date-label">{{ demand.submittedAt ? t('nc_nexus', 'Submitted on') : t('nc_nexus', 'Created on') }}</span>
@@ -44,7 +44,7 @@
 					</template>
 					{{ canEdit ? t('nc_nexus', 'Edit') : t('nc_nexus', 'Open') }}
 				</NcActionButton>
-				<NcActionButton v-if="canEdit" close-after-click @click="remove">
+				<NcActionButton v-if="canDelete" close-after-click @click="remove">
 					<template #icon>
 						<NcIconSvgWrapper :path="mdiDelete" />
 					</template>
@@ -57,7 +57,6 @@
 
 <script>
 import { mdiDelete, mdiEye, mdiPencil } from '@mdi/js'
-import { getCurrentUser } from '@nextcloud/auth'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import NcActionButton from '@nextcloud/vue/components/NcActionButton'
@@ -65,7 +64,7 @@ import NcActions from '@nextcloud/vue/components/NcActions'
 import NcAvatar from '@nextcloud/vue/components/NcAvatar'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import { deleteDemand, errorMessage } from '../api.js'
-import { formatDay, statusLabel, typeColor, typeLabel } from '../labels.js'
+import { formatDay, statusChip, statusLabel, typeColor, typeLabel } from '../labels.js'
 
 export default {
 	name: 'DemandListItem',
@@ -76,14 +75,17 @@ export default {
 	},
 	emits: ['open', 'changed'],
 	setup() {
-		return { mdiDelete, mdiEye, mdiPencil, t, formatDay, statusLabel, typeColor, typeLabel }
+		return { mdiDelete, mdiEye, mdiPencil, t, formatDay, statusChip, statusLabel, typeColor, typeLabel }
 	},
 	computed: {
 		orgUnitName() {
 			return this.orgUnits.find(u => u.id === this.demand.orgUnitId)?.name ?? ''
 		},
 		canEdit() {
-			return this.demand.status === 'draft' && this.demand.requestorId === getCurrentUser()?.uid
+			return !!this.demand.can?.edit
+		},
+		canDelete() {
+			return !!this.demand.can?.delete
 		},
 	},
 	methods: {

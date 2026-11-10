@@ -30,6 +30,10 @@ class DemandService {
 
 	public const STATUS_DRAFT = 'draft';
 	public const STATUS_SUBMITTED = 'submitted';
+	/** Rückfrage des PMO: Antragsteller ergänzt und reicht erneut ein */
+	public const STATUS_QUERY = 'query';
+	/** Status, in denen der Antragsteller den Antrag noch bearbeiten darf */
+	public const EDITABLE_STATUSES = [self::STATUS_DRAFT, self::STATUS_QUERY];
 
 	private const TITLE_MAX = 255;
 	private const KEY_ATTEMPTS = 5;
@@ -150,13 +154,17 @@ class DemandService {
 			throw new ValidationException('A problem statement is required before submitting');
 		}
 		$now = $this->time->getTime();
+		$from = $demand->getStatus();
 		$demand->setStatus(self::STATUS_SUBMITTED);
-		$demand->setSubmittedAt($now);
+		// Erste Einreichung bleibt Basis der Durchlaufzeit; nach einer Rückfrage nur erneut eingereicht
+		if ($demand->getSubmittedAt() === null) {
+			$demand->setSubmittedAt($now);
+		}
 		$demand->setUpdatedAt($now);
 		$this->db->beginTransaction();
 		try {
 			$demand = $this->mapper->update($demand);
-			$this->audit->log(self::ENTITY, $id, 'status_change', $userId, ['status' => [self::STATUS_DRAFT, self::STATUS_SUBMITTED]]);
+			$this->audit->log(self::ENTITY, $id, 'status_change', $userId, ['status' => [$from, self::STATUS_SUBMITTED]]);
 			$this->db->commit();
 		} catch (\Throwable $e) {
 			$this->db->rollBack();
@@ -172,6 +180,9 @@ class DemandService {
 	 */
 	public function delete(string $userId, int $id): void {
 		$demand = $this->editable($userId, $id);
+		if ($demand->getStatus() !== self::STATUS_DRAFT) {
+			throw new ForbiddenException('Only drafts can be deleted');
+		}
 		$this->db->beginTransaction();
 		try {
 			$this->audit->log(self::ENTITY, $id, 'delete', $userId, array_map(static fn ($v) => [$v, null], $this->snapshot($demand)));
@@ -198,7 +209,7 @@ class DemandService {
 		if ($demand->getRequestorId() !== $userId) {
 			throw new ForbiddenException('Only the requestor may change this demand');
 		}
-		if ($demand->getStatus() !== self::STATUS_DRAFT) {
+		if (!in_array($demand->getStatus(), self::EDITABLE_STATUSES, true)) {
 			throw new ForbiddenException('Only drafts can be changed');
 		}
 		return $demand;

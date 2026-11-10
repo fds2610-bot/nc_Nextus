@@ -35,15 +35,41 @@
 					</template>
 				</NcAppNavigationItem>
 
+				<template v-if="me.canTriage">
+					<NcAppNavigationCaption :name="t('nc_nexus', 'Triage')" />
+					<NcAppNavigationItem :name="t('nc_nexus', 'To triage')"
+						:active="view === 'demands' && filter.kind === 'queue' && filter.value === 'triage'"
+						data-test="nav-queue-triage"
+						@click="setFilter('queue', 'triage')">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiGavel" />
+						</template>
+						<template #counter>
+							<NcCounterBubble v-if="queue('triage').length" :count="queue('triage').length" type="highlighted" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem :name="t('nc_nexus', 'Resubmission due')"
+						:active="view === 'demands' && filter.kind === 'queue' && filter.value === 'resubmission'"
+						data-test="nav-queue-resubmission"
+						@click="setFilter('queue', 'resubmission')">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiCalendarClock" />
+						</template>
+						<template #counter>
+							<NcCounterBubble v-if="queue('resubmission').length" :count="queue('resubmission').length" />
+						</template>
+					</NcAppNavigationItem>
+				</template>
+
 				<NcAppNavigationCaption :name="t('nc_nexus', 'Status')" />
-				<NcAppNavigationItem v-for="status in statuses"
+				<NcAppNavigationItem v-for="status in shownStatuses"
 					:key="status"
 					:name="statusLabel(status)"
 					:active="view === 'demands' && filter.kind === 'status' && filter.value === status"
 					:data-test="'nav-status-' + status"
 					@click="setFilter('status', status)">
 					<template #icon>
-						<NcIconSvgWrapper :path="status === 'draft' ? mdiFileDocumentEditOutline : mdiSend" />
+						<NcIconSvgWrapper :path="statusIcon(status)" />
 					</template>
 					<template #counter>
 						<NcCounterBubble v-if="countBy('status', status)" :count="countBy('status', status)" />
@@ -97,6 +123,7 @@
 			<DemandEditor v-if="editorOpen"
 				:demand-id="editorId"
 				:org-units="orgUnits"
+				:demands="demands"
 				@close="editorOpen = false"
 				@changed="load" />
 		</NcAppContent>
@@ -104,7 +131,7 @@
 </template>
 
 <script>
-import { mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend } from '@mdi/js'
+import { mdiAccountQuestion, mdiCalendarClock, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiSend } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -123,7 +150,7 @@ import DemandEditor from './components/DemandEditor.vue'
 import DemandList from './views/DemandList.vue'
 import OrgView from './views/OrgView.vue'
 import { errorMessage, getMe, listDemands, listOrgUnits, listRoleAssignments } from './api.js'
-import { statusLabel, typeColor, typeLabel } from './labels.js'
+import { STATUSES, statusLabel, today, typeColor, typeLabel } from './labels.js'
 
 export default {
 	name: 'App',
@@ -144,7 +171,7 @@ export default {
 		OrgView,
 	},
 	setup() {
-		return { mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiCalendarClock, mdiGavel, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
@@ -154,10 +181,9 @@ export default {
 			editorId: null,
 			search: '',
 			filter: { kind: 'all', value: null },
-			statuses: ['draft', 'submitted'],
 			types: loadState('nc_nexus', 'demand_types', []),
 			view: 'demands',
-			me: { canManageOrg: false, roles: [] },
+			me: { canManageOrg: false, canTriage: false, roles: [] },
 			orgUnits: [],
 			assignments: [],
 		}
@@ -172,9 +198,16 @@ export default {
 				if (this.filter.kind === 'type' && demand.demandType !== this.filter.value) {
 					return false
 				}
+				if (this.filter.kind === 'queue' && !this.queue(this.filter.value).includes(demand)) {
+					return false
+				}
 				return !query || [demand.key, demand.title, demand.problemStatement, demand.requestorId]
 					.some(text => (text || '').toLowerCase().includes(query))
 			})
+		},
+		// Entwurf und Eingereicht immer, weitere Status nur, wenn es Anträge darin gibt
+		shownStatuses() {
+			return STATUSES.filter(s => ['draft', 'submitted'].includes(s) || this.countBy('status', s) > 0)
 		},
 		listTitle() {
 			if (this.filter.kind === 'status') {
@@ -182,6 +215,9 @@ export default {
 			}
 			if (this.filter.kind === 'type') {
 				return typeLabel(this.filter.value)
+			}
+			if (this.filter.kind === 'queue') {
+				return this.filter.value === 'triage' ? t('nc_nexus', 'To triage') : t('nc_nexus', 'Resubmission due')
 			}
 			return t('nc_nexus', 'Demands')
 		},
@@ -199,6 +235,25 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+		queue(name) {
+			if (name === 'triage') {
+				return this.demands.filter(d => d.can?.triage && ['submitted', 'further_analysis'].includes(d.status))
+			}
+			const day = today()
+			return this.demands.filter(d => d.can?.triage && d.status === 'deferred' && d.resubmissionDate && d.resubmissionDate <= day)
+		},
+		statusIcon(status) {
+			return {
+				draft: mdiFileDocumentEditOutline,
+				submitted: mdiSend,
+				query: mdiAccountQuestion,
+				further_analysis: mdiMagnifyScan,
+				deferred: mdiPauseCircleOutline,
+				in_qualification: mdiCheckCircleOutline,
+				rejected: mdiCloseCircleOutline,
+				duplicate: mdiContentDuplicate,
+			}[status] || mdiSend
 		},
 		countBy(field, value) {
 			return this.demands.filter(demand => demand[field] === value).length

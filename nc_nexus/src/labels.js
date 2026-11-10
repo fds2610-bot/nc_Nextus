@@ -8,10 +8,61 @@ export const typeLabel = (type) => ({
 	innovation: t('nc_nexus', 'Innovation'),
 })[type] || type
 
+/** Status in der Reihenfolge des Statusautomaten (Kapitel 02, §4.1) */
+export const STATUSES = ['draft', 'submitted', 'query', 'further_analysis', 'deferred', 'in_qualification', 'rejected', 'duplicate']
+
 export const statusLabel = (status) => ({
 	draft: t('nc_nexus', 'Draft'),
 	submitted: t('nc_nexus', 'Submitted'),
+	query: t('nc_nexus', 'Query'),
+	further_analysis: t('nc_nexus', 'Further analysis'),
+	deferred: t('nc_nexus', 'Deferred'),
+	in_qualification: t('nc_nexus', 'In qualification'),
+	rejected: t('nc_nexus', 'Rejected'),
+	duplicate: t('nc_nexus', 'Duplicate'),
 })[status] || status
+
+// Farbklasse des Status-Chips (nx-chip--…)
+export const statusChip = (status) => ({
+	draft: 'draft',
+	submitted: 'submitted',
+	query: 'on-hold',
+	further_analysis: 'on-hold',
+	deferred: 'on-hold',
+	in_qualification: 'accepted',
+	rejected: 'rejected',
+	duplicate: 'draft',
+})[status] || 'draft'
+
+/** Entscheidungscodes der Triage (Kapitel 02, §2) */
+export const TRIAGE_CODES = ['accepted', 'further_analysis', 'deferred', 'rejected', 'duplicate']
+
+export const codeLabel = (code) => ({
+	accepted: t('nc_nexus', 'Accept'),
+	further_analysis: t('nc_nexus', 'Further analysis'),
+	deferred: t('nc_nexus', 'Defer'),
+	rejected: t('nc_nexus', 'Reject'),
+	duplicate: t('nc_nexus', 'Duplicate'),
+	query: t('nc_nexus', 'Query to requestor'),
+})[code] || code
+
+export const codeHint = (code) => ({
+	accepted: t('nc_nexus', 'Continue with qualification and business case.'),
+	further_analysis: t('nc_nexus', 'No decision possible without more information; assign an analysis with a due date.'),
+	deferred: t('nc_nexus', 'Deliberately postponed; it comes back on the resubmission date.'),
+	rejected: t('nc_nexus', 'Bindingly not accepted; the reason stays visible in the register.'),
+	duplicate: t('nc_nexus', 'Merged into another demand that leads from now on.'),
+	query: t('nc_nexus', 'Information is missing; the requestor completes the demand and submits it again.'),
+})[code] || ''
+
+/** Heute als JJJJ-MM-TT (lokale Zeit) */
+export const today = () => {
+	const d = new Date()
+	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// Datum JJJJ-MM-TT in der Sprache von Nextcloud
+export const formatIsoDay = (iso) => iso ? new Date(iso + 'T12:00:00').toLocaleDateString(getCanonicalLocale(), { dateStyle: 'medium' }) : ''
 
 export const fieldLabel = (field) => ({
 	title: t('nc_nexus', 'Title'),
@@ -20,6 +71,15 @@ export const fieldLabel = (field) => ({
 	problemStatement: t('nc_nexus', 'Problem statement'),
 	expectedBenefit: t('nc_nexus', 'Expected benefit'),
 	orgUnitId: t('nc_nexus', 'Organizational unit'),
+	triageCode: t('nc_nexus', 'Decision'),
+	triageReason: t('nc_nexus', 'Reason'),
+	resubmissionDate: t('nc_nexus', 'Resubmission'),
+	analysisOwner: t('nc_nexus', 'Analysis by'),
+	analysisDue: t('nc_nexus', 'Analysis due'),
+	duplicateOfId: t('nc_nexus', 'Duplicate of'),
+	projectClass: t('nc_nexus', 'Project class'),
+	queryText: t('nc_nexus', 'Query'),
+	queryDue: t('nc_nexus', 'Answer due'),
 	status: t('nc_nexus', 'Status'),
 })[field] || field
 
@@ -27,6 +87,7 @@ export const actionLabel = (action) => ({
 	create: t('nc_nexus', 'Created'),
 	update: t('nc_nexus', 'Changed'),
 	status_change: t('nc_nexus', 'Status changed'),
+	decision: t('nc_nexus', 'Triage decision'),
 	delete: t('nc_nexus', 'Deleted'),
 })[action] || action
 

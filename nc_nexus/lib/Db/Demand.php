@@ -32,6 +32,28 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedAt(int $createdAt)
  * @method int getUpdatedAt()
  * @method void setUpdatedAt(int $updatedAt)
+ * @method string|null getProjectClass()
+ * @method void setProjectClass(?string $projectClass)
+ * @method string|null getTriageCode()
+ * @method void setTriageCode(?string $triageCode)
+ * @method string|null getTriageReason()
+ * @method void setTriageReason(?string $triageReason)
+ * @method string|null getResubmissionDate()
+ * @method void setResubmissionDate(?string $resubmissionDate)
+ * @method int|null getDuplicateOfId()
+ * @method void setDuplicateOfId(?int $duplicateOfId)
+ * @method string|null getAnalysisOwner()
+ * @method void setAnalysisOwner(?string $analysisOwner)
+ * @method string|null getAnalysisDue()
+ * @method void setAnalysisDue(?string $analysisDue)
+ * @method string|null getQueryText()
+ * @method void setQueryText(?string $queryText)
+ * @method string|null getQueryDue()
+ * @method void setQueryDue(?string $queryDue)
+ * @method string|null getTriagedBy()
+ * @method void setTriagedBy(?string $triagedBy)
+ * @method int|null getTriagedAt()
+ * @method void setTriagedAt(?int $triagedAt)
  * @method int|null getOrgUnitId()
  * @method void setOrgUnitId(?int $orgUnitId)
  * @method int|null getSubmittedAt()
@@ -55,12 +77,25 @@ class Demand extends Entity implements JsonSerializable {
 	protected int $updatedAt = 0;
 	protected ?int $submittedAt = null;
 	protected ?int $orgUnitId = null;
+	protected ?string $projectClass = null;
+	protected ?string $triageCode = null;
+	protected ?string $triageReason = null;
+	protected ?string $resubmissionDate = null;
+	protected ?int $duplicateOfId = null;
+	protected ?string $analysisOwner = null;
+	protected ?string $analysisDue = null;
+	protected ?string $queryText = null;
+	protected ?string $queryDue = null;
+	protected ?string $triagedBy = null;
+	protected ?int $triagedAt = null;
 
 	public function __construct() {
 		$this->addType('createdAt', 'integer');
 		$this->addType('updatedAt', 'integer');
 		$this->addType('submittedAt', 'integer');
 		$this->addType('orgUnitId', 'integer');
+		$this->addType('duplicateOfId', 'integer');
+		$this->addType('triagedAt', 'integer');
 	}
 
 	/** @return array<string, mixed> */
@@ -74,6 +109,17 @@ class Demand extends Entity implements JsonSerializable {
 			'expectedBenefit' => $this->expectedBenefit,
 			'demandType' => $this->demandType,
 			'orgUnitId' => $this->orgUnitId,
+			'projectClass' => $this->projectClass,
+			'triageCode' => $this->triageCode,
+			'triageReason' => $this->triageReason,
+			'resubmissionDate' => $this->resubmissionDate,
+			'duplicateOfId' => $this->duplicateOfId,
+			'analysisOwner' => $this->analysisOwner,
+			'analysisDue' => $this->analysisDue,
+			'queryText' => $this->queryText,
+			'queryDue' => $this->queryDue,
+			'triagedBy' => $this->triagedBy,
+			'triagedAt' => $this->triagedAt,
 			'status' => $this->status,
 			'intakeChannel' => $this->intakeChannel,
 			'requestorId' => $this->requestorId,

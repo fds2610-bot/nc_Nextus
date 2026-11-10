@@ -52,6 +52,28 @@ class PermissionService {
 		return $this->isAdmin($userId) || $this->hasRole($userId, self::MANAGE_ORG, null);
 	}
 
+	/**
+	 * Triage (G0/G1) entscheidet das PMO des Bereichs (RACI 01 §4.1). Den eigenen Antrag triagiert
+	 * niemand selbst (Funktionstrennung, 01 §8) – auch kein Admin.
+	 */
+	public function canTriage(string $userId, Demand $demand): bool {
+		return $demand->getRequestorId() !== $userId
+			&& ($this->isAdmin($userId) || $this->hasRole($userId, self::MANAGE_ORG, $demand->getOrgUnitId()));
+	}
+
+	/** Hat das Konto irgendwo eine PMO-Rolle (Arbeitsvorrat in der Navigation)? */
+	public function isTriager(string $userId): bool {
+		if ($this->isAdmin($userId)) {
+			return true;
+		}
+		foreach ($this->assignmentsOf($userId) as $assignment) {
+			if (in_array($assignment->getRole(), self::MANAGE_ORG, true)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public function canReadDemand(string $userId, Demand $demand): bool {
 		return $demand->getRequestorId() === $userId
 			|| $this->isAdmin($userId)

@@ -7,4 +7,4 @@ als Nextcloud-App.
 - **Entwicklung:** [README-dev.md](README-dev.md)
 - **Konzept:** [Planung/README.md](Planung/README.md)
 
-Stand: frühe Entwicklungsversion 0.2.1 – Antragseingang (Entwurf, Einreichen), Organisation mit kontextgebundenen Rollen und Sichtbarkeit nach Rolle, Audit-Log.
+Stand: frühe Entwicklungsversion 0.3.0 – Antragseingang (Entwurf, Einreichen), Organisation mit kontextgebundenen Rollen und Sichtbarkeit nach Rolle, Triage mit Entscheidungscodes und Rückfrage, Audit-Log.

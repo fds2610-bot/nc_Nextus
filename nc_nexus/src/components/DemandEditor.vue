@@ -10,7 +10,7 @@
 		<div class="editor"
 			:class="{ 'editor--readonly': readonly }"
 			data-test="demand-editor"
-			@keydown.esc="$emit('close')">
+			@keydown.esc="onEscape">
 			<h2 id="nx-demand-editor-title" class="nx-hidden-visually">
 				{{ heading }}
 			</h2>
@@ -31,7 +31,7 @@
 					</div>
 					<span v-if="demand"
 						class="nx-chip"
-						:class="'nx-chip--' + demand.status"
+						:class="'nx-chip--' + statusChip(demand.status)"
 						data-test="demand-status">{{ statusLabel(demand.status) }}</span>
 				</div>
 				<div v-if="demand" class="nx-summary__facts">
@@ -55,6 +55,10 @@
 						{{ t('nc_nexus', 'Channel') }}
 						<b>{{ channelLabel(demand.intakeChannel) }}</b>
 					</div>
+					<div v-if="demand.projectClass" class="nx-fact">
+						{{ t('nc_nexus', 'Project class') }}
+						<b>{{ demand.projectClass }}</b>
+					</div>
 				</div>
 			</header>
 
@@ -63,6 +67,48 @@
 					<NcLoadingIcon :size="32" />
 				</div>
 				<form v-else @submit.prevent="save">
+					<div v-if="demand && demand.status === 'query'" class="editor__notice" data-test="query-notice">
+						<strong>{{ t('nc_nexus', 'Query from the portfolio office') }}</strong>
+						<span v-if="demand.queryDue"> · {{ t('nc_nexus', 'answer by {date}', { date: formatIsoDay(demand.queryDue) }) }}</span>
+						<p>{{ demand.queryText }}</p>
+						<p v-if="demand.can.edit" class="nx-hint">
+							{{ t('nc_nexus', 'Complete the demand and submit it again.') }}
+						</p>
+					</div>
+
+					<div v-if="demand && demand.triageCode" class="nx-section" data-test="triage-result">
+						<h3>{{ t('nc_nexus', 'Triage') }}</h3>
+						<div class="nx-summary__facts editor__triage">
+							<div class="nx-fact">
+								{{ t('nc_nexus', 'Decision') }}
+								<b>{{ statusLabel(demand.status) }}</b>
+							</div>
+							<div v-if="demand.resubmissionDate" class="nx-fact">
+								{{ t('nc_nexus', 'Resubmission') }}
+								<b>{{ formatIsoDay(demand.resubmissionDate) }}</b>
+							</div>
+							<div v-if="demand.analysisOwner" class="nx-fact">
+								{{ t('nc_nexus', 'Analysis by') }}
+								<b>{{ demand.analysisOwner }}</b>
+							</div>
+							<div v-if="demand.analysisDue" class="nx-fact">
+								{{ t('nc_nexus', 'Analysis due') }}
+								<b>{{ formatIsoDay(demand.analysisDue) }}</b>
+							</div>
+							<div v-if="demand.duplicateOfId" class="nx-fact">
+								{{ t('nc_nexus', 'Duplicate of') }}
+								<b>{{ duplicateLabel }}</b>
+							</div>
+							<div v-if="demand.triagedBy" class="nx-fact">
+								{{ t('nc_nexus', 'Decided by') }}
+								<b>{{ demand.triagedBy }} · {{ formatDay(demand.triagedAt) }}</b>
+							</div>
+						</div>
+						<p v-if="demand.triageReason" class="editor__reason">
+							{{ demand.triageReason }}
+						</p>
+					</div>
+
 					<div class="nx-section">
 						<h3>{{ t('nc_nexus', 'Basic data') }}</h3>
 						<div class="nx-field-row">
@@ -127,12 +173,17 @@
 						<ul class="editor__history">
 							<li v-for="entry in history" :key="entry.id">
 								<span class="editor__history-when">{{ formatDate(entry.createdAt) }}</span>
-								<span>
+								<span :data-test="'history-' + entry.action">
 									<strong>{{ actionLabel(entry.action) }}</strong>
-									· {{ entry.userId }}
-									<span v-if="entry.action !== 'create' && entry.fieldChanges" class="editor__changes">
-										· {{ Object.keys(entry.fieldChanges).map(fieldLabel).join(', ') }}
+									<!-- Statuswechsel immer mit „alt → neu“ und dem Konto, das ihn ausgelöst hat -->
+									<span v-if="statusChange(entry)" class="editor__transition">
+										{{ statusLabel(statusChange(entry)[0]) }} → {{ statusLabel(statusChange(entry)[1]) }}
 									</span>
+									<span class="editor__by">{{ t('nc_nexus', 'by {user}', { user: entry.userId }) }}</span>
+									<span v-if="changedFields(entry).length" class="editor__changes">
+										· {{ changedFields(entry).map(fieldLabel).join(', ') }}
+									</span>
+									<span v-if="entry.comment" class="editor__comment">„{{ entry.comment }}“</span>
 								</span>
 							</li>
 						</ul>
@@ -156,6 +207,13 @@
 					@click="$emit('close')">
 					{{ dirty ? t('nc_nexus', 'Cancel') : t('nc_nexus', 'Close') }}
 				</NcButton>
+				<NcButton v-if="demand && demand.can.triage"
+					variant="primary"
+					data-test="open-triage"
+					:disabled="busy"
+					@click="triageOpen = true">
+					{{ t('nc_nexus', 'Triage') }}
+				</NcButton>
 				<template v-if="!readonly">
 					<NcButton variant="secondary"
 						:disabled="busy || !valid"
@@ -167,16 +225,20 @@
 						:disabled="busy || !valid || !form.problemStatement.trim()"
 						data-test="submit-demand"
 						@click="submit">
-						{{ t('nc_nexus', 'Submit') }}
+						{{ demand && demand.status === 'query' ? t('nc_nexus', 'Submit again') : t('nc_nexus', 'Submit') }}
 					</NcButton>
 				</template>
 			</footer>
 		</div>
+		<TriageDialog v-if="triageOpen"
+			:demand="demand"
+			:demands="demands"
+			@close="triageOpen = false"
+			@decided="onDecided" />
 	</NcModal>
 </template>
 
 <script>
-import { getCurrentUser } from '@nextcloud/auth'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -184,20 +246,22 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
 import { createDemand, deleteDemand, demandHistory, errorMessage, getDemand, submitDemand, updateDemand } from '../api.js'
-import { actionLabel, channelLabel, fieldLabel, formatDate, formatDay, indented, orgTree, statusLabel, typeLabel } from '../labels.js'
+import TriageDialog from './TriageDialog.vue'
+import { actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, indented, orgTree, statusChip, statusLabel, typeLabel } from '../labels.js'
 
 const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, problemStatement: '', description: '', expectedBenefit: '' })
 
 export default {
 	name: 'DemandEditor',
-	components: { NcButton, NcLoadingIcon, NcModal },
+	components: { NcButton, NcLoadingIcon, NcModal, TriageDialog },
 	props: {
 		demandId: { type: Number, default: null },
 		orgUnits: { type: Array, default: () => [] },
+		demands: { type: Array, default: () => [] },
 	},
 	emits: ['close', 'changed'],
 	setup() {
-		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, statusLabel, typeLabel }
+		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, statusChip, statusLabel, typeLabel }
 	},
 	data() {
 		return {
@@ -208,6 +272,7 @@ export default {
 			history: [],
 			loading: this.demandId !== null,
 			busy: false,
+			triageOpen: false,
 			types: loadState('nc_nexus', 'demand_types', []),
 		}
 	},
@@ -221,14 +286,15 @@ export default {
 		heading() {
 			return this.demand ? this.demand.title : t('nc_nexus', 'New demand')
 		},
-		own() {
-			return !this.demand || this.demand.requestorId === getCurrentUser()?.uid
-		},
 		readonly() {
-			return !!this.demand && (this.demand.status !== 'draft' || !this.own)
+			return !!this.demand && !this.demand.can.edit
 		},
 		canDelete() {
-			return !!this.demand && !this.readonly
+			return !!this.demand && this.demand.can.delete
+		},
+		duplicateLabel() {
+			const lead = this.demands.find(d => d.id === this.demand?.duplicateOfId)
+			return lead ? `${lead.key} · ${lead.title}` : `#${this.demand?.duplicateOfId}`
 		},
 		dirty() {
 			return !this.readonly && JSON.stringify(this.form) !== this.saved
@@ -265,6 +331,27 @@ export default {
 				expectedBenefit: demand.expectedBenefit ?? '',
 			}
 			this.saved = JSON.stringify(this.form)
+		},
+		// [alt, neu] bei einem Statuswechsel, sonst null
+		statusChange(entry) {
+			const change = entry.fieldChanges?.status
+			return Array.isArray(change) && change[0] !== change[1] ? change : null
+		},
+		// geänderte Felder nur bei Bearbeitungen; Statuswechsel und Entscheidungen zeigen „alt → neu“ und den Kommentar
+		changedFields(entry) {
+			return entry.action === 'update' && entry.fieldChanges ? Object.keys(entry.fieldChanges) : []
+		},
+		onEscape() {
+			// Liegt der Triage-Dialog darüber, schließt Esc nur diesen
+			if (!this.triageOpen) {
+				this.$emit('close')
+			}
+		},
+		async onDecided(demand) {
+			this.setDemand(demand)
+			// zuerst melden: wird der Dialog vor dem Nachladen geschlossen, ginge das Ereignis sonst verloren
+			this.$emit('changed')
+			this.history = await demandHistory(this.id)
 		},
 		async persist() {
 			const demand = this.id === null ? await createDemand(this.form) : await updateDemand(this.id, this.form)
@@ -357,6 +444,42 @@ export default {
 	&__history-when {
 		color: var(--color-text-maxcontrast);
 		font-variant-numeric: tabular-nums;
+	}
+
+	&__notice {
+		margin-top: 16px;
+		padding: 10px 14px;
+		border-radius: var(--border-radius-large, 10px);
+		background: rgba(var(--color-warning-rgb), 0.12);
+
+		p {
+			margin: 4px 0 0;
+			white-space: pre-wrap;
+		}
+	}
+
+	&__triage {
+		margin-top: 0;
+	}
+
+	&__reason {
+		margin: 12px 0 0;
+		white-space: pre-wrap;
+	}
+
+	&__transition {
+		margin-inline-start: 4px;
+	}
+
+	&__by {
+		margin-inline-start: 4px;
+		color: var(--color-text-maxcontrast);
+	}
+
+	&__comment {
+		display: block;
+		color: var(--color-text-maxcontrast);
+		white-space: pre-wrap;
 	}
 
 	&__changes {
