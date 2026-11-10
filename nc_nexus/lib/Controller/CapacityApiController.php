@@ -9,6 +9,7 @@ use OCA\Nexus\Exception\ForbiddenException;
 use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
 use OCA\Nexus\Service\CapacityService;
+use OCA\Nexus\Service\PortfolioService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\DataResponse;
@@ -23,6 +24,7 @@ class CapacityApiController extends OCSController {
 	public function __construct(
 		IRequest $request,
 		private CapacityService $capacity,
+		private PortfolioService $portfolio,
 		private IL10N $l10n,
 		private ?string $userId,
 	) {
@@ -184,6 +186,19 @@ class CapacityApiController extends OCSController {
 	#[NoAdminRequired]
 	public function replaceNeeds(int $id, array $needs = []): DataResponse {
 		return $this->handle(fn () => array_map(static fn ($n) => $n->jsonSerialize(), $this->capacity->replaceNeeds($this->uid(), $id, $needs)));
+	}
+
+	/**
+	 * Portfolioübersicht: Org-Einheiten × Portfoliophasen und Bedarf je Quartal.
+	 *
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: Übersicht
+	 * 403: keine Governance-Rolle
+	 */
+	#[NoAdminRequired]
+	public function portfolio(): DataResponse {
+		return $this->handle(fn () => $this->portfolio->overview($this->uid()));
 	}
 
 	private function uid(): string {

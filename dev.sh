@@ -136,8 +136,17 @@ wait_installed() {
 
 setup_apps() {
 	wait_installed
-	# Neue App-Versionen (Migrationen) aus dem Live-Mount übernehmen; ohne Änderung ein No-op
-	occ upgrade --no-interaction | grep -v "^No upgrade required" || true
+	# Neue App-Versionen (Migrationen) aus dem Live-Mount übernehmen; ohne Änderung ein No-op.
+	# Wiederholen, falls der Container gerade neu startet – sonst bleibt Nextcloud auf der Update-Seite.
+	local try
+	for try in 1 2 3 4 5 6 7 8 9 10; do
+		if occ upgrade --no-interaction </dev/null | grep -v "^No upgrade required"; [ "${PIPESTATUS[0]}" -eq 0 ]; then
+			break
+		fi
+		[ $try -lt 10 ] || die "occ upgrade schlägt fehl – ./dev.sh logs"
+		echo "occ upgrade nicht möglich, neuer Versuch ..."
+		sleep 3
+	done
 	occ app:disable firstrunwizard >/dev/null 2>&1 || true
 	occ config:system:set trusted_domains 1 --value=host.docker.internal >/dev/null
 	occ background:cron >/dev/null || true

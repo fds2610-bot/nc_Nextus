@@ -227,3 +227,26 @@ export const loadLevel = (cell) => {
 	}
 	return cell.demand > 0 ? 'ok' : 'empty'
 }
+
+// Portfoliophasen (Kapitel 02 §4.2); Status → Phase wie im PortfolioService
+export const PHASE_OF = {
+	submitted: 'demand',
+	query: 'demand',
+	further_analysis: 'demand',
+	in_qualification: 'demand',
+	deferred: 'on_hold',
+	rejected: 'closed',
+	duplicate: 'closed',
+}
+
+export const phaseLabel = (phase) => ({
+	demand: t('nc_nexus', 'Demand'),
+	planned: t('nc_nexus', 'Planned'),
+	active: t('nc_nexus', 'Active'),
+	on_hold: t('nc_nexus', 'On hold'),
+	closed: t('nc_nexus', 'Closed'),
+	review: t('nc_nexus', 'Benefit review'),
+})[phase] || phase
+
+// Phasen, die erst mit Projekten (Stufe 2) belegt werden
+export const FUTURE_PHASES = ['planned', 'active', 'review']

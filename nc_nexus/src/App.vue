@@ -45,6 +45,15 @@
 				</NcAppNavigationItem>
 
 				<NcAppNavigationItem v-if="poolInfo.canSee"
+					:name="t('nc_nexus', 'Portfolio')"
+					:active="view === 'portfolio'"
+					data-test="nav-portfolio"
+					@click="view = 'portfolio'">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiViewGridOutline" />
+					</template>
+				</NcAppNavigationItem>
+				<NcAppNavigationItem v-if="poolInfo.canSee"
 					:name="t('nc_nexus', 'Capacity')"
 					:active="view === 'capacity'"
 					data-test="nav-capacity"
@@ -138,7 +147,11 @@
 		</NcAppNavigation>
 
 		<NcAppContent>
-			<CapacityView v-if="view === 'capacity'"
+			<PortfolioView v-if="view === 'portfolio'"
+				:org-units="orgUnits"
+				:refresh-key="refresh"
+				@filter="filterPortfolio" />
+			<CapacityView v-else-if="view === 'capacity'"
 				:org-units="orgUnits"
 				:refresh-key="refresh"
 				@open="openEditor" />
@@ -172,7 +185,7 @@
 </template>
 
 <script>
-import { mdiAccountQuestion, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend } from '@mdi/js'
+import { mdiAccountQuestion, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiViewGridOutline } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -190,10 +203,11 @@ import NcTextField from '@nextcloud/vue/components/NcTextField'
 import DemandEditor from './components/DemandEditor.vue'
 import DemandList from './views/DemandList.vue'
 import CapacityView from './views/CapacityView.vue'
+import PortfolioView from './views/PortfolioView.vue'
 import DecisionRegister from './views/DecisionRegister.vue'
 import OrgView from './views/OrgView.vue'
 import { errorMessage, getMe, listDemands, listOrgUnits, listPools, listRoleAssignments } from './api.js'
-import { STATUSES, statusLabel, typeColor, typeLabel } from './labels.js'
+import { PHASE_OF, phaseLabel, STATUSES, statusLabel, typeColor, typeLabel } from './labels.js'
 
 export default {
 	name: 'App',
@@ -214,9 +228,10 @@ export default {
 		CapacityView,
 		DecisionRegister,
 		OrgView,
+		PortfolioView,
 	},
 	setup() {
-		return { mdiCalendarClock, mdiChartBox, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
@@ -248,6 +263,9 @@ export default {
 				if (this.filter.kind === 'queue' && !this.queue(this.filter.value).includes(demand)) {
 					return false
 				}
+				if (this.filter.kind === 'portfolio' && !this.inPortfolioCell(demand, this.filter.value)) {
+					return false
+				}
 				return !query || [demand.key, demand.title, demand.problemStatement, demand.requestorId]
 					.some(text => (text || '').toLowerCase().includes(query))
 			})
@@ -262,6 +280,9 @@ export default {
 			}
 			if (this.filter.kind === 'type') {
 				return typeLabel(this.filter.value)
+			}
+			if (this.filter.kind === 'portfolio') {
+				return `${this.filter.value.label} · ${phaseLabel(this.filter.value.phase)}`
 			}
 			if (this.filter.kind === 'queue') {
 				return {
@@ -325,6 +346,26 @@ export default {
 		setFilter(kind, value = null) {
 			this.filter = { kind, value }
 			this.view = 'demands'
+		},
+		// Klick in der Portfolioübersicht: Anträge der Einheit (samt Untereinheiten) in der Phase
+		filterPortfolio(value) {
+			this.filter = { kind: 'portfolio', value }
+			this.view = 'demands'
+		},
+		inPortfolioCell(demand, { orgUnitId, phase }) {
+			if (PHASE_OF[demand.status] !== phase) {
+				return false
+			}
+			if (orgUnitId === null) {
+				return demand.orgUnitId === null || !this.orgUnits.some(u => u.id === demand.orgUnitId)
+			}
+			const parents = new Map(this.orgUnits.map(u => [u.id, u.parentId]))
+			for (let u = demand.orgUnitId, guard = 0; u !== null && u !== undefined && guard < 100; u = parents.get(u), guard++) {
+				if (u === orgUnitId) {
+					return true
+				}
+			}
+			return false
 		},
 		openOrg() {
 			this.view = 'org'

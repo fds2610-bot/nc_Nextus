@@ -22,6 +22,7 @@ return [
 		['name' => 'capacity_api#capacity', 'url' => '/api/v1/pools/{id}/capacity', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 		['name' => 'capacity_api#setCapacity', 'url' => '/api/v1/pools/{id}/capacity/{period}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+', 'period' => '\d{4}-\d{2}']],
 		['name' => 'capacity_api#cell', 'url' => '/api/v1/pools/{id}/load/{period}', 'verb' => 'GET', 'requirements' => ['id' => '\d+', 'period' => '\d{4}-\d{2}']],
+		['name' => 'capacity_api#portfolio', 'url' => '/api/v1/portfolio', 'verb' => 'GET'],
 		['name' => 'capacity_api#heatmap', 'url' => '/api/v1/capacity/heatmap', 'verb' => 'GET'],
 		['name' => 'capacity_api#needs', 'url' => '/api/v1/demands/{id}/needs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 		['name' => 'capacity_api#replaceNeeds', 'url' => '/api/v1/demands/{id}/needs', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],

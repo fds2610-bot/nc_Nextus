@@ -69,3 +69,4 @@ export const capacityHeatmap = async (from, months = 12) => data(await axios.get
 export const poolLoad = async (id, period) => data(await axios.get(v1(`/pools/${id}/load/${period}`)))
 export const demandNeeds = async (id) => data(await axios.get(v1(`/demands/${id}/needs`)))
 export const saveDemandNeeds = async (id, needs) => data(await axios.put(v1(`/demands/${id}/needs`), { needs }))
+export const portfolioOverview = async () => data(await axios.get(v1('/portfolio')))
