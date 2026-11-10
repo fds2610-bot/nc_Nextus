@@ -63,7 +63,9 @@
 					<span>{{ t('nc_nexus', 'Leading demand') }} *</span>
 					<select v-model="form.duplicateOfId" class="nx-input">
 						<option :value="null">{{ t('nc_nexus', '– choose –') }}</option>
-						<option v-for="d in duplicateCandidates" :key="d.id" :value="d.id">{{ d.key }} · {{ d.title }}</option>
+						<option v-for="d in duplicateCandidates" :key="d.id" :value="d.id">
+							{{ d.key }} · {{ d.title }}{{ similarIds.includes(d.id) ? ' · ' + t('nc_nexus', 'similar') : '' }}
+						</option>
 					</select>
 				</label>
 
@@ -110,7 +112,7 @@ import { t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NxDialog from './NxDialog.vue'
-import { errorMessage, queryDemand, searchPrincipals, triageDemand } from '../api.js'
+import { errorMessage, queryDemand, searchPrincipals, similarDemands, triageDemand } from '../api.js'
 import { codeHint, codeLabel, today, TRIAGE_CODES } from '../labels.js'
 
 export default {
@@ -131,6 +133,7 @@ export default {
 			code: null,
 			owner: null,
 			ownerOptions: [],
+			similarIds: [],
 			form: { reason: '', projectClass: '', analysisDue: '', resubmissionDate: '', duplicateOfId: null, question: '', due: '' },
 		}
 	},
@@ -141,8 +144,14 @@ export default {
 		dirty() {
 			return this.code !== null
 		},
+		// ähnliche Anträge zuerst (Dublettenvorschlag), danach alle übrigen
 		duplicateCandidates() {
-			return this.demands.filter(d => d.id !== this.demand.id && !['draft', 'duplicate'].includes(d.status))
+			const candidates = this.demands.filter(d => d.id !== this.demand.id && !['draft', 'duplicate'].includes(d.status))
+			const rank = (d) => {
+				const i = this.similarIds.indexOf(d.id)
+				return i === -1 ? Number.MAX_SAFE_INTEGER : i
+			}
+			return [...candidates].sort((a, b) => rank(a) - rank(b))
 		},
 		complete() {
 			switch (this.code) {
@@ -155,6 +164,18 @@ export default {
 			default: return false
 			}
 		},
+	},
+	async mounted() {
+		try {
+			const result = await similarDemands({ title: this.demand.title, problem: this.demand.problemStatement || '', excludeId: this.demand.id })
+			this.similarIds = result.matches.map(m => m.id)
+			// genau ein klarer Treffer: gleich als führenden Antrag vorbelegen
+			if (this.similarIds.length === 1) {
+				this.form.duplicateOfId = this.similarIds[0]
+			}
+		} catch (e) {
+			// ohne Vorschlag bleibt die Auswahl unsortiert
+		}
 	},
 	methods: {
 		classLabel(c) {

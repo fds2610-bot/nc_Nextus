@@ -11,6 +11,7 @@ use OCA\Nexus\Exception\ValidationException;
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Service\DemandService;
 use OCA\Nexus\Service\PermissionService;
+use OCA\Nexus\Service\SimilarityService;
 use OCA\Nexus\Service\TriageService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -28,6 +29,7 @@ class DemandApiController extends OCSController {
 		private DemandService $service,
 		private TriageService $triage,
 		private PermissionService $permissions,
+		private SimilarityService $similarity,
 		private IL10N $l10n,
 		private ?string $userId,
 	) {
@@ -186,6 +188,32 @@ class DemandApiController extends OCSController {
 	#[NoAdminRequired]
 	public function query(int $id, ?string $question = null, ?string $due = null): DataResponse {
 		return $this->handle(fn () => $this->out($this->triage->query($this->uid(), $id, $question, $due)));
+	}
+
+	/**
+	 * Mögliche Dubletten: ähnliche offene oder zurückgestellte Anträge. Anträge ohne Leserecht
+	 * werden nur gezählt.
+	 *
+	 * @param string $title Titel (Suchtext)
+	 * @param string $problem Problembeschreibung (optional)
+	 * @param int|null $excludeId eigener Antrag, der nicht vorgeschlagen werden soll
+	 * @return DataResponse<Http::STATUS_OK, array{matches: list<array{id: int, key: string, title: string, status: string, score: float}>, hidden: int}, array{}>
+	 *
+	 * 200: Vorschläge
+	 */
+	#[NoAdminRequired]
+	public function similar(string $title = '', string $problem = '', ?int $excludeId = null): DataResponse {
+		$result = $this->similarity->similar($this->uid(), $title, $problem, $excludeId);
+		return new DataResponse([
+			'matches' => array_map(static fn ($m) => [
+				'id' => $m['demand']->getId(),
+				'key' => $m['demand']->getDemandKey(),
+				'title' => $m['demand']->getTitle(),
+				'status' => $m['demand']->getStatus(),
+				'score' => $m['score'],
+			], $result['matches']),
+			'hidden' => $result['hidden'],
+		]);
 	}
 
 	/**

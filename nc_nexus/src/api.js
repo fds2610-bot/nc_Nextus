@@ -23,6 +23,7 @@ export const submitDemand = async (id) => data(await axios.post(`${base}/${id}/s
 export const deleteDemand = async (id) => data(await axios.delete(`${base}/${id}`))
 export const triageDemand = async (id, decision) => data(await axios.post(`${base}/${id}/triage`, decision))
 export const queryDemand = async (id, query) => data(await axios.post(`${base}/${id}/query`, query))
+export const similarDemands = async (params) => data(await axios.get(`${base}/similar`, { params }))
 export const demandHistory = async (id) => data(await axios.get(`${base}/${id}/history`))
 
 const v1 = (path) => generateOcsUrl('/apps/nc_nexus/api/v1' + path)

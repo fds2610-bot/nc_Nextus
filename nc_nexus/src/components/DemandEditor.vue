@@ -76,6 +76,13 @@
 						</p>
 					</div>
 
+					<!-- Für das PMO: mögliche Dubletten vor der Triage -->
+					<SimilarDemands v-if="demand && demand.can.triage"
+						mode="triage"
+						:title="demand.title"
+						:problem="demand.problemStatement || ''"
+						:exclude-id="demand.id" />
+
 					<div v-if="demand && demand.triageCode" class="nx-section" data-test="triage-result">
 						<h3>{{ t('nc_nexus', 'Triage') }}</h3>
 						<div class="nx-summary__facts editor__triage">
@@ -129,6 +136,11 @@
 								</select>
 							</label>
 						</div>
+						<!-- Dublettenvorschlag beim Tippen (DEM-001) -->
+						<SimilarDemands v-if="!readonly"
+							:title="form.title"
+							:problem="form.problemStatement"
+							:exclude-id="id" />
 						<label class="nx-field" data-test="field-org-unit">
 							<span>{{ t('nc_nexus', 'Organizational unit') }}</span>
 							<select v-model="form.orgUnitId" class="nx-input" :disabled="readonly">
@@ -246,6 +258,7 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
 import { createDemand, deleteDemand, demandHistory, errorMessage, getDemand, submitDemand, updateDemand } from '../api.js'
+import SimilarDemands from './SimilarDemands.vue'
 import TriageDialog from './TriageDialog.vue'
 import { actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, indented, orgTree, statusChip, statusLabel, typeLabel } from '../labels.js'
 
@@ -253,7 +266,7 @@ const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, 
 
 export default {
 	name: 'DemandEditor',
-	components: { NcButton, NcLoadingIcon, NcModal, TriageDialog },
+	components: { NcButton, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
 	props: {
 		demandId: { type: Number, default: null },
 		orgUnits: { type: Array, default: () => [] },

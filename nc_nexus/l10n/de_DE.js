@@ -17,6 +17,10 @@ OC.L10N.register(
             "%n Rolle",
             "%n Rollen"
         ],
+        "_%n similar demand in another area – the portfolio office will see it during triage._::_%n similar demands in other areas – the portfolio office will see them during triage._": [
+            "%n ähnlicher Antrag in einem anderen Bereich – das Portfolio-Office sieht ihn bei der Triage.",
+            "%n ähnliche Anträge in anderen Bereichen – das Portfolio-Office sieht sie bei der Triage."
+        ],
         "_%n unit_::_%n units_": [
             "%n Einheit",
             "%n Einheiten"
@@ -141,7 +145,9 @@ OC.L10N.register(
         "Organizational unit saved": "Org-Einheit gespeichert",
         "Organizational units": "Org-Einheiten",
         "Parent unit": "Übergeordnete Einheit",
+        "Please check whether your request is already covered before submitting.": "Bitte prüfen Sie vor dem Einreichen, ob Ihr Anliegen bereits abgedeckt ist.",
         "Portfolio office (PMO)": "Portfolio-Office (PMO)",
+        "Possible duplicates": "Mögliche Dubletten",
         "Problem statement": "Problembeschreibung",
         "Project class": "Vorhabensklasse",
         "Project governance: strategy, demands, portfolio, resources and decisions in one place": "Projekt-Governance: Strategie, Anträge, Portfolio, Ressourcen und Entscheidungen an einem Ort",
@@ -187,6 +193,8 @@ OC.L10N.register(
         "Sees demands in scope to plan capacity": "Sieht Anträge im Bereich zur Kapazitätsplanung",
         "Sees the demands of their area": "Sieht die Anträge des eigenen Bereichs",
         "Send query": "Rückfrage senden",
+        "similar": "ähnlich",
+        "Similar demands already exist": "Es gibt bereits ähnliche Anträge",
         "Sponsor": "Sponsor",
         "Status": "Status",
         "Status changed": "Status geändert",
