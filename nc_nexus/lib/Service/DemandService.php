@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\Nexus\Service;
 
 use OCA\Nexus\Db\AuditEntry;
+use OCA\Nexus\Db\BusinessCaseMapper;
 use OCA\Nexus\Db\Comment;
 use OCA\Nexus\Db\CommentMapper;
 use OCA\Nexus\Db\CounterMapper;
@@ -55,6 +56,7 @@ class DemandService {
 		private ResourceNeedMapper $resourceNeeds,
 		private ObjectiveMapper $objectiveLinks,
 		private ScoringMapper $scoring,
+		private BusinessCaseMapper $businessCases,
 	) {
 	}
 
@@ -211,6 +213,7 @@ class DemandService {
 			$this->resourceNeeds->deleteForDemand($id);
 			$this->objectiveLinks->deleteLinksOfDemand($id);
 			$this->scoring->deleteAssessmentsOfDemand($id);
+			$this->businessCases->deleteForDemand($id);
 			$this->db->commit();
 		} catch (\Throwable $e) {
 			$this->db->rollBack();

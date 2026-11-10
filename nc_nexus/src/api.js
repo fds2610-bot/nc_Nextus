@@ -85,3 +85,7 @@ export const demandAssessments = async (id) => data(await axios.get(v1(`/demands
 export const assessDemand = async (id, assessment) => data(await axios.post(v1(`/demands/${id}/assessments`), assessment))
 export const getRanking = async () => data(await axios.get(v1('/ranking')))
 export const overrideRank = async (id, rank, reason) => data(await axios.put(v1(`/demands/${id}/rank-override`), { rank, reason }))
+
+export const getBusinessCase = async (id) => data(await axios.get(v1(`/demands/${id}/business-case`)))
+export const saveBusinessCase = async (id, content) => data(await axios.put(v1(`/demands/${id}/business-case`), { content }))
+export const benefitRegister = async () => data(await axios.get(v1('/benefits')))

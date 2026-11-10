@@ -301,3 +301,22 @@ export const assessmentKindLabel = (kind) => ({
 	self: t('nc_nexus', 'Self-assessment'),
 	review: t('nc_nexus', 'Review by the portfolio office'),
 })[kind] || kind
+
+export const costKindLabel = (kind) => ({
+	capex: t('nc_nexus', 'Investment (CAPEX)'),
+	opex_once: t('nc_nexus', 'One-time expense'),
+	opex_annual: t('nc_nexus', 'Running cost per year'),
+})[kind] || kind
+
+export const benefitTypeLabel = (type) => ({
+	cost_saving: t('nc_nexus', 'Cost saving'),
+	capacity: t('nc_nexus', 'Capacity gain'),
+	revenue: t('nc_nexus', 'Revenue effect'),
+	avoided_cost: t('nc_nexus', 'Avoided cost'),
+	qualitative: t('nc_nexus', 'Qualitative'),
+})[type] || type
+
+// Geldbetrag in der Sprache von Nextcloud, ohne Nachkommastellen
+export const formatMoney = (value) => value === null || value === undefined
+	? '–'
+	: Number(value).toLocaleString(getCanonicalLocale(), { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })

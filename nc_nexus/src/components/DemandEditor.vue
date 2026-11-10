@@ -231,6 +231,34 @@
 						</label>
 					</div>
 
+					<div v-if="demand && businessCase && (businessCase.canEdit || businessCase.versions.length)"
+						class="nx-section"
+						data-test="demand-business-case">
+						<h3>{{ t('nc_nexus', 'Business case') }}</h3>
+						<div v-if="businessCase.versions.length" class="nx-summary__facts editor__triage">
+							<div class="nx-fact">
+								{{ t('nc_nexus', 'Benefit p. a.') }}<b data-test="bc-summary-benefit">{{ formatMoney(businessCase.kpis.benefitPerYear) }}</b>
+							</div>
+							<div class="nx-fact">
+								{{ t('nc_nexus', 'One-time cost') }}<b>{{ formatMoney(businessCase.kpis.oneTimeCost) }}</b>
+							</div>
+							<div class="nx-fact">
+								{{ t('nc_nexus', 'Payback') }}<b>{{ businessCase.kpis.paybackYears === null ? '–' : t('nc_nexus', '{y} years', { y: businessCase.kpis.paybackYears }) }}</b>
+							</div>
+						</div>
+						<p v-else class="editor__muted">
+							{{ t('nc_nexus', 'No business case yet.') }}
+						</p>
+						<p v-if="businessCase.versions.length && !businessCase.complete" class="editor__next">
+							{{ t('nc_nexus', 'Incomplete: at least one cost item and one benefit item are needed for prioritization.') }}
+						</p>
+						<div class="editor__rating-actions">
+							<NcButton variant="secondary" data-test="open-business-case" @click="bcOpen = true">
+								{{ businessCase.canEdit ? t('nc_nexus', 'Edit business case') : t('nc_nexus', 'Show business case') }}
+							</NcButton>
+						</div>
+					</div>
+
 					<div v-if="demand && rating && (rating.assessments.length || rating.can.self || rating.can.review)"
 						class="nx-section"
 						data-test="demand-rating">
@@ -379,6 +407,12 @@
 			@ready="el => trapElements = [el]"
 			@close="triageOpen = false; trapElements = []"
 			@decided="onDecided" />
+		<BusinessCaseDialog v-if="bcOpen && businessCase"
+			:demand="demand"
+			:business-case="businessCase"
+			@ready="el => trapElements = [el]"
+			@close="bcOpen = false; trapElements = []"
+			@saved="onBusinessCase" />
 		<AssessmentDialog v-if="assessKind && scoring"
 			:demand="demand"
 			:kind="assessKind"
@@ -404,20 +438,21 @@ import { getCanonicalLocale, t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
-import { createDemand, deleteDemand, demandAssessments, demandHistory, demandNeeds, demandObjectives, errorMessage, getDemand, saveDemandNeeds, saveDemandObjectives, submitDemand, updateDemand } from '../api.js'
+import { createDemand, deleteDemand, demandAssessments, demandHistory, demandNeeds, demandObjectives, errorMessage, getBusinessCase, getDemand, saveDemandNeeds, saveDemandObjectives, submitDemand, updateDemand } from '../api.js'
 import AnalysisDialog from './AnalysisDialog.vue'
 import AssessmentDialog from './AssessmentDialog.vue'
+import BusinessCaseDialog from './BusinessCaseDialog.vue'
 import CommentThread from './CommentThread.vue'
 import NeedsEditor from './NeedsEditor.vue'
 import SimilarDemands from './SimilarDemands.vue'
 import TriageDialog from './TriageDialog.vue'
-import { actionLabel, assessmentKindLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, indented, objectiveTree, orgTree, qualityLabel, statusChip, statusLabel, typeLabel } from '../labels.js'
+import { actionLabel, assessmentKindLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, formatMoney, indented, objectiveTree, orgTree, qualityLabel, statusChip, statusLabel, typeLabel } from '../labels.js'
 
 const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, deadline: '', problemStatement: '', description: '', expectedBenefit: '' })
 
 export default {
 	name: 'DemandEditor',
-	components: { AnalysisDialog, AssessmentDialog, CommentThread, NcButton, NeedsEditor, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
+	components: { AnalysisDialog, AssessmentDialog, BusinessCaseDialog, CommentThread, NcButton, NeedsEditor, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
 	props: {
 		demandId: { type: Number, default: null },
 		orgUnits: { type: Array, default: () => [] },
@@ -428,7 +463,7 @@ export default {
 	},
 	emits: ['close', 'changed'],
 	setup() {
-		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, statusChip, statusLabel, typeLabel, assessmentKindLabel, qualityLabel }
+		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, statusChip, statusLabel, typeLabel, assessmentKindLabel, qualityLabel, formatMoney }
 	},
 	data() {
 		return {
@@ -443,6 +478,8 @@ export default {
 			triageOverride: false,
 			needs: [],
 			rating: null,
+			businessCase: null,
+			bcOpen: false,
 			assessKind: null,
 			objectiveIds: [],
 			objectivesSaved: '[]',
@@ -538,6 +575,7 @@ export default {
 				this.setNeeds(await demandNeeds(this.id))
 				this.setObjectives(await demandObjectives(this.id))
 				this.rating = await demandAssessments(this.id)
+				this.businessCase = await getBusinessCase(this.id)
 				this.history = await demandHistory(this.id)
 			} catch (e) {
 				showError(errorMessage(e))
@@ -571,6 +609,11 @@ export default {
 		formatNumber2(value) {
 			return Number(value).toLocaleString(getCanonicalLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 		},
+		async onBusinessCase(bc) {
+			this.businessCase = bc
+			this.$emit('changed')
+			this.history = await demandHistory(this.id)
+		},
 		async onAssessed(rating) {
 			this.rating = rating
 			this.$emit('changed')
@@ -583,7 +626,7 @@ export default {
 		},
 		onEscape() {
 			// Liegt ein innerer Dialog darüber, schließt Esc nur diesen
-			if (!this.triageOpen && !this.analysisOpen && !this.assessKind) {
+			if (!this.triageOpen && !this.analysisOpen && !this.assessKind && !this.bcOpen) {
 				this.$emit('close')
 			}
 		},

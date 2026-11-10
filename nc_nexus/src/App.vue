@@ -52,6 +52,14 @@
 						<NcIconSvgWrapper :path="mdiBullseyeArrow" />
 					</template>
 				</NcAppNavigationItem>
+				<NcAppNavigationItem :name="t('nc_nexus', 'Benefit register')"
+					:active="view === 'benefits'"
+					data-test="nav-benefits"
+					@click="view = 'benefits'">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiCashMultiple" />
+					</template>
+				</NcAppNavigationItem>
 				<NcAppNavigationItem v-if="poolInfo.canSee"
 					:name="t('nc_nexus', 'Portfolio')"
 					:active="view === 'portfolio'"
@@ -174,7 +182,10 @@
 		</NcAppNavigation>
 
 		<NcAppContent>
-			<RankingView v-if="view === 'ranking'"
+			<BenefitRegister v-if="view === 'benefits'"
+				:refresh-key="refresh"
+				@open="openEditor" />
+			<RankingView v-else-if="view === 'ranking'"
 				:refresh-key="refresh"
 				@open="openEditor" />
 			<ScoringModelView v-else-if="view === 'model'"
@@ -224,7 +235,7 @@
 </template>
 
 <script>
-import { mdiAccountQuestion, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
+import { mdiAccountQuestion, mdiBullseyeArrow, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -241,6 +252,7 @@ import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 import DemandEditor from './components/DemandEditor.vue'
 import DemandList from './views/DemandList.vue'
+import BenefitRegister from './views/BenefitRegister.vue'
 import CapacityView from './views/CapacityView.vue'
 import PortfolioView from './views/PortfolioView.vue'
 import RankingView from './views/RankingView.vue'
@@ -267,6 +279,7 @@ export default {
 		NcCounterBubble,
 		NcIconSvgWrapper,
 		NcTextField,
+		BenefitRegister,
 		CapacityView,
 		DecisionRegister,
 		ObjectivesView,
@@ -276,7 +289,7 @@ export default {
 		ScoringModelView,
 	},
 	setup() {
-		return { mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
