@@ -9,6 +9,7 @@ use OCA\Nexus\Exception\ForbiddenException;
 use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
 use OCA\Nexus\Service\OrgService;
+use OCA\Nexus\Service\GovernanceService;
 use OCA\Nexus\Service\PermissionService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -25,6 +26,7 @@ class OrgApiController extends OCSController {
 		IRequest $request,
 		private OrgService $org,
 		private PermissionService $permissions,
+		private GovernanceService $governance,
 		private IL10N $l10n,
 		private ?string $userId,
 	) {
@@ -46,6 +48,7 @@ class OrgApiController extends OCSController {
 			'canManageOrg' => $this->permissions->canManageOrg($uid),
 			'canTriage' => $this->permissions->isTriager($uid),
 			'roles' => array_map(static fn ($a) => $a->jsonSerialize(), $this->permissions->assignmentsOf($uid)),
+			'bodies' => $this->governance->bodiesOf($uid),
 		]);
 	}
 

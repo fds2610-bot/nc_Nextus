@@ -19,7 +19,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
  */
 class PlanningService {
 	/** Status, in denen ein Vorhaben mit dem Planungstool verbunden werden kann */
-	public const LINKABLE = ['released'];
+	public const LINKABLE = ['released', 'in_execution', 'paused', 'completed'];
 
 	public function __construct(
 		private PlanningLinkMapper $links,

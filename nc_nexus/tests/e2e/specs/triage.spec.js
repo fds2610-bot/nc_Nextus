@@ -3,6 +3,7 @@ const { test, expect } = require('@playwright/test')
 const { adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { E2E_OTHER_USER, E2E_PASSWORD, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
+const { navTo } = require('../helpers/nav')
 
 const unique = (prefix) => `${prefix} ${Date.now()}`
 const isoDay = (offset = 0) => {
@@ -10,7 +11,11 @@ const isoDay = (offset = 0) => {
 	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/** Eingereichten Antrag des Testkontos anlegen */
+/**
+ * Eingereichten Antrag des Testkontos anlegen
+ * @param api
+ * @param title
+ */
 async function submitted(api, title) {
 	const demand = await createDemand(api, { title, demandType: 'strategic', problemStatement: 'Ohne Lösung steigt das Risiko.' })
 	return call(api, 'post', `/demands/${demand.id}/submit`, undefined, 200)
@@ -38,7 +43,7 @@ test.describe('Triage', () => {
 		try {
 			// PMO: Arbeitsvorrat → Rückfrage
 			await pmo.goto('/apps/nc_nexus/')
-			await pmo.locator('[data-test="nav-queue-triage"]').click()
+			await navTo(pmo, 'triage', 'nav-queue-triage')
 			await pmo.locator(`[data-test="demand-${demand.key}"]`).click()
 			await pmo.locator('[data-test="open-triage"]').click()
 			const dialog = pmo.locator('[data-test="triage-dialog"]')
@@ -123,7 +128,7 @@ test.describe('Triage', () => {
 		const { context, page } = await loginAs(browser, E2E_OTHER_USER, E2E_PASSWORD)
 		try {
 			await page.goto('/apps/nc_nexus/')
-			await page.locator('[data-test="nav-queue-resubmission"]').click()
+			await navTo(page, 'triage', 'nav-queue-resubmission')
 			await expect(page.locator(`[data-test="demand-${demand.key}"]`)).toBeVisible()
 			// erneut triagierbar: annehmen mit Vorhabensklasse
 			await page.locator(`[data-test="demand-${demand.key}"]`).click()
@@ -154,7 +159,7 @@ test.describe('Triage', () => {
 		try {
 			// PMO: Triage ausgegraut, Hinweis auf die ausstehende Analyse, nicht im Arbeitsvorrat
 			await pmo.goto('/apps/nc_nexus/')
-			await pmo.locator('[data-test="nav-queue-triage"]').click()
+			await navTo(pmo, 'triage', 'nav-queue-triage')
 			await expect(pmo.locator(`[data-test="demand-${demand.key}"]`)).toHaveCount(0)
 			await pmo.locator('[data-test="nav-all"]').click()
 			await pmo.locator(`[data-test="demand-${demand.key}"]`).click()
@@ -164,7 +169,7 @@ test.describe('Triage', () => {
 
 			// Analyst: „Meine Analysen“ → Ergebnis liefern
 			await page.goto('/apps/nc_nexus/')
-			await page.locator('[data-test="nav-queue-analysis"]').click()
+			await navTo(page, 'triage', 'nav-queue-analysis')
 			await page.locator(`[data-test="demand-${demand.key}"]`).click()
 			await page.locator('[data-test="open-analysis"]').click()
 			const dialog = page.locator('[data-test="analysis-dialog"]')
@@ -176,7 +181,7 @@ test.describe('Triage', () => {
 
 			// PMO: jetzt wieder im Arbeitsvorrat und triagierbar
 			await pmo.reload()
-			await pmo.locator('[data-test="nav-queue-triage"]').click()
+			await navTo(pmo, 'triage', 'nav-queue-triage')
 			await pmo.locator(`[data-test="demand-${demand.key}"]`).click()
 			await expect(pmo.locator('[data-test="open-triage"]')).toBeEnabled()
 			await expect(pmo.locator('[data-test="triage-next"]')).toHaveText(/Analysis delivered|Analyse geliefert/)

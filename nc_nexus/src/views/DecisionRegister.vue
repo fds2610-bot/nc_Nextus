@@ -12,7 +12,7 @@
 			</div>
 		</div>
 		<p class="register__intro">
-			{{ t('nc_nexus', 'Every triage decision is recorded here with mandate and reason and can no longer be changed. A new decision on the same demand replaces the previous one.') }}
+			{{ t('nc_nexus', 'Every decision – triage, gates, decisions of bodies in sessions – is recorded here with mandate and reason and can no longer be changed. A new decision on the same demand replaces the previous one.') }}
 		</p>
 
 		<div v-if="loading" class="register__loading">
@@ -54,7 +54,7 @@
 				</div>
 				<div class="decision__mandate">
 					<span class="decision__label">{{ t('nc_nexus', 'Mandate') }}</span>
-					<span data-test="decision-mandate">{{ mandateLabel(d.mandate) }}</span>
+					<span data-test="decision-mandate">{{ mandateLabel(d.mandate, d.details) }}</span>
 					<span class="decision__label">{{ t('nc_nexus', 'Decided by') }}</span>
 					<span>{{ d.decidedBy }}</span>
 				</div>
@@ -72,7 +72,7 @@ import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 import { errorMessage, listDecisions } from '../api.js'
-import { decisionTypeLabel, formatDate, formatIsoDay, orgTree, outcomeChip, outcomeLabel, roleLabel } from '../labels.js'
+import { decisionTypeLabel, formatDate, formatIsoDay, formatMoney, orgTree, outcomeChip, outcomeLabel, roleLabel } from '../labels.js'
 
 export default {
 	name: 'DecisionRegister',
@@ -124,7 +124,10 @@ export default {
 		keyOf(id) {
 			return this.decisions.find(d => d.id === id)?.key ?? '#' + id
 		},
-		mandateLabel(m) {
+		mandateLabel(m, details) {
+			if (m.scopeType === 'body') {
+				return details?.session ? `${details.body} · ${details.session}` : (details?.body ?? t('nc_nexus', 'Body'))
+			}
 			if (m.scopeType === 'nextcloud') {
 				return t('nc_nexus', 'Nextcloud administration')
 			}
@@ -150,6 +153,15 @@ export default {
 			}
 			if (x.businessCaseVersion) {
 				parts.push(t('nc_nexus', 'business case version {v}', { v: x.businessCaseVersion }))
+			}
+			if (x.votes) {
+				parts.push(t('nc_nexus', 'Votes: {yes} yes, {no} no, {abstain} abstain', x.votes))
+			}
+			if (x.conditions) {
+				parts.push(n('nc_nexus', '%n condition', '%n conditions', x.conditions))
+			}
+			if (x.tranche) {
+				parts.push(t('nc_nexus', 'Tranche {amount} ({year})', { amount: formatMoney(x.tranche.amount), year: x.tranche.fiscalYear }))
 			}
 			if (x.duplicateOfId) {
 				parts.push(t('nc_nexus', 'Duplicate of demand #{id}', { id: x.duplicateOfId }))

@@ -9,7 +9,7 @@ export const typeLabel = (type) => ({
 })[type] || type
 
 /** Status in der Reihenfolge des Statusautomaten (Kapitel 02, §4.1) */
-export const STATUSES = ['draft', 'submitted', 'query', 'further_analysis', 'deferred', 'in_qualification', 'candidate', 'prioritized', 'released', 'rejected', 'duplicate']
+export const STATUSES = ['draft', 'submitted', 'query', 'further_analysis', 'deferred', 'in_qualification', 'candidate', 'prioritized', 'released', 'in_execution', 'paused', 'completed', 'closed', 'cancelled', 'rejected', 'duplicate']
 
 export const statusLabel = (status) => ({
 	draft: t('nc_nexus', 'Draft'),
@@ -21,6 +21,11 @@ export const statusLabel = (status) => ({
 	candidate: t('nc_nexus', 'Candidate'),
 	prioritized: t('nc_nexus', 'Prioritized'),
 	released: t('nc_nexus', 'Released'),
+	in_execution: t('nc_nexus', 'In execution'),
+	paused: t('nc_nexus', 'Paused'),
+	completed: t('nc_nexus', 'Completed'),
+	closed: t('nc_nexus', 'Closed'),
+	cancelled: t('nc_nexus', 'Cancelled'),
 	rejected: t('nc_nexus', 'Rejected'),
 	duplicate: t('nc_nexus', 'Duplicate'),
 })[status] || status
@@ -36,6 +41,11 @@ export const statusChip = (status) => ({
 	candidate: 'submitted',
 	prioritized: 'accepted',
 	released: 'accepted',
+	in_execution: 'accepted',
+	paused: 'on-hold',
+	completed: 'submitted',
+	closed: 'draft',
+	cancelled: 'rejected',
 	rejected: 'rejected',
 	duplicate: 'draft',
 })[status] || 'draft'
@@ -62,6 +72,10 @@ export const outcomeLabel = (code) => ({
 	ready_for_prioritization: t('nc_nexus', 'Ready for prioritization'),
 	prioritized: t('nc_nexus', 'Prioritized'),
 	released: t('nc_nexus', 'Released'),
+	approved: t('nc_nexus', 'Approved'),
+	approved_with_conditions: t('nc_nexus', 'Approved with conditions'),
+	rework: t('nc_nexus', 'Rework'),
+	cancelled: t('nc_nexus', 'Cancelled'),
 })[code] || code
 
 export const outcomeChip = (code) => ({
@@ -73,6 +87,10 @@ export const outcomeChip = (code) => ({
 	ready_for_prioritization: 'submitted',
 	prioritized: 'accepted',
 	released: 'accepted',
+	approved: 'accepted',
+	approved_with_conditions: 'accepted',
+	rework: 'on-hold',
+	cancelled: 'rejected',
 })[code] || 'draft'
 
 export const codeHint = (code) => ({
@@ -249,6 +267,11 @@ export const PHASE_OF = {
 	candidate: 'demand',
 	prioritized: 'planned',
 	released: 'planned',
+	in_execution: 'active',
+	paused: 'on_hold',
+	completed: 'review',
+	closed: 'closed',
+	cancelled: 'closed',
 	deferred: 'on_hold',
 	rejected: 'closed',
 	duplicate: 'closed',
@@ -340,7 +363,63 @@ export const gateLabel = (step) => ({
 	candidate: t('nc_nexus', 'Ready for prioritization'),
 	g2: t('nc_nexus', 'G2 – prioritization'),
 	g3: t('nc_nexus', 'G3 – release'),
+	g4: t('nc_nexus', 'G4 – phase release'),
+	g5: t('nc_nexus', 'G5 – acceptance / go-live'),
+	g6: t('nc_nexus', 'G6 – benefit review'),
 })[step] || step
+
+/** Beschlussarten an Gates (Kapitel 02 §3) */
+export const GATE_OUTCOMES = ['approved', 'approved_with_conditions', 'rework', 'deferred', 'rejected', 'cancelled']
+
+// Beschlussart je Gate in Worten (Kapitel 02, Gate-Steckbriefe)
+export const gateOutcomeLabel = (gate, outcome) => {
+	const specific = {
+		g2: { approved: t('nc_nexus', 'Prioritize – becomes a project'), deferred: t('nc_nexus', 'Defer – not prioritized now') },
+		g3: { approved: t('nc_nexus', 'Release'), deferred: t('nc_nexus', 'Postpone the start') },
+		g4: { approved: t('nc_nexus', 'Continue with the next phase'), deferred: t('nc_nexus', 'Pause'), cancelled: t('nc_nexus', 'Cancel the project') },
+		g5: { approved: t('nc_nexus', 'Accept'), approved_with_conditions: t('nc_nexus', 'Accept with open items'), rejected: t('nc_nexus', 'Not accepted') },
+		g6: { approved: t('nc_nexus', 'Benefit confirmed'), approved_with_conditions: t('nc_nexus', 'Benefit partly achieved'), rejected: t('nc_nexus', 'Benefit missed') },
+	}[gate]?.[outcome]
+	return specific || {
+		approved: t('nc_nexus', 'Approve'),
+		approved_with_conditions: t('nc_nexus', 'Approve with conditions'),
+		rework: t('nc_nexus', 'Rework – back with a due date'),
+		deferred: t('nc_nexus', 'Defer'),
+		rejected: t('nc_nexus', 'Reject'),
+		cancelled: t('nc_nexus', 'Cancel'),
+	}[outcome] || outcome
+}
+
+export const bodyTypeLabel = (type) => ({
+	executive: t('nc_nexus', 'Executive board'),
+	portfolio_board: t('nc_nexus', 'Portfolio board'),
+	resource_board: t('nc_nexus', 'Resource board'),
+	architecture_board: t('nc_nexus', 'Architecture and security board'),
+	steering_committee: t('nc_nexus', 'Steering committee'),
+	pmo: t('nc_nexus', 'Portfolio office'),
+})[type] || type
+
+export const sessionStatusLabel = (status) => ({
+	planned: t('nc_nexus', 'Planned'),
+	agenda_final: t('nc_nexus', 'Agenda final'),
+	held: t('nc_nexus', 'In session'),
+	minuted: t('nc_nexus', 'Minuted'),
+})[status] || status
+
+export const instanceStatusLabel = (status) => ({
+	open: t('nc_nexus', 'Pending'),
+	incomplete: t('nc_nexus', 'Incomplete'),
+	ready: t('nc_nexus', 'Ready for decision'),
+	scheduled: t('nc_nexus', 'On the agenda'),
+	adjourned: t('nc_nexus', 'Adjourned'),
+	decided: t('nc_nexus', 'Decided'),
+})[status] || status
+
+export const voteLabel = (vote) => ({
+	yes: t('nc_nexus', 'Yes'),
+	no: t('nc_nexus', 'No'),
+	abstain: t('nc_nexus', 'Abstain'),
+})[vote] || vote
 
 export const checkLabel = (key) => ({
 	assessment_review: t('nc_nexus', 'Assessment reviewed by the portfolio office'),
@@ -348,6 +427,10 @@ export const checkLabel = (key) => ({
 	resource_needs: t('nc_nexus', 'Resource needs recorded'),
 	org_unit: t('nc_nexus', 'Organizational unit set'),
 	capacity: t('nc_nexus', 'Capacity in all bottleneck pools (firm commitment)'),
+	project_class: t('nc_nexus', 'Project class set'),
+	objectives: t('nc_nexus', 'Assigned to strategic objectives'),
+	open_conditions: t('nc_nexus', 'No open blocking conditions'),
+	planning_link: t('nc_nexus', 'Connected with the planning tool'),
 })[key] || key
 
 export const decisionTypeLabel = (type) => ({
@@ -355,4 +438,7 @@ export const decisionTypeLabel = (type) => ({
 	candidate: t('nc_nexus', 'Ready for prioritization'),
 	g2: t('nc_nexus', 'G2 – prioritization'),
 	g3: t('nc_nexus', 'G3 – release'),
+	g4: t('nc_nexus', 'G4 – phase release'),
+	g5: t('nc_nexus', 'G5 – acceptance / go-live'),
+	g6: t('nc_nexus', 'G6 – benefit review'),
 })[type] || type

@@ -34,7 +34,7 @@ use OCP\IUserManager;
 class CapacityService {
 	public const TYPES = ['internal', 'external', 'business'];
 	/** Status, deren Bedarf die Auslastung belastet (Entwürfe privat, Zurückgestellte ruhen) */
-	public const LOAD_STATUSES = ['submitted', 'query', 'further_analysis', 'in_qualification', 'candidate', 'prioritized', 'released'];
+	public const LOAD_STATUSES = ['submitted', 'query', 'further_analysis', 'in_qualification', 'candidate', 'prioritized', 'released', 'in_execution', 'paused'];
 	private const MAX_MONTHS = 24;
 	private const SEE_ROLES = ['portfolio_manager', 'pool_manager', 'board_member', 'steering_member', 'auditor', 'admin'];
 

@@ -25,6 +25,8 @@ export default {
 		min: { type: Number, default: null },
 		max: { type: Number, default: null },
 		maxDecimals: { type: Number, default: 2 },
+		/** Tausendertrennzeichen anzeigen (aus bei Jahreszahlen) */
+		grouping: { type: Boolean, default: true },
 	},
 	emits: ['update:modelValue'],
 	data() {
@@ -57,7 +59,7 @@ export default {
 			if (value === null || value === undefined || value === '' || Number.isNaN(Number(value))) {
 				return ''
 			}
-			return Number(value).toLocaleString(getCanonicalLocale(), { maximumFractionDigits: this.maxDecimals })
+			return Number(value).toLocaleString(getCanonicalLocale(), { maximumFractionDigits: this.maxDecimals, useGrouping: this.grouping })
 		},
 		/**
 		 * Eingabe lesen: Gruppenzeichen entfernen, Dezimalzeichen vereinheitlichen.

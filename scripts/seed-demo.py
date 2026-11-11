@@ -213,7 +213,33 @@ def main():
     demand(ben, 'Monitoring vereinheitlichen', 'efficiency', '', infra['id'], [])
 
     sven.post(f"/demands/{dp['id']}/comments", {'message': 'Ich prüfe mit dem Datenschutz die Anonymisierung; Ergebnis bis zur Frist.'})
-    print('Fertig. Anmelden z. B. als paula (PMO), boris (Board), anna oder ben – Passwort siehe DEMO_PASSWORD.')
+
+    print('Gremien, Entscheidungsrechte, Sitzung …')
+    # Portfolio-Board mit Fachsitzen; Großvorhaben (Klasse L) entscheidet es in Sitzungen,
+    # kleinere Vorhaben bleiben beim PMO bzw. Board des Bereichs (Kapitel 01 §4.2)
+    board = paula.post('/bodies', {'code': 'PB', 'name': 'Portfolio-Board', 'bodyType': 'portfolio_board', 'chairId': 'boris',
+                                   'quorumMin': 2, 'requiredSeats': ['Finanzen'],
+                                   'description': 'Quartalsweise: Portfolio-Aufnahme, Freigaben und Abbrüche von Großvorhaben.'})
+    for member in [{'userId': 'boris', 'seat': 'Geschäftsführung'}, {'userId': 'fiona', 'seat': 'Finanzen', 'deputyId': 'ben'},
+                   {'userId': 'sven', 'seat': 'IT'}]:
+        paula.post(f"/bodies/{board['id']}/members", member)
+    resources = paula.post('/bodies', {'code': 'RB', 'name': 'Ressourcen-Board', 'bodyType': 'resource_board', 'chairId': 'sven', 'quorumMin': 2})
+    for member in [{'userId': 'sven', 'seat': 'IT-Pools'}, {'userId': 'anna', 'seat': 'Fachbereiche'}]:
+        paula.post(f"/bodies/{resources['id']}/members", member)
+    for gate in ['g2', 'g3', 'g4']:
+        paula.post('/decision-rights', {'gateCode': gate, 'projectClasses': ['L'], 'bodyId': board['id']})
+    # CRM-Ablösung (Klasse L) dem Board vorlegen und die nächste Sitzung vorbereiten
+    paula.post(f"/demands/{crm['id']}/gate/submit", {'step': 'g2'})
+    session = paula.post('/sessions', {'bodyId': board['id'], 'scheduledAt': day(7) + 'T10:00', 'durationMin': 120, 'location': 'Raum 2.04'})
+    session = paula.post(f"/sessions/{session['id']}/agenda")
+    paula.put(f"/agenda-items/{session['items'][0]['id']}", {'recommendation': 'Aufnehmen mit Auflage: Migrationskonzept für die Kundendaten vor G3.'})
+    paula.post(f"/sessions/{session['id']}/topics", {'title': 'Auslastung der Engpass-Pools im nächsten Quartal'})
+    paula.post(f"/sessions/{session['id']}/status", {'status': 'agenda_final'})
+    # Auflage und Maßnahme am freigegebenen Rechnungsworkflow (sperrt G4 bis zur Erfüllung)
+    paula.post(f"/demands/{invoice['id']}/conditions", {'kind': 'condition', 'title': 'Datenschutz-Folgenabschätzung vorlegen', 'ownerId': 'ben', 'dueDate': day(20), 'blocking': True})
+    paula.post(f"/demands/{invoice['id']}/conditions", {'kind': 'action', 'title': 'Schulung der Kreditorenbuchhaltung planen', 'ownerId': 'ben', 'dueDate': day(45)})
+
+    print('Fertig. Anmelden z. B. als paula (PMO), boris (Board-Vorsitz), fiona (Finanzen), anna oder ben – Passwort siehe DEMO_PASSWORD.')
 
 
 if __name__ == '__main__':

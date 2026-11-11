@@ -6,14 +6,25 @@ const { loginAs } = require('../helpers/login')
 
 const tag = () => 'Zs' + Math.random().toString(36).slice(2, 7)
 
-/** Antrag einreichen und annehmen (Status „In Qualifizierung“) */
+/**
+ * Antrag einreichen und annehmen (Status „In Qualifizierung“)
+ * @param own
+ * @param admin
+ * @param title
+ * @param type
+ */
 async function accepted(own, admin, title, type = 'efficiency') {
 	const d = await createDemand(own, { title, demandType: type, problemStatement: 'x' })
 	await call(own, 'post', `/demands/${d.id}/submit`, undefined, 200)
 	return call(admin, 'post', `/demands/${d.id}/triage`, { code: 'accepted' }, 200)
 }
 
-/** alle Kriterien mit einem Wert, Nutzen optional abweichend */
+/**
+ * alle Kriterien mit einem Wert, Nutzen optional abweichend
+ * @param model
+ * @param benefit
+ * @param other
+ */
 function scores(model, benefit, other = 1) {
 	return Object.fromEntries(model.set.criteria.map(c => [c.code, c.dimension === 'benefit' ? benefit : other]))
 }

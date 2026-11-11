@@ -10,7 +10,11 @@ const thisMonth = () => {
 	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-/** Pool samt Bedarf wieder entfernen (Bedarf über die PMO-Rechte des Admins) */
+/**
+ * Pool samt Bedarf wieder entfernen (Bedarf über die PMO-Rechte des Admins)
+ * @param admin
+ * @param poolCode
+ */
 async function cleanup(admin, poolCode) {
 	const { pools } = await call(admin, 'get', '/pools')
 	const pool = pools.find(p => p.code === poolCode)

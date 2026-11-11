@@ -235,8 +235,32 @@
 						</label>
 					</div>
 
-					<div v-if="demand && gate && (gate.step || gate.allocations.length)" class="nx-section" data-test="demand-gate">
-						<h3>{{ gate.step ? gateLabel(gate.step) : t('nc_nexus', 'Firm commitments') }}</h3>
+					<div v-if="demand && gate && (gate.step || gate.allocations.length || gate.conditions.length || PROJECT_STATES.includes(demand.status))" class="nx-section" data-test="demand-gate">
+						<h3>{{ t('nc_nexus', 'Gates') }}</h3>
+						<ol v-if="PROJECT_STATES.includes(demand.status) || gate.step && gate.step !== 'candidate'" class="editor__path" data-test="gate-path">
+							<li v-for="g in gate.gateSet.gates"
+								:key="g.code"
+								:class="'editor__path--' + g.state"
+								:title="g.name">
+								{{ g.code.toUpperCase() }}
+							</li>
+							<li class="editor__path-set">
+								{{ gate.gateSet.name }}
+							</li>
+						</ol>
+						<template v-for="step in (gate.steps.length ? gate.steps : [])" :key="step">
+							<p class="editor__step">
+								<b>{{ gateLabel(step) }}</b>
+								<span v-if="step !== 'candidate'" data-test="gate-decider">
+									· {{ gate.decider.kind === 'body'
+										? t('nc_nexus', 'decided by {body} in a session', { body: gate.decider.body.name })
+										: t('nc_nexus', 'decided directly by the board or the portfolio office of the area') }}
+								</span>
+								<span v-if="gate.instance && step === gate.step" class="nx-chip nx-chip--submitted" data-test="gate-instance">
+									{{ instanceStatusLabel(gate.instance.status) }}
+								</span>
+							</p>
+						</template>
 						<ul v-if="gate.step" class="editor__checks">
 							<li v-for="c in gate.checks" :key="c.key" :class="c.ok ? 'editor__check--ok' : 'editor__check--fail'">
 								{{ c.ok ? '✓' : '✗' }} {{ checkLabel(c.key) }}<template v-if="!c.ok && c.detail">
@@ -244,9 +268,36 @@
 								</template>
 							</li>
 						</ul>
-						<p v-if="gate.step && !gate.canDecide" class="editor__next">
-							{{ gate.step === 'candidate' ? t('nc_nexus', 'The portfolio office puts the project up for prioritization once everything is complete.') : t('nc_nexus', 'The board or the portfolio office of the area decides.') }}
+						<p v-if="gate.step && !gate.canDecide && !gate.canSubmit" class="editor__next">
+							{{ gate.step === 'candidate'
+								? t('nc_nexus', 'The portfolio office puts the project up for prioritization once everything is complete.')
+								: (gate.decider.kind === 'body'
+									? t('nc_nexus', 'The portfolio office submits the gate to {body}; the decision is taken in a session.', { body: gate.decider.body.name })
+									: t('nc_nexus', 'The board or the portfolio office of the area decides.')) }}
 						</p>
+						<div v-if="gate.conditions.length" class="editor__conditions" data-test="demand-conditions">
+							<h4>{{ t('nc_nexus', 'Conditions and actions') }}</h4>
+							<ul>
+								<li v-for="c in gate.conditions"
+									:key="c.id"
+									:class="{ 'editor__condition--overdue': c.overdue, 'editor__condition--closed': c.status !== 'open' }">
+									<span class="nx-chip" :class="c.status === 'open' ? (c.blocking ? 'nx-chip--rejected' : 'nx-chip--on-hold') : 'nx-chip--accepted'">
+										{{ c.status === 'open' ? (c.blocking ? t('nc_nexus', 'blocking') : t('nc_nexus', 'open')) : (c.status === 'done' ? t('nc_nexus', 'done') : t('nc_nexus', 'waived')) }}
+									</span>
+									{{ c.title }} · {{ c.ownerId }} · {{ formatIsoDay(c.dueDate) }}
+								</li>
+							</ul>
+						</div>
+						<p v-if="gate.tranches.length" class="editor__tranches" data-test="demand-tranches">
+							{{ t('nc_nexus', 'Budget released') }}: <b>{{ formatMoney(gate.budgetReleased) }}</b>
+							<template v-if="businessCase && businessCase.kpis && businessCase.kpis.oneTimeCost">
+								{{ t('nc_nexus', 'of {total} one-time cost', { total: formatMoney(businessCase.kpis.oneTimeCost) }) }}
+							</template>
+							<small>({{ gate.tranches.map(tr => tr.gateCode.toUpperCase() + ' ' + formatMoney(tr.amount) + ' / ' + tr.fiscalYear).join(' · ') }})</small>
+						</p>
+						<h4 v-if="gate.allocations.length">
+							{{ t('nc_nexus', 'Firm commitments') }}
+						</h4>
 						<table v-if="gate.allocations.length" class="editor__alloc" data-test="allocations">
 							<tbody>
 								<tr v-for="(a, i) in gate.allocations" :key="i">
@@ -258,7 +309,7 @@
 						</table>
 					</div>
 
-					<PlanningPanel v-if="demand && demand.status === 'released'"
+					<PlanningPanel v-if="demand && ['released', 'in_execution', 'paused', 'completed'].includes(demand.status)"
 						:demand-id="demand.id"
 						:status="demand.status"
 						@changed="onPlanning" />
@@ -399,13 +450,26 @@
 					{{ t('nc_nexus', 'Complete analysis') }}
 				</NcButton>
 				<!-- Für das PMO sichtbar; ausgegraut, solange keine Triage fällig ist (Grund im Abschnitt „Triage“) -->
-				<NcButton v-if="demand && gate && gate.step && gate.canDecide"
-					:variant="gate.ready ? 'primary' : 'secondary'"
-					data-test="open-gate"
-					:disabled="busy"
-					@click="gateOpen = true">
-					{{ gateLabel(gate.step) }}
-				</NcButton>
+				<template v-if="demand && gate && gate.canDecide">
+					<NcButton v-for="step in gate.steps"
+						:key="step"
+						:variant="gate.ready && step === gate.step ? 'primary' : 'secondary'"
+						:data-test="step === gate.step ? 'open-gate' : 'open-gate-' + step"
+						:disabled="busy"
+						@click="openGate(step)">
+						{{ gateLabel(step) }}
+					</NcButton>
+				</template>
+				<template v-if="demand && gate && gate.canSubmit">
+					<NcButton v-for="step in gate.steps"
+						:key="'submit-' + step"
+						:variant="gate.ready && step === gate.step && !(gate.instance && ['ready', 'scheduled'].includes(gate.instance.status)) ? 'primary' : 'secondary'"
+						:data-test="step === gate.step ? 'submit-gate' : 'submit-gate-' + step"
+						:disabled="busy || (step === gate.step && gate.instance && ['ready', 'scheduled', 'adjourned'].includes(gate.instance.status))"
+						@click="onSubmitGate(step)">
+						{{ t('nc_nexus', 'Submit {gate} to {body}', { gate: step.toUpperCase(), body: gate.decider.body.code }) }}
+					</NcButton>
+				</template>
 				<!-- PMO: außerplanmäßig neu entscheiden (Begründung Pflicht), bewusst zurückhaltend -->
 				<NcButton v-if="demand && demand.can.retriage"
 					variant="tertiary"
@@ -447,8 +511,13 @@
 			@close="triageOpen = false; trapElements = []"
 			@decided="onDecided" />
 		<GateDialog v-if="gateOpen && gate"
-			:demand="demand"
-			:gate="gate"
+			:demand-id="demand.id"
+			:title="demand.title"
+			:step="gateStep"
+			:checks="gateStep === gate.step ? gate.checks : []"
+			:outcomes="gate.outcomes"
+			:ready="gateStep !== gate.step || gate.ready"
+			:tranche="gate.tranche"
 			@ready="el => trapElements = [el]"
 			@close="gateOpen = false; trapElements = []"
 			@decided="onGate" />
@@ -483,7 +552,7 @@ import { getCanonicalLocale, t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
-import { createDemand, deleteDemand, demandAssessments, demandHistory, demandNeeds, demandObjectives, errorMessage, gateStatus, getBusinessCase, getDemand, saveDemandNeeds, saveDemandObjectives, submitDemand, updateDemand } from '../api.js'
+import { createDemand, deleteDemand, demandAssessments, demandHistory, demandNeeds, demandObjectives, errorMessage, gateStatus, getBusinessCase, getDemand, saveDemandNeeds, saveDemandObjectives, submitDemand, submitGate, updateDemand } from '../api.js'
 import AnalysisDialog from './AnalysisDialog.vue'
 import AssessmentDialog from './AssessmentDialog.vue'
 import BusinessCaseDialog from './BusinessCaseDialog.vue'
@@ -493,7 +562,7 @@ import CommentThread from './CommentThread.vue'
 import NeedsEditor from './NeedsEditor.vue'
 import SimilarDemands from './SimilarDemands.vue'
 import TriageDialog from './TriageDialog.vue'
-import { actionLabel, assessmentKindLabel, channelLabel, checkLabel, fieldLabel, formatDate, formatDay, formatIsoDay, formatMoney, formatMonth, formatNumber, gateLabel, indented, objectiveTree, orgTree, qualityLabel, statusChip, statusLabel, typeLabel } from '../labels.js'
+import { actionLabel, assessmentKindLabel, channelLabel, checkLabel, fieldLabel, formatDate, formatDay, formatIsoDay, formatMoney, formatMonth, formatNumber, gateLabel, indented, instanceStatusLabel, objectiveTree, orgTree, qualityLabel, statusChip, statusLabel, typeLabel } from '../labels.js'
 
 const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, deadline: '', problemStatement: '', description: '', expectedBenefit: '' })
 
@@ -510,7 +579,7 @@ export default {
 	},
 	emits: ['close', 'changed'],
 	setup() {
-		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, statusChip, statusLabel, typeLabel, assessmentKindLabel, qualityLabel, formatMoney, checkLabel, gateLabel, formatMonth, formatNumber }
+		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, statusChip, statusLabel, typeLabel, assessmentKindLabel, qualityLabel, formatMoney, checkLabel, gateLabel, formatMonth, formatNumber, instanceStatusLabel, PROJECT_STATES: ['prioritized', 'released', 'in_execution', 'paused', 'completed', 'closed', 'cancelled'] }
 	},
 	data() {
 		return {
@@ -528,6 +597,7 @@ export default {
 			businessCase: null,
 			gate: null,
 			gateOpen: false,
+			gateStep: null,
 			bcOpen: false,
 			assessKind: null,
 			objectiveIds: [],
@@ -571,7 +641,7 @@ export default {
 				return false
 			}
 			return !this.dirty && !this.demand.can.submit && !this.demand.can.triage && !this.demand.can.completeAnalysis
-				&& !(this.gate?.step && this.gate.canDecide && this.gate.ready)
+				&& !(this.gate?.step && (this.gate.canDecide || this.gate.canSubmit) && this.gate.ready)
 		},
 		dirtyForm() {
 			return !this.readonly && (JSON.stringify(this.form) !== this.saved || JSON.stringify(this.needs) !== this.needsSaved || this.objectivesChanged())
@@ -662,6 +732,27 @@ export default {
 		},
 		poolName(id) {
 			return this.pools.find(p => p.id === id)?.name ?? '?'
+		},
+		openGate(step) {
+			this.gateStep = step
+			this.gateOpen = true
+		},
+		async onSubmitGate(step) {
+			this.busy = true
+			try {
+				const instance = await submitGate(this.id, step)
+				if (instance.status === 'ready') {
+					showSuccess(t('nc_nexus', 'Submitted; the gate is ready for the next session'))
+				} else {
+					showError(t('nc_nexus', 'The checklist is not complete yet'))
+				}
+				this.gate = await gateStatus(this.id)
+				this.history = await demandHistory(this.id)
+			} catch (e) {
+				showError(errorMessage(e))
+			} finally {
+				this.busy = false
+			}
 		},
 		async onGate() {
 			// über den Antrags-Endpunkt neu laden: nur er liefert die Rechte (can) des Kontos
@@ -870,6 +961,90 @@ export default {
 
 	&__check--fail {
 		color: var(--color-error-text);
+	}
+
+	&__path {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		align-items: center;
+		margin: 0 0 10px;
+		padding: 0;
+		list-style: none;
+
+		li {
+			padding: 2px 10px;
+			border: 1px solid var(--color-border-dark);
+			border-radius: var(--border-radius-pill, 20px);
+			font-size: 12px;
+			font-weight: 600;
+		}
+	}
+
+	&__path--done {
+		background: var(--color-success);
+		border-color: var(--color-success) !important;
+		color: var(--color-success-text-on, #fff);
+	}
+
+	&__path--current {
+		background: var(--color-primary-element-light);
+		border-color: var(--color-primary-element) !important;
+		color: var(--color-primary-element-light-text);
+	}
+
+	&__path--open {
+		color: var(--color-text-maxcontrast);
+	}
+
+	li.editor__path-set {
+		border: none;
+		font-weight: normal;
+		color: var(--color-text-maxcontrast);
+	}
+
+	&__step {
+		margin: 0 0 6px;
+
+		.nx-chip {
+			margin-inline-start: 6px;
+		}
+	}
+
+	&__conditions {
+		margin: 10px 0;
+
+		h4 {
+			margin: 0 0 4px;
+			font-size: 13px;
+		}
+
+		ul {
+			margin: 0;
+			padding: 0;
+			list-style: none;
+		}
+
+		li {
+			display: flex;
+			gap: 6px;
+			align-items: center;
+			padding: 2px 0;
+			font-size: 13px;
+		}
+	}
+
+	&__condition--overdue {
+		color: var(--color-error-text);
+	}
+
+	&__condition--closed {
+		color: var(--color-text-maxcontrast);
+	}
+
+	&__tranches small {
+		margin-inline-start: 6px;
+		color: var(--color-text-maxcontrast);
 	}
 
 	&__alloc {

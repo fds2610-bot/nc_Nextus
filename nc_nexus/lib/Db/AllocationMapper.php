@@ -64,6 +64,26 @@ class AllocationMapper {
 		])->executeStatement();
 	}
 
+	/**
+	 * Zusagen ab einem Monat freigeben (Abbruch, Abnahme): die Kapazität steht wieder zur Verfügung.
+	 *
+	 * @return float freigegebene Personentage
+	 */
+	public function releaseFrom(int $demandId, string $period): float {
+		$released = 0.0;
+		foreach ($this->forDemand($demandId) as $row) {
+			if ($row['period'] >= $period) {
+				$released += $row['personDays'];
+			}
+		}
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete(self::TABLE)
+			->where($qb->expr()->eq('demand_id', $qb->createNamedParameter($demandId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->gte('period', $qb->createNamedParameter($period)))
+			->executeStatement();
+		return $released;
+	}
+
 	public function countForPool(int $poolId): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'n'))->from(self::TABLE)

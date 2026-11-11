@@ -284,3 +284,143 @@ textarea.nx-input.nx-input {
 	clip: rect(0 0 0 0);
 	white-space: nowrap;
 }
+
+// ---- Ansichten der Stufe 3 (Governance, Sitzungen, Beschlussverfolgung, Datenqualität) ----------
+// Gleicher Aufbau wie Organisation: Kopf, Abschnitte mit Überschrift, Zeilen in einer Karte.
+.nx-view {
+	padding: 8px 20px 20px 50px;
+
+	&__header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px;
+		min-height: var(--default-clickable-area, 34px);
+		margin: 4px 0 16px;
+
+		h2 {
+			margin: 0;
+			font-size: 20px;
+			font-weight: 600;
+		}
+	}
+
+	&__count,
+	&__hint,
+	&__empty {
+		color: var(--color-text-maxcontrast);
+	}
+
+	&__hint {
+		margin: -6px 0 10px;
+		font-size: 13px;
+	}
+
+	&__spacer {
+		flex: 1;
+	}
+
+	&__section {
+		margin-bottom: 28px;
+	}
+
+	&__section-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		margin-bottom: 10px;
+
+		h3 {
+			margin: 0;
+			font-size: 12px;
+			font-weight: 700;
+			color: var(--color-text-maxcontrast);
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+	}
+
+	&__table {
+		background: var(--color-main-background);
+		border: 1px solid var(--color-border);
+		border-radius: var(--border-radius-container-large, 12px);
+		overflow: hidden;
+	}
+}
+
+.nx-row {
+	display: grid;
+	align-items: center;
+	gap: 12px;
+	min-height: 52px;
+	padding: 4px 4px 4px 12px;
+	border-bottom: 1px solid var(--color-border);
+
+	&:last-child {
+		border-bottom: none;
+	}
+
+	&--click {
+		cursor: pointer;
+
+		&:hover {
+			background: var(--color-background-hover);
+		}
+	}
+
+	&--sub {
+		min-height: 40px;
+		padding-inline-start: 48px;
+		font-size: 13px;
+	}
+
+	&__chevron,
+	&__muted {
+		color: var(--color-text-maxcontrast);
+	}
+
+	&__name {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	&__title {
+		overflow: hidden;
+		font-weight: 600;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	&__meta {
+		overflow: hidden;
+		font-size: 13px;
+		color: var(--color-text-maxcontrast);
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	&__actions {
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	&--warn {
+		color: var(--color-error-text);
+	}
+}
+
+.nx-gates {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+
+	span {
+		padding: 1px 8px;
+		border: 1px solid var(--color-border-dark);
+		border-radius: var(--border-radius-pill, 20px);
+		font-size: 12px;
+		font-weight: 600;
+	}
+}

@@ -9,7 +9,16 @@ const thisMonth = () => {
 	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-/** Vorhaben bis „In Qualifizierung“ mit Bedarf, Fremdbewertung und Business Case vorbereiten */
+/**
+ * Vorhaben bis „In Qualifizierung“ mit Bedarf, Fremdbewertung und Business Case vorbereiten
+ * @param own
+ * @param admin
+ * @param root0
+ * @param root0.title
+ * @param root0.unitId
+ * @param root0.poolId
+ * @param root0.days
+ */
 async function qualified(own, admin, { title, unitId, poolId, days }) {
 	const d = await createDemand(own, { title, demandType: 'efficiency', problemStatement: 'x', orgUnitId: unitId })
 	await call(own, 'put', `/demands/${d.id}/needs`, { needs: [{ poolId, period: thisMonth(), personDays: days }] }, 200)
@@ -54,7 +63,7 @@ test.describe('Gates G2/G3 und Kapazitätsschnitt', () => {
 
 			// G2: priorisieren → Projektschlüssel
 			await editor.locator('[data-test="open-gate"]').click()
-			await dialog.locator('[data-test="outcome-prioritized"] input').check()
+			await dialog.locator('[data-test="outcome-approved"] input').check()
 			await dialog.locator('[data-test="save-gate"]').click()
 			await expect(editor.locator('[data-test="demand-status"]')).toHaveText(/Prioritized|Priorisiert/)
 			await expect(editor.locator('[data-test="project-key"]')).toHaveText(/^PRJ-\d{4}-\d{4}$/)

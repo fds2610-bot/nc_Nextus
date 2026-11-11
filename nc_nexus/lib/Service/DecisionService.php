@@ -38,10 +38,11 @@ class DecisionService {
 	 * Beschluss festhalten (Triage, G2, G3 …). Innerhalb der Transaktion des Vorgangs aufrufen.
 	 *
 	 * @param array<string, mixed> $details
+	 * @param array{role: string, scopeType: string, scopeId: int|null}|null $mandate Gremium als Mandat (Sitzung), sonst das PMO-Mandat des Kontos
 	 */
-	public function record(string $userId, Demand $demand, string $type, string $outcome, ?string $rationale, array $details, bool $outOfSequence = false): Decision {
+	public function record(string $userId, Demand $demand, string $type, string $outcome, ?string $rationale, array $details, bool $outOfSequence = false, ?array $mandate = null): Decision {
 		$now = $this->time->getTime();
-		$mandate = $this->permissions->mandateFor($userId, $demand);
+		$mandate ??= $this->permissions->mandateFor($userId, $demand);
 		$previous = $this->decisions->findLatest(DemandService::ENTITY, $demand->getId(), $demand->getCreatedAt());
 		$sequence = $this->counters->next('decision-' . date('Y', $now));
 

@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { navTo } = require('../helpers/nav')
 const { PATH, apiAs, createDemand } = require('../helpers/api')
 const { E2E_OTHER_USER, E2E_USER } = require('../helpers/env')
 
@@ -55,9 +56,9 @@ test.describe('Antragseingang', () => {
 		await page.reload()
 		const row = page.locator(`[data-test="demand-${demand.key}"]`)
 
-		await page.locator('[data-test="nav-status-submitted"]').click()
+		await navTo(page, 'status', 'nav-status-submitted')
 		await expect(row).toHaveCount(0)
-		await page.locator('[data-test="nav-status-draft"]').click()
+		await navTo(page, 'status', 'nav-status-draft')
 		await expect(row).toBeVisible()
 
 		await page.locator('[data-test="nav-all"]').click()

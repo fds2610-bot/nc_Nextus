@@ -43,6 +43,23 @@
 						<NcIconSvgWrapper :path="mdiScaleBalance" />
 					</template>
 				</NcAppNavigationItem>
+				<NcAppNavigationItem v-if="showSessions"
+					:name="t('nc_nexus', 'Sessions')"
+					:active="view === 'sessions'"
+					data-test="nav-sessions"
+					@click="view = 'sessions'">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiCalendarAccount" />
+					</template>
+				</NcAppNavigationItem>
+				<NcAppNavigationItem :name="t('nc_nexus', 'Decision follow-up')"
+					:active="view === 'conditions'"
+					data-test="nav-conditions"
+					@click="view = 'conditions'">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiClipboardCheckOutline" />
+					</template>
+				</NcAppNavigationItem>
 
 				<NcAppNavigationItem :name="t('nc_nexus', 'Strategic objectives')"
 					:active="view === 'objectives'"
@@ -88,8 +105,18 @@
 					</template>
 				</NcAppNavigationItem>
 
-				<template v-if="me.canTriage">
-					<NcAppNavigationCaption :name="t('nc_nexus', 'Triage')" />
+				<NcAppNavigationItem v-if="me.canTriage"
+					v-model:open="groups.triage"
+					:name="t('nc_nexus', 'Triage')"
+					:allow-collapse="true"
+					data-test="nav-group-triage"
+					@click="groups.triage = !groups.triage">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiGavel" />
+					</template>
+					<template #counter>
+						<NcCounterBubble v-if="triageTotal && !groups.triage" :count="triageTotal" type="highlighted" />
+					</template>
 					<NcAppNavigationItem :name="t('nc_nexus', 'To triage')"
 						:active="view === 'demands' && filter.kind === 'queue' && filter.value === 'triage'"
 						data-test="nav-queue-triage"
@@ -112,7 +139,7 @@
 							<NcCounterBubble v-if="queue('resubmission').length" :count="queue('resubmission').length" />
 						</template>
 					</NcAppNavigationItem>
-				</template>
+				</NcAppNavigationItem>
 
 				<NcAppNavigationItem v-if="queue('analysis').length"
 					:name="t('nc_nexus', 'My analyses')"
@@ -127,37 +154,53 @@
 					</template>
 				</NcAppNavigationItem>
 
-				<NcAppNavigationCaption :name="t('nc_nexus', 'Status')" />
-				<NcAppNavigationItem v-for="status in shownStatuses"
-					:key="status"
-					:name="statusLabel(status)"
-					:active="view === 'demands' && filter.kind === 'status' && filter.value === status"
-					:data-test="'nav-status-' + status"
-					@click="setFilter('status', status)">
+				<NcAppNavigationItem v-model:open="groups.status"
+					:name="t('nc_nexus', 'Status')"
+					:allow-collapse="true"
+					data-test="nav-group-status"
+					@click="groups.status = !groups.status">
 					<template #icon>
-						<NcIconSvgWrapper :path="statusIcon(status)" />
+						<NcIconSvgWrapper :path="mdiProgressCheck" />
 					</template>
-					<template #counter>
-						<NcCounterBubble v-if="countBy('status', status)" :count="countBy('status', status)" />
-					</template>
+					<NcAppNavigationItem v-for="status in shownStatuses"
+						:key="status"
+						:name="statusLabel(status)"
+						:active="view === 'demands' && filter.kind === 'status' && filter.value === status"
+						:data-test="'nav-status-' + status"
+						@click="setFilter('status', status)">
+						<template #icon>
+							<NcIconSvgWrapper :path="statusIcon(status)" />
+						</template>
+						<template #counter>
+							<NcCounterBubble v-if="countBy('status', status)" :count="countBy('status', status)" />
+						</template>
+					</NcAppNavigationItem>
 				</NcAppNavigationItem>
 
-				<NcAppNavigationCaption :name="t('nc_nexus', 'Demand types')" />
-				<NcAppNavigationItem v-for="type in types"
-					:key="type"
-					:name="typeLabel(type)"
-					:active="view === 'demands' && filter.kind === 'type' && filter.value === type"
-					@click="setFilter('type', type)">
+				<NcAppNavigationItem v-model:open="groups.types"
+					:name="t('nc_nexus', 'Demand types')"
+					:allow-collapse="true"
+					data-test="nav-group-types"
+					@click="groups.types = !groups.types">
 					<template #icon>
-						<NcAppNavigationIconBullet :color="typeColor(type)" />
+						<NcIconSvgWrapper :path="mdiShapeOutline" />
 					</template>
-					<template #counter>
-						<NcCounterBubble v-if="countBy('demandType', type)" :count="countBy('demandType', type)" />
-					</template>
+					<NcAppNavigationItem v-for="type in types"
+						:key="type"
+						:name="typeLabel(type)"
+						:active="view === 'demands' && filter.kind === 'type' && filter.value === type"
+						@click="setFilter('type', type)">
+						<template #icon>
+							<NcAppNavigationIconBullet :color="typeColor(type)" />
+						</template>
+						<template #counter>
+							<NcCounterBubble v-if="countBy('demandType', type)" :count="countBy('demandType', type)" />
+						</template>
+					</NcAppNavigationItem>
 				</NcAppNavigationItem>
 			</NcAppNavigationList>
 
-			<template v-if="me.canManageOrg || poolInfo.canSee" #footer>
+			<template v-if="me.canManageOrg || me.canTriage || poolInfo.canSee" #footer>
 				<ul class="app-navigation-entry__settings">
 					<NcAppNavigationItem v-if="poolInfo.canSee"
 						:name="t('nc_nexus', 'Assessment model')"
@@ -166,6 +209,24 @@
 						@click="view = 'model'">
 						<template #icon>
 							<NcIconSvgWrapper :path="mdiTuneVariant" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="me.canTriage || me.canManageOrg"
+						:name="t('nc_nexus', 'Data quality')"
+						:active="view === 'quality'"
+						data-test="nav-quality"
+						@click="view = 'quality'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiShieldCheckOutline" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="me.canManageOrg"
+						:name="t('nc_nexus', 'Governance')"
+						:active="view === 'governance'"
+						data-test="nav-governance"
+						@click="view = 'governance'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiSitemapOutline" />
 						</template>
 					</NcAppNavigationItem>
 					<NcAppNavigationItem v-if="me.canManageOrg"
@@ -207,6 +268,20 @@
 				:org-units="orgUnits"
 				:refresh-key="refresh"
 				@open="openEditor" />
+			<SessionsView v-else-if="view === 'sessions'"
+				:me="me.userId"
+				:refresh-key="refresh"
+				@changed="onChanged" />
+			<ConditionsView v-else-if="view === 'conditions'"
+				:me="me.userId"
+				:refresh-key="refresh"
+				@open="openEditor"
+				@changed="onChanged" />
+			<QualityView v-else-if="view === 'quality'"
+				:refresh-key="refresh"
+				@open="openEditor" />
+			<GovernanceView v-else-if="view === 'governance'"
+				@changed="loadOrg" />
 			<OrgView v-else-if="view === 'org'"
 				:units="orgUnits"
 				:assignments="assignments"
@@ -235,13 +310,12 @@
 </template>
 
 <script>
-import { mdiAccountQuestion, mdiBullseyeArrow, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
+import { mdiAccountQuestion, mdiArchiveOutline, mdiProgressCheck, mdiShapeOutline, mdiBullseyeArrow, mdiCancel, mdiFlagCheckered, mdiPlayCircleOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
 import NcAppContent from '@nextcloud/vue/components/NcAppContent'
 import NcAppNavigation from '@nextcloud/vue/components/NcAppNavigation'
-import NcAppNavigationCaption from '@nextcloud/vue/components/NcAppNavigationCaption'
 import NcAppNavigationIconBullet from '@nextcloud/vue/components/NcAppNavigationIconBullet'
 import NcAppNavigationItem from '@nextcloud/vue/components/NcAppNavigationItem'
 import NcAppNavigationList from '@nextcloud/vue/components/NcAppNavigationList'
@@ -260,6 +334,10 @@ import ScoringModelView from './views/ScoringModelView.vue'
 import DecisionRegister from './views/DecisionRegister.vue'
 import ObjectivesView from './views/ObjectivesView.vue'
 import OrgView from './views/OrgView.vue'
+import ConditionsView from './views/ConditionsView.vue'
+import GovernanceView from './views/GovernanceView.vue'
+import QualityView from './views/QualityView.vue'
+import SessionsView from './views/SessionsView.vue'
 import { errorMessage, getMe, listDemands, listObjectives, listOrgUnits, listPools, listRoleAssignments, scoringModel } from './api.js'
 import { PHASE_OF, phaseLabel, STATUSES, statusLabel, typeColor, typeLabel } from './labels.js'
 
@@ -270,7 +348,6 @@ export default {
 		DemandList,
 		NcAppContent,
 		NcAppNavigation,
-		NcAppNavigationCaption,
 		NcAppNavigationIconBullet,
 		NcAppNavigationItem,
 		NcAppNavigationList,
@@ -281,6 +358,10 @@ export default {
 		NcTextField,
 		BenefitRegister,
 		CapacityView,
+		ConditionsView,
+		GovernanceView,
+		QualityView,
+		SessionsView,
 		DecisionRegister,
 		ObjectivesView,
 		OrgView,
@@ -289,7 +370,7 @@ export default {
 		ScoringModelView,
 	},
 	setup() {
-		return { mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiProgressCheck, mdiShapeOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
@@ -301,8 +382,10 @@ export default {
 			filter: { kind: 'all', value: null },
 			types: loadState('nc_nexus', 'demand_types', []),
 			view: 'demands',
+			// Gruppen der Navigation, standardmäßig eingeklappt
+			groups: { triage: false, status: false, types: false },
 			refresh: 0,
-			me: { canManageOrg: false, canTriage: false, roles: [] },
+			me: { canManageOrg: false, canTriage: false, roles: [], bodies: [] },
 			orgUnits: [],
 			assignments: [],
 			poolInfo: { canSee: false, canManage: false, pools: [] },
@@ -311,6 +394,15 @@ export default {
 		}
 	},
 	computed: {
+		// Sitzungen sehen PMO, Gremiumsmitglieder sowie Board und Revision
+		// Summe der Arbeitsvorräte der Triage (für die eingeklappte Gruppe)
+		triageTotal() {
+			return this.queue('triage').length + this.queue('resubmission').length
+		},
+		showSessions() {
+			return this.me.canManageOrg || (this.me.bodies ?? []).length > 0
+				|| this.me.roles.some(r => ['board_member', 'auditor', 'portfolio_manager'].includes(r.role))
+		},
 		visibleDemands() {
 			const query = this.search.trim().toLowerCase()
 			return this.demands.filter(demand => {
@@ -388,6 +480,11 @@ export default {
 				in_qualification: mdiCheckCircleOutline,
 				rejected: mdiCloseCircleOutline,
 				duplicate: mdiContentDuplicate,
+				in_execution: mdiPlayCircleOutline,
+				paused: mdiPauseCircleOutline,
+				completed: mdiFlagCheckered,
+				closed: mdiArchiveOutline,
+				cancelled: mdiCancel,
 			}[status] || mdiSend
 		},
 		countBy(field, value) {
