@@ -56,6 +56,7 @@ return [
 		['name' => 'org_api#deleteUnit', 'url' => '/api/v1/org-units/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 		['name' => 'org_api#assignments', 'url' => '/api/v1/role-assignments', 'verb' => 'GET'],
 		['name' => 'org_api#assign', 'url' => '/api/v1/role-assignments', 'verb' => 'POST'],
+		['name' => 'org_api#updateAssignment', 'url' => '/api/v1/role-assignments/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
 		['name' => 'org_api#unassign', 'url' => '/api/v1/role-assignments/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 		['name' => 'demand_api#decide', 'url' => '/api/v1/demands/{id}/triage', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 		['name' => 'demand_api#completeAnalysis', 'url' => '/api/v1/demands/{id}/analysis', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],

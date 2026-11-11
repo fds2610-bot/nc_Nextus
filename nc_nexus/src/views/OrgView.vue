@@ -70,6 +70,14 @@
 							<span class="org-row__meta">{{ validity(a) }}</span>
 							<div class="org-row__actions">
 								<NcButton variant="tertiary"
+									:aria-label="t('nc_nexus', 'Edit role assignment')"
+									:data-test="'edit-unit-role-' + a.id"
+									@click="roleDialog = { assignment: a }">
+									<template #icon>
+										<NcIconSvgWrapper :path="mdiPencil" />
+									</template>
+								</NcButton>
+								<NcButton variant="tertiary"
 									:aria-label="t('nc_nexus', 'Remove role')"
 									@click="remove(a)">
 									<template #icon>
@@ -138,6 +146,14 @@
 						<span class="org-row__meta">{{ validity(a) }}</span>
 						<div class="org-row__actions">
 							<NcButton variant="tertiary"
+								:aria-label="t('nc_nexus', 'Edit role assignment')"
+								:data-test="'edit-role-' + a.id"
+								@click="roleDialog = { assignment: a }">
+								<template #icon>
+									<NcIconSvgWrapper :path="mdiPencil" />
+								</template>
+							</NcButton>
+							<NcButton variant="tertiary"
 								:aria-label="t('nc_nexus', 'Remove role')"
 								:data-test="'remove-role-' + a.id"
 								@click="remove(a)">
@@ -160,6 +176,7 @@
 			:units="units"
 			:scope-id="roleDialog.scopeId"
 			:initial-role="roleDialog.role"
+			:assignment="roleDialog.assignment ?? null"
 			@close="roleDialog = null"
 			@changed="$emit('changed')" />
 	</div>
@@ -376,7 +393,7 @@ export default {
 }
 
 .role-row {
-	grid-template-columns: 24px 28px minmax(0, 1fr) minmax(0, 1fr) 150px 44px;
+	grid-template-columns: 24px 28px minmax(0, 1fr) minmax(0, 1fr) 150px 88px;
 	min-height: 44px;
 
 	&__group {

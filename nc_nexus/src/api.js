@@ -38,6 +38,7 @@ export const updateOrgUnit = async (id, unit) => data(await axios.put(v1(`/org-u
 export const deleteOrgUnit = async (id) => data(await axios.delete(v1(`/org-units/${id}`)))
 export const listRoleAssignments = async () => data(await axios.get(v1('/role-assignments')))
 export const assignRole = async (assignment) => data(await axios.post(v1('/role-assignments'), assignment))
+export const updateRoleAssignment = async (id, assignment) => data(await axios.put(v1(`/role-assignments/${id}`), assignment))
 export const unassignRole = async (id) => data(await axios.delete(v1(`/role-assignments/${id}`)))
 
 /**

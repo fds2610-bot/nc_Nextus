@@ -123,6 +123,51 @@ class OrgService {
 	public function assign(string $userId, array $data): RoleAssignment {
 		$this->requireManage($userId);
 		$a = new RoleAssignment();
+		$principalType = (string)($data['principalType'] ?? 'user');
+		$principalId = trim((string)($data['principalId'] ?? ''));
+		if ($principalType === 'user' ? !$this->userManager->userExists($principalId)
+			: ($principalType !== 'group' || !$this->groupManager->groupExists($principalId))) {
+			throw new ValidationException('Unknown account or group');
+		}
+		$this->applyAssignment($a, $data);
+		$a->setPrincipalType($principalType);
+		$a->setPrincipalId($principalId);
+		$a->setCreatedBy($userId);
+		$a->setCreatedAt($this->time->getTime());
+		$a = $this->roles->insert($a);
+		$this->audit->log('role_assignment', $a->getId(), 'create', $userId, $this->changes([], $a->jsonSerialize()));
+		$this->permissions->reset();
+		return $a;
+	}
+
+	/**
+	 * Rolle, Bereich, Gültigkeit und Stellvertretung ändern; die Person bleibt fest.
+	 *
+	 * @param array<string, mixed> $data
+	 * @throws ForbiddenException|ValidationException|NotFoundException
+	 */
+	public function updateAssignment(string $userId, int $id, array $data): RoleAssignment {
+		$this->requireManage($userId);
+		try {
+			$a = $this->roles->find($id);
+		} catch (DoesNotExistException) {
+			throw new NotFoundException('Role assignment not found');
+		}
+		$before = $a->jsonSerialize();
+		$this->applyAssignment($a, $data);
+		$a = $this->roles->update($a);
+		$this->audit->log('role_assignment', $id, 'update', $userId, $this->changes($before, $a->jsonSerialize()));
+		$this->permissions->reset();
+		return $a;
+	}
+
+	/**
+	 * Gemeinsame Prüfung und Übernahme von Rolle, Bereich, Gültigkeit und Stellvertretung.
+	 *
+	 * @param array<string, mixed> $data
+	 * @throws ValidationException|NotFoundException
+	 */
+	private function applyAssignment(RoleAssignment $a, array $data): void {
 		$role = (string)($data['role'] ?? '');
 		if (!in_array($role, PermissionService::ROLES, true)) {
 			throw new ValidationException('Unknown role');
@@ -136,12 +181,6 @@ class OrgService {
 			$scopeId = (int)($data['scopeId'] ?? 0);
 			$this->unit($scopeId);
 		}
-		$principalType = (string)($data['principalType'] ?? 'user');
-		$principalId = trim((string)($data['principalId'] ?? ''));
-		if ($principalType === 'user' ? !$this->userManager->userExists($principalId)
-			: ($principalType !== 'group' || !$this->groupManager->groupExists($principalId))) {
-			throw new ValidationException('Unknown account or group');
-		}
 		$validFrom = $this->date($data['validFrom'] ?? null);
 		$validTo = $this->date($data['validTo'] ?? null);
 		if ($validFrom !== null && $validTo !== null && $validTo < $validFrom) {
@@ -151,21 +190,12 @@ class OrgService {
 		if ($deputyFor !== '' && !$this->userManager->userExists($deputyFor)) {
 			throw new ValidationException('Unknown account or group');
 		}
-
 		$a->setRole($role);
 		$a->setScopeType($scopeType);
 		$a->setScopeId($scopeId);
-		$a->setPrincipalType($principalType);
-		$a->setPrincipalId($principalId);
 		$a->setValidFrom($validFrom);
 		$a->setValidTo($validTo);
 		$a->setDeputyFor($deputyFor === '' ? null : $deputyFor);
-		$a->setCreatedBy($userId);
-		$a->setCreatedAt($this->time->getTime());
-		$a = $this->roles->insert($a);
-		$this->audit->log('role_assignment', $a->getId(), 'create', $userId, $this->changes([], $a->jsonSerialize()));
-		$this->permissions->reset();
-		return $a;
 	}
 
 	/** @throws ForbiddenException|NotFoundException */

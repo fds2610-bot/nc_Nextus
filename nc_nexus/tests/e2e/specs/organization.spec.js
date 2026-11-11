@@ -43,6 +43,16 @@ test.describe('Organisation und Rollen', () => {
 			await expect(page.locator(`[data-test="unit-role-${E2E_OTHER_USER}-board_member"]`)).toBeVisible()
 			await page.locator('[data-test="role-group-board_member"]').click()
 			await expect(page.locator(`[data-test="role-${E2E_OTHER_USER}-board_member"]`)).toBeVisible()
+			// Zuweisung bearbeiten: Gültigkeit setzen, Person bleibt
+			await page.locator('[data-test^="edit-role-"]').first().click()
+			const edit = page.locator('[data-test="role-dialog"]')
+			await expect(edit.locator('[data-test="field-principal-fixed"]')).toContainText(E2E_OTHER_USER)
+			await expect(edit.locator('[data-test="save-role"]')).toBeDisabled()
+			await edit.locator('input[type="date"]').last().fill('2099-12-31')
+			await edit.locator('[data-test="save-role"]').click()
+			await expect(edit).toHaveCount(0)
+			const saved = (await call(admin, 'get', '/role-assignments')).find(a => a.principalId === E2E_OTHER_USER && a.role === 'board_member' && a.scopeType === 'org_unit')
+			expect(saved.validTo).toBe('2099-12-31')
 			// Rollen zuerst, die Person darunter eingerückt
 			const group = page.locator('[data-test="role-tree"] > *')
 			const names = await group.evaluateAll(els => els.map(e => e.getAttribute('data-test')))

@@ -156,6 +156,30 @@ class OrgApiController extends OCSController {
 	}
 
 	/**
+	 * Rollenzuweisung ändern (Rolle, Bereich, Gültigkeit, Stellvertretung; die Person bleibt).
+	 *
+	 * @param string $role Rolle
+	 * @param string $scopeType global oder org_unit
+	 * @param int|null $scopeId Org-Einheit bei scopeType org_unit
+	 * @param string|null $validFrom gültig ab (JJJJ-MM-TT)
+	 * @param string|null $validTo gültig bis (JJJJ-MM-TT)
+	 * @param string|null $deputyFor Stellvertretung für Konto
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: geändert
+	 * 400: Eingaben ungültig
+	 * 403: keine Berechtigung
+	 * 404: nicht gefunden
+	 */
+	#[NoAdminRequired]
+	public function updateAssignment(int $id, string $role = '', string $scopeType = 'global', ?int $scopeId = null, ?string $validFrom = null, ?string $validTo = null, ?string $deputyFor = null): DataResponse {
+		return $this->handle(fn () => $this->org->updateAssignment((string)$this->userId, $id, [
+			'role' => $role, 'scopeType' => $scopeType, 'scopeId' => $scopeId,
+			'validFrom' => $validFrom, 'validTo' => $validTo, 'deputyFor' => $deputyFor,
+		])->jsonSerialize());
+	}
+
+	/**
 	 * Rollenzuweisung entfernen.
 	 *
 	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
