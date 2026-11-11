@@ -78,6 +78,7 @@ export default {
 	props: {
 		units: { type: Array, required: true },
 		scopeId: { type: Number, default: null },
+		initialRole: { type: String, default: 'portfolio_manager' },
 	},
 	emits: ['close', 'changed'],
 	setup() {
@@ -90,7 +91,7 @@ export default {
 			principal: null,
 			principalOptions: [],
 			scope: this.scopeId === null ? 'global' : String(this.scopeId),
-			form: { role: 'portfolio_manager', validFrom: '', validTo: '' },
+			form: { role: this.initialRole, validFrom: '', validTo: '' },
 		}
 	},
 	computed: {

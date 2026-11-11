@@ -37,6 +37,11 @@ test.describe('Organisation und Rollen', () => {
 			await dialog.locator('[data-test="field-scope"] select').selectOption({ label: name })
 			await dialog.locator('[data-test="save-role"]').click()
 			await expect(page.locator(`[data-test="role-${E2E_OTHER_USER}-board_member"]`)).toBeVisible()
+			// Rollen zuerst, die Person darunter eingerückt
+			const group = page.locator('[data-test="role-tree"] > *')
+			const names = await group.evaluateAll(els => els.map(e => e.getAttribute('data-test')))
+			expect(names.indexOf('role-group-board_member')).toBeGreaterThanOrEqual(0)
+			expect(names.indexOf(`role-${E2E_OTHER_USER}-board_member`)).toBeGreaterThan(names.indexOf('role-group-board_member'))
 		} finally {
 			// Aufräumen über die API: Rollen der Einheit, dann die Einheit
 			const units = await call(admin, 'get', '/org-units')

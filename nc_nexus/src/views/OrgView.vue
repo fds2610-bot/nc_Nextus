@@ -65,34 +65,59 @@
 			<p class="org-view__hint">
 				{{ t('nc_nexus', 'Nextcloud administrators always act as global portfolio office.') }}
 			</p>
-			<div v-if="assignments.length" class="org-view__table">
-				<div v-for="a in sortedAssignments"
-					:key="a.id"
-					class="role-row"
-					:data-test="'role-' + a.principalId + '-' + a.role">
-					<NcAvatar v-if="a.principalType === 'user'"
-						:user="a.principalId"
-						:size="32"
-						:disable-menu="true" />
-					<NcIconSvgWrapper v-else :path="mdiAccountGroup" class="role-row__group" />
-					<div class="org-row__name">
-						<span class="org-row__title">{{ a.principalId }}</span>
-						<span class="org-row__meta">{{ a.principalType === 'group' ? t('nc_nexus', 'Group') : t('nc_nexus', 'Account') }}</span>
+			<div class="org-view__table" data-test="role-tree">
+				<template v-for="group in roleGroups" :key="group.role">
+					<div class="org-row role-head"
+						:data-test="'role-group-' + group.role">
+						<NcIconSvgWrapper class="org-row__icon" :path="mdiShieldAccount" />
+						<div class="org-row__name">
+							<span class="org-row__title">{{ roleLabel(group.role) }}</span>
+							<span class="org-row__meta">{{ roleHint(group.role) }}</span>
+						</div>
+						<span class="org-row__meta">{{ n('nc_nexus', '%n assignment', '%n assignments', group.items.length) }}</span>
+						<div class="org-row__actions">
+							<NcButton variant="tertiary"
+								:aria-label="t('nc_nexus', 'Assign role') + ': ' + roleLabel(group.role)"
+								:data-test="'assign-' + group.role"
+								@click="roleDialog = { scopeId: null, role: group.role }">
+								<template #icon>
+									<NcIconSvgWrapper :path="mdiAccountPlus" />
+								</template>
+							</NcButton>
+						</div>
 					</div>
-					<span class="nx-chip nx-chip--submitted">{{ roleLabel(a.role) }}</span>
-					<span class="org-row__meta">{{ scopeLabel(a) }}</span>
-					<span class="org-row__meta">{{ validity(a) }}</span>
-					<div class="org-row__actions">
-						<NcButton variant="tertiary"
-							:aria-label="t('nc_nexus', 'Remove role')"
-							:data-test="'remove-role-' + a.id"
-							@click="remove(a)">
-							<template #icon>
-								<NcIconSvgWrapper :path="mdiClose" />
-							</template>
-						</NcButton>
+					<div v-for="a in group.items"
+						:key="a.id"
+						class="role-row"
+						:data-test="'role-' + a.principalId + '-' + a.role">
+						<span class="role-row__indent" />
+						<NcAvatar v-if="a.principalType === 'user'"
+							:user="a.principalId"
+							:size="28"
+							:disable-menu="true" />
+						<NcIconSvgWrapper v-else :path="mdiAccountGroup" class="role-row__group" />
+						<div class="org-row__name">
+							<span class="org-row__title">{{ a.principalId }}</span>
+							<span class="org-row__meta">{{ a.principalType === 'group' ? t('nc_nexus', 'Group') : t('nc_nexus', 'Account') }}</span>
+						</div>
+						<span class="org-row__meta">{{ scopeLabel(a) }}</span>
+						<span class="org-row__meta">{{ validity(a) }}</span>
+						<div class="org-row__actions">
+							<NcButton variant="tertiary"
+								:aria-label="t('nc_nexus', 'Remove role')"
+								:data-test="'remove-role-' + a.id"
+								@click="remove(a)">
+								<template #icon>
+									<NcIconSvgWrapper :path="mdiClose" />
+								</template>
+							</NcButton>
+						</div>
 					</div>
-				</div>
+					<div v-if="!group.items.length" class="role-row role-row--empty">
+						<span class="role-row__indent" />
+						<span class="org-row__meta">{{ t('nc_nexus', 'Nobody assigned yet.') }}</span>
+					</div>
+				</template>
 			</div>
 		</section>
 
@@ -104,13 +129,14 @@
 		<RoleDialog v-if="roleDialog"
 			:units="units"
 			:scope-id="roleDialog.scopeId"
+			:initial-role="roleDialog.role"
 			@close="roleDialog = null"
 			@changed="$emit('changed')" />
 	</div>
 </template>
 
 <script>
-import { mdiAccountGroup, mdiAccountPlus, mdiClose, mdiDomain, mdiPencil, mdiPlus } from '@mdi/js'
+import { mdiAccountGroup, mdiAccountPlus, mdiClose, mdiDomain, mdiPencil, mdiPlus, mdiShieldAccount } from '@mdi/js'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { n, t } from '@nextcloud/l10n'
 import NcActionButton from '@nextcloud/vue/components/NcActionButton'
@@ -121,7 +147,7 @@ import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import OrgUnitDialog from '../components/OrgUnitDialog.vue'
 import RoleDialog from '../components/RoleDialog.vue'
 import { errorMessage, unassignRole } from '../api.js'
-import { formatDay, orgTree, roleLabel } from '../labels.js'
+import { ASSIGNABLE_ROLES, formatDay, orgTree, roleHint, roleLabel } from '../labels.js'
 
 export default {
 	name: 'OrgView',
@@ -132,7 +158,7 @@ export default {
 	},
 	emits: ['changed'],
 	setup() {
-		return { mdiAccountGroup, mdiAccountPlus, mdiClose, mdiDomain, mdiPencil, mdiPlus, n, t, roleLabel }
+		return { mdiAccountGroup, mdiAccountPlus, mdiClose, mdiDomain, mdiPencil, mdiPlus, mdiShieldAccount, n, t, roleHint, roleLabel }
 	},
 	data() {
 		return { unitDialog: null, roleDialog: null }
@@ -141,8 +167,20 @@ export default {
 		tree() {
 			return orgTree(this.units)
 		},
-		sortedAssignments() {
-			return [...this.assignments].sort((a, b) => this.scopeLabel(a).localeCompare(this.scopeLabel(b)) || a.principalId.localeCompare(b.principalId))
+		/** Alle vergebbaren Rollen (auch ohne Inhaber), danach weitere vorhandene Rollen; darunter die Zuweisungen. */
+		roleGroups() {
+			const roles = [...ASSIGNABLE_ROLES]
+			for (const a of this.assignments) {
+				if (!roles.includes(a.role)) {
+					roles.push(a.role)
+				}
+			}
+			return roles.map(role => ({
+				role,
+				items: this.assignments
+					.filter(a => a.role === role)
+					.sort((x, y) => this.scopeLabel(x).localeCompare(this.scopeLabel(y)) || x.principalId.localeCompare(y.principalId)),
+			}))
 		},
 	},
 	methods: {
@@ -284,8 +322,23 @@ export default {
 	}
 }
 
+.role-head {
+	background: var(--color-background-dark);
+	cursor: default;
+	grid-template-columns: auto minmax(0, 1fr) 120px 44px;
+
+	&:hover {
+		background: var(--color-background-dark);
+	}
+}
+
 .role-row {
-	grid-template-columns: 32px minmax(0, 1fr) 210px minmax(0, 1fr) 150px 44px;
+	grid-template-columns: 24px 28px minmax(0, 1fr) minmax(0, 1fr) 150px 44px;
+	min-height: 44px;
+
+	&--empty {
+		grid-template-columns: 24px minmax(0, 1fr);
+	}
 
 	&__group {
 		color: var(--color-text-maxcontrast);
