@@ -21,6 +21,8 @@ use OCP\IUserManager;
 class GovernanceService {
 	public const BODY_TYPES = ['executive', 'portfolio_board', 'resource_board', 'architecture_board', 'steering_committee', 'pmo'];
 	public const GATES = ['g2', 'g3', 'g4', 'g5', 'g6'];
+	/** Entscheidungstypen der Matrix: Gates und Change Requests oberhalb der Schwelle */
+	public const DECISION_TYPES = ['g2', 'g3', 'g4', 'g5', 'g6', 'change'];
 	/** Maschinenlesbare Pflichtprüfungen, aus denen Gate-Definitionen ihre Eingangsbedingung bilden */
 	public const CHECKS = ['org_unit', 'project_class', 'objectives', 'assessment_review', 'business_case', 'resource_needs', 'capacity', 'open_conditions', 'planning_link'];
 
@@ -231,7 +233,7 @@ class GovernanceService {
 	public function saveRight(string $userId, ?int $id, array $data): array {
 		$this->requireManage($userId);
 		$gate = (string)($data['gateCode'] ?? '');
-		if (!in_array($gate, self::GATES, true)) {
+		if (!in_array($gate, self::DECISION_TYPES, true)) {
 			throw new ValidationException('Unknown gate');
 		}
 		$classes = $data['projectClasses'] ?? null;

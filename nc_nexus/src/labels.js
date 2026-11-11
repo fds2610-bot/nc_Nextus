@@ -366,6 +366,7 @@ export const gateLabel = (step) => ({
 	g4: t('nc_nexus', 'G4 – phase release'),
 	g5: t('nc_nexus', 'G5 – acceptance / go-live'),
 	g6: t('nc_nexus', 'G6 – benefit review'),
+	change: t('nc_nexus', 'Change request above threshold'),
 })[step] || step
 
 /** Beschlussarten an Gates (Kapitel 02 §3) */
@@ -441,4 +442,118 @@ export const decisionTypeLabel = (type) => ({
 	g4: t('nc_nexus', 'G4 – phase release'),
 	g5: t('nc_nexus', 'G5 – acceptance / go-live'),
 	g6: t('nc_nexus', 'G6 – benefit review'),
+	change: t('nc_nexus', 'Change request'),
 })[type] || type
+
+// ---- Stufe 4: Steuerung im Betrieb ---------------------------------------------------------------
+
+export const ragLabel = (rag) => ({
+	green: t('nc_nexus', 'Green'),
+	yellow: t('nc_nexus', 'Yellow'),
+	red: t('nc_nexus', 'Red'),
+})[rag] || '–'
+
+export const dimensionRagLabel = (dimension) => ({
+	scope: t('nc_nexus', 'Scope'),
+	time: t('nc_nexus', 'Schedule'),
+	cost: t('nc_nexus', 'Cost'),
+	risk: t('nc_nexus', 'Risk'),
+})[dimension] || dimension
+
+// Regeln des Health-Indikators (Kapitel 02 §4.5)
+export const healthRuleLabel = (rule) => ({
+	milestone_overdue: t('nc_nexus', 'Milestone overdue'),
+	milestone_late: t('nc_nexus', 'Milestone forecast after due date'),
+	forecast_over_budget: t('nc_nexus', 'Forecast above budget'),
+	report_overdue: t('nc_nexus', 'Status report overdue'),
+	effort_deviation: t('nc_nexus', 'Actual effort deviates from plan'),
+	blocking_condition_overdue: t('nc_nexus', 'Blocking condition overdue'),
+	critical_risk_unmitigated: t('nc_nexus', 'Critical risk without mitigation'),
+	critical_issue: t('nc_nexus', 'Critical issue open'),
+	conflict_escalated: t('nc_nexus', 'Resource conflict escalated'),
+})[rule] || rule
+
+export const healthSourceLabel = (source) => ({
+	milestones: t('nc_nexus', 'Milestones'),
+	status_report: t('nc_nexus', 'Status report'),
+	actuals: t('nc_nexus', 'Actuals'),
+	conditions: t('nc_nexus', 'Decision follow-up'),
+	risks: t('nc_nexus', 'Risks'),
+	issues: t('nc_nexus', 'Issues'),
+	conflicts: t('nc_nexus', 'Conflicts'),
+})[source] || source
+
+export const riskCategoryLabel = (c) => ({
+	technical: t('nc_nexus', 'Technical'),
+	schedule: t('nc_nexus', 'Schedule'),
+	resources: t('nc_nexus', 'Resources'),
+	supplier: t('nc_nexus', 'Supplier'),
+	financial: t('nc_nexus', 'Financial'),
+	compliance: t('nc_nexus', 'Compliance'),
+	security: t('nc_nexus', 'Security'),
+	organizational: t('nc_nexus', 'Organizational'),
+})[c] || c
+
+export const riskStatusLabel = (s) => ({
+	open: t('nc_nexus', 'Pending'),
+	mitigated: t('nc_nexus', 'Mitigated'),
+	occurred: t('nc_nexus', 'Occurred'),
+	closed: t('nc_nexus', 'Closed'),
+	resolved: t('nc_nexus', 'Resolved'),
+})[s] || s
+
+export const severityLabel = (s) => ({
+	low: t('nc_nexus', 'Low'),
+	medium: t('nc_nexus', 'Medium'),
+	high: t('nc_nexus', 'High'),
+	critical: t('nc_nexus', 'Critical'),
+})[s] || s
+
+export const changeTypeLabel = (type) => ({
+	scope: t('nc_nexus', 'Scope'),
+	time: t('nc_nexus', 'Schedule'),
+	cost: t('nc_nexus', 'Cost'),
+	resource: t('nc_nexus', 'Resources'),
+	benefit: t('nc_nexus', 'Benefit'),
+})[type] || type
+
+export const changeStatusLabel = (s) => ({
+	draft: t('nc_nexus', 'Draft'),
+	submitted: t('nc_nexus', 'Submitted'),
+	incorporated: t('nc_nexus', 'Approved and incorporated'),
+	rejected: t('nc_nexus', 'Rejected'),
+})[s] || s
+
+export const thresholdReasonLabel = (r) => ({
+	budget: t('nc_nexus', 'budget above threshold'),
+	time: t('nc_nexus', 'schedule above threshold'),
+	resources: t('nc_nexus', 'bottleneck resources above threshold'),
+	benefit: t('nc_nexus', 'committed benefit changes'),
+})[r] || r
+
+export const conflictTypeLabel = (type) => ({
+	overbooking: t('nc_nexus', 'Overbooking'),
+	uncovered_demand: t('nc_nexus', 'Uncovered demand'),
+	bottleneck_peak: t('nc_nexus', 'Bottleneck peak'),
+	wip_exceeded: t('nc_nexus', 'WIP limit exceeded'),
+	zombie_project: t('nc_nexus', 'Zombie project'),
+	priority_inversion: t('nc_nexus', 'Priority inversion'),
+})[type] || type
+
+export const conflictOptionLabel = (o) => ({
+	sequenced: t('nc_nexus', 'Stagger in time'),
+	scope_cut: t('nc_nexus', 'Cut scope'),
+	substituted: t('nc_nexus', 'Substitute (other skill or pool)'),
+	external: t('nc_nexus', 'Source externally'),
+	paused: t('nc_nexus', 'Pause the lower-ranked project'),
+	deprioritised: t('nc_nexus', 'Defer the higher-ranked project (portfolio board)'),
+})[o] || o
+
+export const escalationLabel = (level) => ({
+	0: t('nc_nexus', 'not escalated'),
+	1: t('nc_nexus', 'Level 1 · bilateral'),
+	2: t('nc_nexus', 'Level 2 · resource board'),
+	3: t('nc_nexus', 'Level 3 · portfolio board'),
+})[level] || String(level)
+
+export const ragChip = (rag) => ({ green: 'nx-chip--accepted', yellow: 'nx-chip--on-hold', red: 'nx-chip--rejected' })[rag] || 'nx-chip--draft'

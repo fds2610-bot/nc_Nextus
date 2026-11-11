@@ -215,15 +215,17 @@ snapshot_save() { # $1 = Zieldatei
 	esac
 }
 
-snapshot_restore() { # $1 = Sicherungsdatei
+snapshot_restore() { # $1 = Sicherungsdatei, $2 = Startzeit des Laufs (Unix)
 	local tables
+	# Benachrichtigungen, die Nexus während des Laufs erzeugt hat, gehören zu den Testdaten
+	local notes="DELETE FROM oc_notifications WHERE app = 'nc_nexus' AND timestamp >= ${2:-0};"
 	case "$NX_DB" in
 	mariadb)
-		{ echo 'SET FOREIGN_KEY_CHECKS=0;'; for t in $(db_tables); do echo "TRUNCATE $t;"; done; cat "$1"; } \
+		{ echo 'SET FOREIGN_KEY_CHECKS=0;'; for t in $(db_tables); do echo "TRUNCATE $t;"; done; cat "$1"; echo "$notes"; } \
 			| dc exec -T db mariadb -uroot -p"${NX_DB_PASSWORD:-nextcloud}" nextcloud ;;
 	pgsql)
 		tables=$(db_tables | paste -sd,)
-		{ echo "TRUNCATE $tables RESTART IDENTITY;"; cat "$1"; } \
+		{ echo "TRUNCATE $tables RESTART IDENTITY;"; cat "$1"; echo "$notes"; } \
 			| dc exec -T db psql -q -v ON_ERROR_STOP=1 -U nextcloud -d nextcloud >/dev/null ;;
 	sqlite)
 		dc exec -T --user www-data nextcloud cp /tmp/nx-e2e-snapshot.db /var/www/html/data/nextcloud.db ;;
@@ -231,7 +233,8 @@ snapshot_restore() { # $1 = Sicherungsdatei
 }
 
 e2e() {
-	local snap='' rc=0
+	local snap='' rc=0 started
+	started=$(date +%s)
 	if [ -z "${NX_E2E_KEEP:-}" ]; then
 		snap=$(mktemp)
 		snapshot_save "$snap" || { rm -f "$snap"; die "Sicherung der App-Daten vor den E2E-Tests fehlgeschlagen"; }
@@ -240,7 +243,7 @@ e2e() {
 	trap 'rc=130' INT
 	BASE_URL="http://host.docker.internal:$NX_PORT" E2E_PASSWORD="$E2E_PASSWORD" sh "$ROOT/nc_nexus/tests/e2e/run.sh" "${ARGS[@]}" || rc=$?
 	if [ -n "$snap" ]; then
-		if snapshot_restore "$snap"; then
+		if snapshot_restore "$snap" "$started"; then
 			echo "E2E-Testdaten entfernt (App-Daten auf den Stand vor dem Lauf zurückgesetzt)"
 		else
 			echo "WARNUNG: App-Daten konnten nicht zurückgesetzt werden" >&2

@@ -105,6 +105,50 @@
 					</template>
 				</NcAppNavigationItem>
 
+				<NcAppNavigationItem v-model:open="groups.steering"
+					:name="t('nc_nexus', 'Steering')"
+					:allow-collapse="true"
+					data-test="nav-group-steering"
+					@click="groups.steering = !groups.steering">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiSteering" />
+					</template>
+					<NcAppNavigationItem :name="t('nc_nexus', 'Projects')"
+						:active="view === 'projects'"
+						data-test="nav-projects"
+						@click="openProjects(null)">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiBriefcaseOutline" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem :name="t('nc_nexus', 'Portfolio risks')"
+						:active="view === 'risks'"
+						data-test="nav-risks"
+						@click="view = 'risks'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiAlertOutline" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="poolInfo.canSee"
+						:name="t('nc_nexus', 'Resource conflicts')"
+						:active="view === 'conflicts'"
+						data-test="nav-conflicts"
+						@click="view = 'conflicts'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiSwapHorizontal" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="poolInfo.canSee"
+						:name="t('nc_nexus', 'Key figures')"
+						:active="view === 'kpis'"
+						data-test="nav-kpis"
+						@click="view = 'kpis'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiSpeedometer" />
+						</template>
+					</NcAppNavigationItem>
+				</NcAppNavigationItem>
+
 				<NcAppNavigationItem v-if="me.canTriage"
 					v-model:open="groups.triage"
 					:name="t('nc_nexus', 'Triage')"
@@ -268,6 +312,20 @@
 				:org-units="orgUnits"
 				:refresh-key="refresh"
 				@open="openEditor" />
+			<ProjectsView v-else-if="view === 'projects'"
+				:pools="poolInfo.pools"
+				:open-id="projectOpenId"
+				:refresh-key="refresh"
+				@open="openEditor"
+				@changed="onChanged" />
+			<RisksView v-else-if="view === 'risks'"
+				:refresh-key="refresh"
+				@project="openProjects" />
+			<ConflictsView v-else-if="view === 'conflicts'"
+				:refresh-key="refresh"
+				@open="openProjects" />
+			<KpiView v-else-if="view === 'kpis'"
+				:refresh-key="refresh" />
 			<SessionsView v-else-if="view === 'sessions'"
 				:me="me.userId"
 				:refresh-key="refresh"
@@ -304,13 +362,14 @@
 				:objectives="objectiveInfo.objectives"
 				:scoring="scoring"
 				@close="editorOpen = false"
+				@open-project="id => { editorOpen = false; openProjects(id) }"
 				@changed="onChanged" />
 		</NcAppContent>
 	</NcContent>
 </template>
 
 <script>
-import { mdiAccountQuestion, mdiArchiveOutline, mdiProgressCheck, mdiShapeOutline, mdiBullseyeArrow, mdiCancel, mdiFlagCheckered, mdiPlayCircleOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
+import { mdiAccountQuestion, mdiAlertOutline, mdiArchiveOutline, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiBullseyeArrow, mdiCancel, mdiFlagCheckered, mdiPlayCircleOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -335,6 +394,10 @@ import DecisionRegister from './views/DecisionRegister.vue'
 import ObjectivesView from './views/ObjectivesView.vue'
 import OrgView from './views/OrgView.vue'
 import ConditionsView from './views/ConditionsView.vue'
+import ConflictsView from './views/ConflictsView.vue'
+import KpiView from './views/KpiView.vue'
+import ProjectsView from './views/ProjectsView.vue'
+import RisksView from './views/RisksView.vue'
 import GovernanceView from './views/GovernanceView.vue'
 import QualityView from './views/QualityView.vue'
 import SessionsView from './views/SessionsView.vue'
@@ -359,6 +422,10 @@ export default {
 		BenefitRegister,
 		CapacityView,
 		ConditionsView,
+		ConflictsView,
+		KpiView,
+		ProjectsView,
+		RisksView,
 		GovernanceView,
 		QualityView,
 		SessionsView,
@@ -370,7 +437,7 @@ export default {
 		ScoringModelView,
 	},
 	setup() {
-		return { mdiProgressCheck, mdiShapeOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiAlertOutline, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
@@ -383,7 +450,8 @@ export default {
 			types: loadState('nc_nexus', 'demand_types', []),
 			view: 'demands',
 			// Gruppen der Navigation, standardmäßig eingeklappt
-			groups: { triage: false, status: false, types: false },
+			groups: { steering: false, triage: false, status: false, types: false },
+			projectOpenId: null,
 			refresh: 0,
 			me: { canManageOrg: false, canTriage: false, roles: [], bodies: [] },
 			orgUnits: [],
@@ -525,6 +593,10 @@ export default {
 				}
 			}
 			return false
+		},
+		openProjects(id) {
+			this.projectOpenId = id
+			this.view = 'projects'
 		},
 		openOrg() {
 			this.view = 'org'

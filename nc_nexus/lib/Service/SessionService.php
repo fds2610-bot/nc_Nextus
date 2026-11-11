@@ -33,6 +33,7 @@ class SessionService {
 		private Rows $rows,
 		private GovernanceService $governance,
 		private GateService $gates,
+		private ChangeService $changes,
 		private ConditionService $conditions,
 		private BusinessCaseService $businessCases,
 		private RankingService $ranking,
@@ -100,7 +101,8 @@ class SessionService {
 			'body' => $body,
 			'items' => $items,
 			'followUp' => $followUp,
-			'readyCount' => count(array_filter($this->gates->readyFor($body['id']), fn (array $i) => !$this->onOpenAgenda((int)$i['id']))),
+			'readyCount' => count(array_filter($this->gates->readyFor($body['id']), fn (array $i) => !$this->onOpenAgenda((int)$i['id'])))
+				+ count(array_filter($this->changes->submittedFor($body['id']), fn (array $c) => !$this->changeOnOpenAgenda((int)$c['id']))),
 			'can' => [
 				'manage' => $manage && $open,
 				'edit' => $manage && in_array($session['status'], ['planned', 'agenda_final'], true),
@@ -213,6 +215,23 @@ class SessionService {
 				'options' => $this->defaultOptions((string)$instance['gateCode']), 'status' => 'open',
 			]);
 			$this->gates->setInstanceStatus((int)$instance['id'], 'scheduled');
+			$added++;
+		}
+		// Change Requests oberhalb der Schwelle, für die dieses Gremium zuständig ist
+		foreach ($this->changes->submittedFor((int)$session['bodyId']) as $change) {
+			if ($this->changeOnOpenAgenda((int)$change['id'])) {
+				continue;
+			}
+			try {
+				$demand = $this->demands->find((int)$change['demandId']);
+			} catch (DoesNotExistException) {
+				continue;
+			}
+			$this->rows->insert(self::ITEMS, [
+				'sessionId' => $id, 'position' => ++$position, 'changeId' => $change['id'], 'demandId' => $demand->getId(),
+				'title' => 'CR · ' . $change['title'] . ' · ' . $demand->getTitle(),
+				'options' => $this->defaultOptions('change'), 'status' => 'open',
+			]);
 			$added++;
 		}
 		$this->audit->log('session', $id, 'agenda', $userId, ['items' => [null, $added]]);
@@ -332,7 +351,7 @@ class SessionService {
 	public function vote(string $userId, int $itemId, ?string $memberId, string $vote, bool $conflict, ?string $comment): array {
 		$item = $this->item($itemId);
 		$session = $this->session((int)$item['sessionId']);
-		if (!in_array($session['status'], ['agenda_final', 'held'], true) || $item['status'] !== 'open' || $item['gateInstanceId'] === null) {
+		if (!in_array($session['status'], ['agenda_final', 'held'], true) || $item['status'] !== 'open' || ($item['gateInstanceId'] === null && $item['changeId'] === null)) {
 			throw new ValidationException('Voting is not open for this item');
 		}
 		if (!in_array($vote, self::VOTES, true)) {
@@ -390,13 +409,13 @@ class SessionService {
 		if ($session['status'] !== 'held') {
 			throw new ValidationException('Decisions are recorded while the session is held');
 		}
-		if ($item['status'] !== 'open' || $item['gateInstanceId'] === null) {
+		if ($item['status'] !== 'open' || ($item['gateInstanceId'] === null && $item['changeId'] === null)) {
 			throw new ValidationException('This item cannot be decided');
 		}
-		$instance = $this->instance((int)$item['gateInstanceId']);
+		$gate = $item['changeId'] !== null ? 'change' : (string)$this->instance((int)$item['gateInstanceId'])['gateCode'];
 		$demand = $this->demands->find((int)$item['demandId']);
 		$votes = $this->rows->where(self::VOTE_TABLE, ['itemId' => $itemId]);
-		$quorum = $this->quorum($body, $demand, (string)$instance['gateCode'], $votes);
+		$quorum = $this->quorum($body, $demand, $gate, $votes);
 		if (!$quorum['ok']) {
 			throw new ValidationException('The quorum is not met: %1$s of %2$s votes', [(string)$quorum['present'], (string)$quorum['required']]);
 		}
@@ -407,8 +426,14 @@ class SessionService {
 		if (in_array($outcome, ['approved', 'approved_with_conditions'], true) && $quorum['tally']['yes'] <= $quorum['tally']['no']) {
 			throw new ValidationException('An approval needs more yes than no votes');
 		}
+		$details = ['session' => $session['title'], 'votes' => $quorum['tally'], 'recommendation' => $item['recommendation']];
+		if ($item['changeId'] !== null) {
+			$decision = $this->changes->decideInSession($userId, $demand, (int)$item['changeId'], $outcome, isset($data['reason']) ? (string)$data['reason'] : null, $body, $details);
+			$this->rows->update(self::ITEMS, $itemId, ['status' => 'decided', 'decisionId' => $decision->getId()]);
+			return $this->detail($userId, (int)$session['id']);
+		}
 		// Das Gate läuft in einer eigenen Transaktion; danach den Punkt als entschieden markieren
-		$decision = $this->gates->decideInSession($userId, $demand, (string)$instance['gateCode'], $data, $body, [
+		$decision = $this->gates->decideInSession($userId, $demand, $gate, $data, $body, [
 			'session' => $session['title'],
 			'votes' => $quorum['tally'],
 			'recommendation' => $item['recommendation'],
@@ -498,7 +523,8 @@ class SessionService {
 			}
 		}
 		$instance = $item['gateInstanceId'] === null ? null : $this->rows->find(GateService::INSTANCES, (int)$item['gateInstanceId']);
-		$gate = $instance['gateCode'] ?? null;
+		$gate = $instance['gateCode'] ?? ($item['changeId'] !== null ? 'change' : null);
+		$change = $item['changeId'] !== null ? $this->changes->find((int)$item['changeId']) : null;
 		$brief = null;
 		if ($demand !== null && ($this->permissions->canReadDemand($userId, $demand) || in_array($body['id'], $this->governance->bodiesOf($userId), true))) {
 			$bc = null;
@@ -518,7 +544,8 @@ class SessionService {
 				'expectedBenefit' => $demand->getExpectedBenefit(),
 				'kpis' => $bc['kpis'] ?? null,
 				'rank' => $ranks[$demand->getId()] ?? null,
-				'checks' => $gate === null ? [] : $this->gates->checks($demand, (string)$gate),
+				'checks' => $gate === null || $gate === 'change' ? [] : $this->gates->checks($demand, (string)$gate),
+				'change' => $change === null ? null : array_intersect_key($change, array_flip(['title', 'description', 'changeType', 'deltaBudget', 'deltaDays', 'deltaPersonDays', 'deltaRisk', 'deltaBenefit', 'impactAnalysis', 'thresholdReasons'])),
 				'conditions' => array_values(array_filter($this->conditions->forDemand($userId, $demand), static fn (array $c) => $c['status'] === 'open')),
 			];
 		}
@@ -574,10 +601,20 @@ class SessionService {
 	/** @return list<string> */
 	private function defaultOptions(string $gate): array {
 		return match ($gate) {
+			'change' => ['approved', 'rejected'],
 			'g2', 'g3' => ['approved', 'approved_with_conditions', 'rework', 'deferred', 'rejected'],
 			'g4' => ['approved', 'approved_with_conditions', 'rework', 'deferred', 'cancelled'],
 			default => ['approved', 'approved_with_conditions', 'rework', 'rejected'],
 		};
+	}
+
+	private function changeOnOpenAgenda(int $changeId): bool {
+		foreach ($this->rows->where(self::ITEMS, ['changeId' => $changeId]) as $item) {
+			if ($item['status'] === 'open') {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private function onOpenAgenda(int $instanceId): bool {

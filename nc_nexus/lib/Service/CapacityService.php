@@ -146,6 +146,14 @@ class CapacityService {
 			}
 			$pool->{'set' . ucfirst($field)}($value);
 		}
+		// Verrechnungssatz je Personentag (Kapitel 03 §7.2): interne Leistung als Kosten
+		if (array_key_exists('pdRate', $data)) {
+			$rate = $data['pdRate'] === null || $data['pdRate'] === '' ? null : (float)$data['pdRate'];
+			if ($rate !== null && $rate < 0) {
+				throw new ValidationException('The rate must not be negative');
+			}
+			$pool->setPdRate($rate);
+		}
 		$now = $this->time->getTime();
 		$pool->setUpdatedAt($now);
 		if ($id === null) {

@@ -98,14 +98,14 @@ def main():
 
     print('Ressourcenpools …')
     pools = {}
-    for code, name, kind, fte, bottleneck, unit, manager in [
-        ('SEC', 'IT-Security', 'internal', 3, True, it['id'], 'sven'),
-        ('SAP', 'SAP-Basis', 'internal', 2, True, apps['id'], None),
-        ('DEV', 'Softwareentwicklung', 'internal', 6, False, apps['id'], None),
-        ('FB-VT', 'Fachbereich Vertrieb', 'business', 2, True, sales['id'], None),
+    for code, name, kind, fte, bottleneck, unit, manager, rate in [
+        ('SEC', 'IT-Security', 'internal', 3, True, it['id'], 'sven', 950),
+        ('SAP', 'SAP-Basis', 'internal', 2, True, apps['id'], None, 1000),
+        ('DEV', 'Softwareentwicklung', 'internal', 6, False, apps['id'], None, 800),
+        ('FB-VT', 'Fachbereich Vertrieb', 'business', 2, True, sales['id'], None, 600),
     ]:
         pool = admin.post('/pools', {'code': code, 'name': name, 'poolType': kind, 'isBottleneck': bottleneck,
-                                     'orgUnitId': unit, 'managerUserId': manager or ''})
+                                     'orgUnitId': unit, 'managerUserId': manager or '', 'pdRate': rate})
         admin.put(f"/pools/{pool['id']}/capacity/{month()}", {'fte': fte})
         pools[code] = pool['id']
 
@@ -238,6 +238,30 @@ def main():
     # Auflage und Maßnahme am freigegebenen Rechnungsworkflow (sperrt G4 bis zur Erfüllung)
     paula.post(f"/demands/{invoice['id']}/conditions", {'kind': 'condition', 'title': 'Datenschutz-Folgenabschätzung vorlegen', 'ownerId': 'ben', 'dueDate': day(20), 'blocking': True})
     paula.post(f"/demands/{invoice['id']}/conditions", {'kind': 'action', 'title': 'Schulung der Kreditorenbuchhaltung planen', 'ownerId': 'ben', 'dueDate': day(45)})
+
+    print('Projektsteuerung …')
+    # Rechnungsworkflow (freigegeben): Projektleitung, Meilensteine, Statusbericht, Ist-Werte, Risiko, Issue, CR
+    inv = invoice['id']
+    paula.put(f"/projects/{inv}", {'managerId': 'ben', 'sponsorId': 'boris', 'committed': 30000})
+    ben.post(f"/projects/{inv}/milestones", {'name': 'Pilot in der Kreditorenbuchhaltung', 'dueDate': day(-4), 'external': False})
+    ben.post(f"/projects/{inv}/milestones", {'name': 'Go-Live mit dem Lieferantenportal', 'dueDate': day(75), 'forecastDate': day(90), 'external': True})
+    ben.post(f"/projects/{inv}/actuals", {'period': month(), 'kind': 'effort', 'poolId': pools['DEV'], 'amount': 9})
+    ben.post(f"/projects/{inv}/actuals", {'period': month(), 'kind': 'cost', 'amount': 14500})
+    ben.post(f"/projects/{inv}/reports", {
+        'period': month(), 'ragScope': 'green', 'ragTime': 'yellow', 'ragCost': 'green', 'ragRisk': 'yellow',
+        'ragComment': 'Pilot um eine Woche verschoben, Lieferantenportal braucht Freigabe der IT-Security.',
+        'progressPct': 25, 'achievements': 'OCR-Erkennung eingerichtet, erste 200 Belege verarbeitet.',
+        'nextSteps': 'Pilot abschließen, Schnittstelle zum Lieferantenportal testen.', 'forecastCost': 92000,
+        'forecastEndDate': day(90),
+    })
+    ben.post(f"/projects/{inv}/risks", {'title': 'ERP-Lieferant liefert die Schnittstelle zu spät', 'category': 'supplier',
+                                         'probability': 3, 'impact': 4, 'mitigation': 'Übergangsweise CSV-Export, wöchentlicher Abgleich',
+                                         'residualProbability': 2, 'residualImpact': 3, 'ownerId': 'ben'})
+    ben.post(f"/projects/{inv}/issues", {'title': 'Testdaten aus dem Vorjahr fehlen', 'severity': 'medium', 'ownerId': 'ben', 'dueDate': day(10)})
+    ben.post(f"/projects/{inv}/changes", {'title': 'Zusätzliche Belegarten (Gutschriften)', 'changeType': 'scope', 'deltaBudget': 12000,
+                                           'deltaDays': 14, 'impactAnalysis': 'Zwei Wochen Entwicklung, keine Engpass-Pools betroffen.',
+                                           'deltaRisk': 'gering', 'deltaBenefit': 'weitere 8 % automatisch verbuchte Belege'})
+    paula.post('/conflicts/detect')
 
     print('Fertig. Anmelden z. B. als paula (PMO), boris (Board-Vorsitz), fiona (Finanzen), anna oder ben – Passwort siehe DEMO_PASSWORD.')
 

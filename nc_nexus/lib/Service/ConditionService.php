@@ -66,13 +66,14 @@ class ConditionService {
 	 *
 	 * @param list<array{title: string, ownerId: string, dueDate: string, blocking: bool}> $items
 	 */
-	public function createFor(string $userId, Demand $demand, ?int $decisionId, ?int $bodyId, string $kind, array $items): void {
+	public function createFor(string $userId, Demand $demand, ?int $decisionId, ?int $bodyId, string $kind, array $items, ?string $originType = null, ?int $originId = null): void {
 		$now = $this->time->getTime();
 		foreach ($items as $item) {
 			$id = $this->rows->insert(self::TABLE, [
 				'kind' => $kind, 'decisionId' => $decisionId, 'demandId' => $demand->getId(), 'bodyId' => $bodyId,
 				'title' => $item['title'], 'ownerId' => $item['ownerId'], 'dueDate' => $item['dueDate'],
 				'blocking' => $kind === 'condition' && $item['blocking'] ? 1 : 0, 'status' => 'open',
+				'originType' => $originType ?? ($decisionId === null ? null : 'decision'), 'originId' => $originId ?? $decisionId,
 				'createdBy' => $userId, 'createdAt' => $now,
 			]);
 			$this->audit->log('condition', $id, 'create', $userId, ['title' => [null, $item['title']], 'ownerId' => [null, $item['ownerId']], 'dueDate' => [null, $item['dueDate']]]);

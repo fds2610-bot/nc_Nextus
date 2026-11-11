@@ -18,6 +18,7 @@ class Application extends App implements IBootstrap {
 	}
 
 	public function register(IRegistrationContext $context): void {
+		$context->registerNotifierService(\OCA\Nexus\Notification\Notifier::class);
 	}
 
 	public function boot(IBootContext $context): void {

@@ -450,6 +450,12 @@
 					{{ t('nc_nexus', 'Complete analysis') }}
 				</NcButton>
 				<!-- Für das PMO sichtbar; ausgegraut, solange keine Triage fällig ist (Grund im Abschnitt „Triage“) -->
+				<NcButton v-if="demand && ['released', 'in_execution', 'paused', 'completed', 'closed', 'cancelled'].includes(demand.status)"
+					variant="secondary"
+					data-test="open-cockpit"
+					@click="$emit('open-project', demand.id)">
+					{{ t('nc_nexus', 'Project cockpit') }}
+				</NcButton>
 				<template v-if="demand && gate && gate.canDecide">
 					<NcButton v-for="step in gate.steps"
 						:key="step"
@@ -577,7 +583,7 @@ export default {
 		objectives: { type: Array, default: () => [] },
 		scoring: { type: Object, default: null },
 	},
-	emits: ['close', 'changed'],
+	emits: ['close', 'changed', 'open-project'],
 	setup() {
 		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, statusChip, statusLabel, typeLabel, assessmentKindLabel, qualityLabel, formatMoney, checkLabel, gateLabel, formatMonth, formatNumber, instanceStatusLabel, PROJECT_STATES: ['prioritized', 'released', 'in_execution', 'paused', 'completed', 'closed', 'cancelled'] }
 	},
@@ -982,7 +988,7 @@ export default {
 	}
 
 	&__path--done {
-		background: var(--color-success);
+		background: var(--color-element-success, var(--color-success-text));
 		border-color: var(--color-success) !important;
 		color: var(--color-success-text-on, #fff);
 	}

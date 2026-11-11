@@ -36,6 +36,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setOverheadPct(float $overheadPct)
  * @method float getReservePct()
  * @method void setReservePct(float $reservePct)
+ * @method float|null getPdRate()
+ * @method void setPdRate(?float $pdRate)
  * @method int getCreatedAt()
  * @method void setCreatedAt(int $createdAt)
  * @method int getUpdatedAt()
@@ -56,6 +58,7 @@ class Pool extends Entity implements JsonSerializable {
 	protected float $linePct = -1.0;
 	protected float $overheadPct = -1.0;
 	protected float $reservePct = -1.0;
+	protected ?float $pdRate = null;
 	protected int $createdAt = 0;
 	protected int $updatedAt = 0;
 
@@ -68,6 +71,7 @@ class Pool extends Entity implements JsonSerializable {
 		$this->addType('linePct', 'float');
 		$this->addType('overheadPct', 'float');
 		$this->addType('reservePct', 'float');
+		$this->addType('pdRate', 'float');
 		$this->addType('createdAt', 'integer');
 		$this->addType('updatedAt', 'integer');
 	}
@@ -89,6 +93,7 @@ class Pool extends Entity implements JsonSerializable {
 			'linePct' => $this->linePct,
 			'overheadPct' => $this->overheadPct,
 			'reservePct' => $this->reservePct,
+			'pdRate' => $this->pdRate,
 			'createdAt' => $this->createdAt,
 			'updatedAt' => $this->updatedAt,
 		];

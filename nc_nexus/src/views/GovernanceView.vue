@@ -86,7 +86,7 @@
 					:key="g"
 					class="nx-row gov__right"
 					:data-test="'rights-' + g">
-					<b>{{ g.toUpperCase() }}</b>
+					<b>{{ g === 'change' ? 'CR' : g.toUpperCase() }}</b>
 					<span>{{ gateLabel(g) }}</span>
 					<div class="gov__right-list">
 						<span v-if="!rightsFor(g).length" class="nx-row__meta">
@@ -150,6 +150,35 @@
 			</div>
 		</section>
 
+		<section v-if="settings" class="nx-view__section" data-test="thresholds">
+			<div class="nx-view__section-head">
+				<h3>{{ t('nc_nexus', 'Thresholds') }}</h3>
+				<NcButton v-if="canManage"
+					variant="secondary"
+					:disabled="!settingsDirty"
+					data-test="save-thresholds"
+					@click="storeSettings">
+					{{ t('nc_nexus', 'Save') }}
+				</NcButton>
+			</div>
+			<p class="nx-view__hint">
+				{{ t('nc_nexus', 'Change requests above these thresholds go to the body of the decision rights (type “change request”); tolerances feed the health indicator and the escalation of conflicts.') }}
+			</p>
+			<div class="nx-view__table gov__thresholds">
+				<label v-for="key in Object.keys(settings)"
+					:key="key"
+					class="gov__threshold"
+					:data-test="'threshold-' + key">
+					<span>{{ thresholdLabel(key) }}</span>
+					<NxNumberInput v-model="settings[key]"
+						:min="0"
+						:max-decimals="1"
+						:disabled="!canManage"
+						class="nx-input" />
+				</label>
+			</div>
+		</section>
+
 		<BodyDialog v-if="bodyDialog"
 			:body="bodyDialog.body"
 			@close="bodyDialog = null"
@@ -169,7 +198,7 @@
 
 <script>
 import { mdiAccountGroup, mdiChevronDown, mdiChevronRight, mdiPencil, mdiPlus, mdiSourceBranch } from '@mdi/js'
-import { showError } from '@nextcloud/dialogs'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { n, t } from '@nextcloud/l10n'
 import NcAvatar from '@nextcloud/vue/components/NcAvatar'
 import NcButton from '@nextcloud/vue/components/NcButton'
@@ -177,18 +206,24 @@ import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import BodyDialog from '../components/BodyDialog.vue'
 import GateSetDialog from '../components/GateSetDialog.vue'
 import RightDialog from '../components/RightDialog.vue'
-import { errorMessage, governance } from '../api.js'
+import { errorMessage, getSettings, governance, saveSettings } from '../api.js'
+import NxNumberInput from '../components/NxNumberInput.vue'
 import { bodyTypeLabel, checkLabel, gateLabel, typeLabel } from '../labels.js'
 
 export default {
 	name: 'GovernanceView',
-	components: { BodyDialog, GateSetDialog, NcAvatar, NcButton, NcIconSvgWrapper, RightDialog },
+	components: { BodyDialog, GateSetDialog, NcAvatar, NcButton, NcIconSvgWrapper, NxNumberInput, RightDialog },
 	emits: ['changed'],
 	setup() {
-		return { mdiAccountGroup, mdiChevronDown, mdiChevronRight, mdiPencil, mdiPlus, mdiSourceBranch, n, t, bodyTypeLabel, checkLabel, gateLabel, typeLabel, gates: ['g2', 'g3', 'g4', 'g5', 'g6'] }
+		return { mdiAccountGroup, mdiChevronDown, mdiChevronRight, mdiPencil, mdiPlus, mdiSourceBranch, n, t, bodyTypeLabel, checkLabel, gateLabel, typeLabel, gates: ['g2', 'g3', 'g4', 'g5', 'g6', 'change'] }
 	},
 	data() {
-		return { canManage: false, bodies: [], rights: [], retired: 0, gateSets: [], checks: [], open: new Set(), bodyDialog: null, rightDialog: null, setDialog: null }
+		return { canManage: false, bodies: [], rights: [], retired: 0, gateSets: [], checks: [], open: new Set(), bodyDialog: null, rightDialog: null, setDialog: null, settings: null, settingsSaved: '' }
+	},
+	computed: {
+		settingsDirty() {
+			return JSON.stringify(this.settings) !== this.settingsSaved
+		},
 	},
 	mounted() {
 		this.load()
@@ -203,6 +238,9 @@ export default {
 				this.retired = g.rights.retired
 				this.gateSets = g.gateSets
 				this.checks = g.checks
+				if (!this.settings) {
+					await this.loadSettings()
+				}
 				// Dialog mit aktuellem Gremium versorgen (Mitglieder)
 				if (this.bodyDialog?.body) {
 					this.bodyDialog = { body: this.bodies.find(b => b.id === this.bodyDialog.body.id) ?? null }
@@ -218,6 +256,37 @@ export default {
 				open.add(id)
 			}
 			this.open = open
+		},
+		async loadSettings() {
+			const result = await getSettings()
+			this.settings = { ...result.values }
+			this.settingsSaved = JSON.stringify(this.settings)
+		},
+		async storeSettings() {
+			try {
+				const result = await saveSettings(this.settings)
+				this.settings = { ...result.values }
+				this.settingsSaved = JSON.stringify(this.settings)
+				showSuccess(t('nc_nexus', 'Thresholds saved'))
+			} catch (e) {
+				showError(errorMessage(e))
+			}
+		},
+		thresholdLabel(key) {
+			return {
+				crBudgetPct: t('nc_nexus', 'Change request: budget increase (%)'),
+				crBudgetAbs: t('nc_nexus', 'Change request: budget increase (€)'),
+				crDays: t('nc_nexus', 'Change request: delay (days)'),
+				crPersonDaysPct: t('nc_nexus', 'Change request: extra effort in a bottleneck pool (%)'),
+				facTolerancePct: t('nc_nexus', 'Forecast above budget: tolerance (%)'),
+				reportDaysLarge: t('nc_nexus', 'Status report cadence M/L (days)'),
+				reportDaysSmall: t('nc_nexus', 'Status report cadence XS/S (days)'),
+				effortDeviationPct: t('nc_nexus', 'Actual effort deviation (%)'),
+				riskEscalationScore: t('nc_nexus', 'Risk score for escalation'),
+				conflictLevel1Days: t('nc_nexus', 'Conflict: days until resource board'),
+				conflictLevel2Days: t('nc_nexus', 'Conflict: days until portfolio board'),
+				conditionReminderDays: t('nc_nexus', 'Reminder before a condition is due (days)'),
+			}[key] ?? key
 		},
 		rightsFor(gate) {
 			return this.rights.filter(r => r.gateCode === gate)
@@ -266,6 +335,22 @@ export default {
 		cursor: default;
 		opacity: 1;
 	}
+}
+
+.gov__thresholds {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+	gap: 0 16px;
+	padding: 8px 12px;
+}
+
+.gov__threshold {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 110px;
+	gap: 10px;
+	align-items: center;
+	padding: 4px 0;
+	font-size: 13px;
 }
 
 .gov__set {

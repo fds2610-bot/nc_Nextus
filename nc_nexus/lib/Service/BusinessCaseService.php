@@ -131,6 +131,16 @@ class BusinessCaseService {
 	}
 
 	/**
+	 * Kennzahlen des aktuellen Business Case (ohne Rechteprüfung, für Baselines und Finanzen).
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	public function kpisFor(Demand $demand): ?array {
+		$current = $this->current($this->valid($demand, $this->cases->versions($demand->getId())));
+		return $current === null ? null : self::kpis($current['content']);
+	}
+
+	/**
 	 * Inhalt für ein Gate prüfen.
 	 *
 	 * @return list<string>

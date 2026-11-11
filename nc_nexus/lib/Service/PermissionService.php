@@ -6,6 +6,7 @@ namespace OCA\Nexus\Service;
 
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\OrgUnitMapper;
+use OCA\Nexus\Db\Rows;
 use OCA\Nexus\Db\RoleAssignment;
 use OCA\Nexus\Db\RoleAssignmentMapper;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -32,6 +33,8 @@ class PermissionService {
 
 	/** @var array<string, list<RoleAssignment>> */
 	private array $assignments = [];
+	/** @var array<int, array{managerId: mixed, sponsorId: mixed, createdAt: mixed}>|null Vorhaben => Projektleitung/Sponsor */
+	private ?array $projectLeads = null;
 	/** @var array<int, int|null>|null Org-Einheit => Eltern */
 	private ?array $parents = null;
 
@@ -41,6 +44,7 @@ class PermissionService {
 		private IGroupManager $groupManager,
 		private IUserManager $userManager,
 		private ITimeFactory $time,
+		private Rows $rows,
 	) {
 	}
 
@@ -114,7 +118,21 @@ class PermissionService {
 		}
 		return ($demand->getStatus() === 'further_analysis' && $demand->getAnalysisOwner() === $userId)
 			|| $this->isAdmin($userId)
-			|| $this->hasRole($userId, self::READ_DEMANDS, $demand->getOrgUnitId());
+			|| $this->hasRole($userId, self::READ_DEMANDS, $demand->getOrgUnitId())
+			|| $this->isProjectLead($userId, $demand);
+	}
+
+	/** Projektleitung oder Sponsor des Projekts (Projektstammdaten, Stufe 4) */
+	public function isProjectLead(string $userId, Demand $demand): bool {
+		if ($this->projectLeads === null) {
+			$this->projectLeads = [];
+			foreach ($this->rows->where('nx_projects') as $p) {
+				$this->projectLeads[$p['demandId']] = ['managerId' => $p['managerId'], 'sponsorId' => $p['sponsorId'], 'createdAt' => $p['createdAt']];
+			}
+		}
+		// ungespeicherte Anträge haben noch keine ID (null wäre als Schlüssel veraltet)
+		$p = $this->projectLeads[(int)$demand->getId()] ?? null;
+		return $p !== null && $p['createdAt'] >= $demand->getCreatedAt() && in_array($userId, [$p['managerId'], $p['sponsorId']], true);
 	}
 
 	/**
@@ -159,6 +177,7 @@ class PermissionService {
 	public function reset(): void {
 		$this->assignments = [];
 		$this->parents = null;
+		$this->projectLeads = null;
 	}
 
 	/** @return list<int> die Einheit und alle übergeordneten */

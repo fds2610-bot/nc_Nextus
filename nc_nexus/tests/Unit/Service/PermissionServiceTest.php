@@ -44,7 +44,9 @@ class PermissionServiceTest extends TestCase {
 
 		$time = $this->createMock(ITimeFactory::class);
 		$time->method('getTime')->willReturn(1794268800); // 10.11.2026
-		$this->service = new PermissionService($this->roles, $orgUnits, $this->groups, $users, $time);
+		$rows = $this->createMock(\OCA\Nexus\Db\Rows::class);
+		$rows->method('where')->willReturn([]);
+		$this->service = new PermissionService($this->roles, $orgUnits, $this->groups, $users, $time, $rows);
 	}
 
 	private function role(string $role, string $scopeType, ?int $scopeId, ?string $from = null, ?string $to = null): RoleAssignment {

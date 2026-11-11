@@ -67,6 +67,13 @@
 								:min="0"
 								class="nx-input" />
 						</label>
+						<label class="nx-field" data-test="field-pd-rate">
+							<span>{{ t('nc_nexus', 'Rate per person day (€)') }}</span>
+							<NxNumberInput v-model="form.pdRate"
+								:max-decimals="0"
+								:min="0"
+								class="nx-input" />
+						</label>
 					</div>
 				</fieldset>
 			</div>
@@ -182,6 +189,7 @@ const fromPool = (pool) => ({
 	reservePct: pool?.reservePct ?? 5,
 	keyPersons: pool?.keyPersons ?? '',
 	wipLimit: pool?.wipLimit ?? '',
+	pdRate: pool?.pdRate ?? '',
 })
 
 export default {
@@ -246,6 +254,7 @@ export default {
 				code: f.code.trim().toUpperCase(),
 				keyPersons: f.keyPersons === '' ? null : f.keyPersons,
 				wipLimit: f.wipLimit === '' ? null : f.wipLimit,
+				pdRate: f.pdRate === '' ? null : f.pdRate,
 			}
 		},
 		async save() {

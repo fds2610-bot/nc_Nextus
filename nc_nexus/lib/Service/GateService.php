@@ -81,6 +81,8 @@ class GateService {
 		private DecisionService $decisions,
 		private GovernanceService $governance,
 		private ConditionService $conditions,
+		private ProjectService $projects,
+		private NotificationService $notifications,
 		private CounterMapper $counters,
 		private PermissionService $permissions,
 		private AuditService $audit,
@@ -428,6 +430,8 @@ class GateService {
 				foreach ($this->validNeeds($demand) as $need) {
 					$this->allocations->insert($demand->getId(), $need->getPoolId(), $need->getPeriod(), $need->getPersonDays(), 'hard', $decision->getId(), $userId, $now);
 				}
+				// Projektstammdaten, Baseline 1 und Termin des Nutzenreviews
+				$this->projects->onReleased($userId, $demand, $decision->getId());
 			}
 			// Abbruch gibt alle Zusagen ab sofort frei, die Abnahme ab dem Folgemonat
 			if ($outcome === 'cancelled' || ($step === 'g5' && $go)) {
@@ -454,6 +458,7 @@ class GateService {
 			$this->db->rollBack();
 			throw $e;
 		}
+		$this->notifications->decided($demand, $step, $outcome, $userId);
 		return $decision;
 	}
 

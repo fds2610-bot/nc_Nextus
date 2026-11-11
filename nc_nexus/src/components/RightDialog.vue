@@ -73,7 +73,7 @@ export default {
 	},
 	emits: ['close', 'changed', 'ready'],
 	setup() {
-		return { t, gateLabel, gates: ['g2', 'g3', 'g4', 'g5', 'g6'], classes: ['XS', 'S', 'M', 'L'] }
+		return { t, gateLabel, gates: ['g2', 'g3', 'g4', 'g5', 'g6', 'change'], classes: ['XS', 'S', 'M', 'L'] }
 	},
 	data() {
 		const form = {

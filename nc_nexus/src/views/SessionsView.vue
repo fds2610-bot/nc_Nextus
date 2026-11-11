@@ -192,6 +192,21 @@
 							<p v-if="item.brief.expectedBenefit">
 								<b>{{ t('nc_nexus', 'Expected benefit') }}:</b> {{ item.brief.expectedBenefit }}
 							</p>
+							<div v-if="item.brief.change" class="ses__change" data-test="item-change">
+								<p><b>{{ t('nc_nexus', 'Change request') }}:</b> {{ item.brief.change.title }} · {{ changeTypeLabel(item.brief.change.changeType) }}</p>
+								<p>
+									<template v-if="item.brief.change.deltaBudget">
+										{{ formatMoney(item.brief.change.deltaBudget) }} ·
+									</template>
+									<template v-if="item.brief.change.deltaDays">
+										{{ t('nc_nexus', '{n} days', { n: item.brief.change.deltaDays }) }} ·
+									</template>
+									{{ (item.brief.change.thresholdReasons || []).map(thresholdReasonLabel).join(', ') }}
+								</p>
+								<p v-if="item.brief.change.impactAnalysis">
+									<b>{{ t('nc_nexus', 'Impact analysis') }}:</b> {{ item.brief.change.impactAnalysis }}
+								</p>
+							</div>
 							<ul v-if="item.brief.checks.length" class="ses__checks">
 								<li v-for="c in item.brief.checks" :key="c.key" :class="c.ok ? 'ses__ok' : 'ses__fail'">
 									{{ c.ok ? '✓' : '✗' }} {{ checkLabel(c.key) }}
@@ -334,7 +349,7 @@
 			:checks="decideItem.brief ? decideItem.brief.checks : []"
 			:outcomes="decideItem.options"
 			:ready="!decideItem.brief || decideItem.brief.checks.every(c => c.ok)"
-			:tranche="true"
+			:tranche="decideItem.gateCode !== 'change'"
 			@close="decideItem = null"
 			@decided="onDecided" />
 		<NxDialog v-if="minutesOpen"
@@ -372,7 +387,7 @@ import GateDialog from '../components/GateDialog.vue'
 import NxDialog from '../components/NxDialog.vue'
 import SessionDialog from '../components/SessionDialog.vue'
 import { addTopic, adjournItem, castVote, deleteSession, errorMessage, generateAgenda, getSession, governance, listSessions, removeAgendaItem, sessionStatus, updateAgendaItem } from '../api.js'
-import { checkLabel, formatDate, formatIsoDay, formatMoney, gateOutcomeLabel, instanceStatusLabel, sessionStatusLabel, statusLabel, voteLabel } from '../labels.js'
+import { changeTypeLabel, checkLabel, formatDate, thresholdReasonLabel, formatIsoDay, formatMoney, gateOutcomeLabel, instanceStatusLabel, sessionStatusLabel, statusLabel, voteLabel } from '../labels.js'
 
 export default {
 	name: 'SessionsView',
@@ -392,6 +407,8 @@ export default {
 			mdiPlus,
 			n,
 			t,
+			changeTypeLabel,
+			thresholdReasonLabel,
 			checkLabel,
 			formatDate,
 			formatIsoDay,
