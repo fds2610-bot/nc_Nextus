@@ -64,6 +64,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setRankOverride(?int $rankOverride)
  * @method string|null getOverrideReason()
  * @method void setOverrideReason(?string $overrideReason)
+ * @method string|null getProjectKey()
+ * @method void setProjectKey(?string $projectKey)
+ * @method int|null getReleasedAt()
+ * @method void setReleasedAt(?int $releasedAt)
  * @method int|null getOrgUnitId()
  * @method void setOrgUnitId(?int $orgUnitId)
  * @method int|null getSubmittedAt()
@@ -87,6 +91,8 @@ class Demand extends Entity implements JsonSerializable {
 	protected int $updatedAt = 0;
 	protected ?int $submittedAt = null;
 	protected ?int $orgUnitId = null;
+	protected ?string $projectKey = null;
+	protected ?int $releasedAt = null;
 	protected ?string $bucket = null;
 	protected ?string $deadline = null;
 	protected ?int $rankOverride = null;
@@ -109,6 +115,7 @@ class Demand extends Entity implements JsonSerializable {
 		$this->addType('updatedAt', 'integer');
 		$this->addType('submittedAt', 'integer');
 		$this->addType('orgUnitId', 'integer');
+		$this->addType('releasedAt', 'integer');
 		$this->addType('rankOverride', 'integer');
 		$this->addType('duplicateOfId', 'integer');
 		$this->addType('triagedAt', 'integer');
@@ -126,6 +133,8 @@ class Demand extends Entity implements JsonSerializable {
 			'expectedBenefit' => $this->expectedBenefit,
 			'demandType' => $this->demandType,
 			'orgUnitId' => $this->orgUnitId,
+			'projectKey' => $this->projectKey,
+			'releasedAt' => $this->releasedAt,
 			'bucket' => $this->bucket,
 			'deadline' => $this->deadline,
 			'rankOverride' => $this->rankOverride,

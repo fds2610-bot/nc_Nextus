@@ -9,7 +9,7 @@ export const typeLabel = (type) => ({
 })[type] || type
 
 /** Status in der Reihenfolge des Statusautomaten (Kapitel 02, §4.1) */
-export const STATUSES = ['draft', 'submitted', 'query', 'further_analysis', 'deferred', 'in_qualification', 'rejected', 'duplicate']
+export const STATUSES = ['draft', 'submitted', 'query', 'further_analysis', 'deferred', 'in_qualification', 'candidate', 'prioritized', 'released', 'rejected', 'duplicate']
 
 export const statusLabel = (status) => ({
 	draft: t('nc_nexus', 'Draft'),
@@ -18,6 +18,9 @@ export const statusLabel = (status) => ({
 	further_analysis: t('nc_nexus', 'Further analysis'),
 	deferred: t('nc_nexus', 'Deferred'),
 	in_qualification: t('nc_nexus', 'In qualification'),
+	candidate: t('nc_nexus', 'Candidate'),
+	prioritized: t('nc_nexus', 'Prioritized'),
+	released: t('nc_nexus', 'Released'),
 	rejected: t('nc_nexus', 'Rejected'),
 	duplicate: t('nc_nexus', 'Duplicate'),
 })[status] || status
@@ -30,6 +33,9 @@ export const statusChip = (status) => ({
 	further_analysis: 'on-hold',
 	deferred: 'on-hold',
 	in_qualification: 'accepted',
+	candidate: 'submitted',
+	prioritized: 'accepted',
+	released: 'accepted',
 	rejected: 'rejected',
 	duplicate: 'draft',
 })[status] || 'draft'
@@ -53,6 +59,9 @@ export const outcomeLabel = (code) => ({
 	deferred: t('nc_nexus', 'Deferred'),
 	rejected: t('nc_nexus', 'Rejected'),
 	duplicate: t('nc_nexus', 'Duplicate'),
+	ready_for_prioritization: t('nc_nexus', 'Ready for prioritization'),
+	prioritized: t('nc_nexus', 'Prioritized'),
+	released: t('nc_nexus', 'Released'),
 })[code] || code
 
 export const outcomeChip = (code) => ({
@@ -61,6 +70,9 @@ export const outcomeChip = (code) => ({
 	deferred: 'on-hold',
 	rejected: 'rejected',
 	duplicate: 'draft',
+	ready_for_prioritization: 'submitted',
+	prioritized: 'accepted',
+	released: 'accepted',
 })[code] || 'draft'
 
 export const codeHint = (code) => ({
@@ -234,6 +246,9 @@ export const PHASE_OF = {
 	query: 'demand',
 	further_analysis: 'demand',
 	in_qualification: 'demand',
+	candidate: 'demand',
+	prioritized: 'planned',
+	released: 'planned',
 	deferred: 'on_hold',
 	rejected: 'closed',
 	duplicate: 'closed',
@@ -320,3 +335,24 @@ export const benefitTypeLabel = (type) => ({
 export const formatMoney = (value) => value === null || value === undefined
 	? '–'
 	: Number(value).toLocaleString(getCanonicalLocale(), { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+
+export const gateLabel = (step) => ({
+	candidate: t('nc_nexus', 'Ready for prioritization'),
+	g2: t('nc_nexus', 'G2 – prioritization'),
+	g3: t('nc_nexus', 'G3 – release'),
+})[step] || step
+
+export const checkLabel = (key) => ({
+	assessment_review: t('nc_nexus', 'Assessment reviewed by the portfolio office'),
+	business_case: t('nc_nexus', 'Business case with costs and benefit items'),
+	resource_needs: t('nc_nexus', 'Resource needs recorded'),
+	org_unit: t('nc_nexus', 'Organizational unit set'),
+	capacity: t('nc_nexus', 'Capacity in all bottleneck pools (firm commitment)'),
+})[key] || key
+
+export const decisionTypeLabel = (type) => ({
+	triage: t('nc_nexus', 'Triage'),
+	candidate: t('nc_nexus', 'Ready for prioritization'),
+	g2: t('nc_nexus', 'G2 – prioritization'),
+	g3: t('nc_nexus', 'G3 – release'),
+})[type] || type

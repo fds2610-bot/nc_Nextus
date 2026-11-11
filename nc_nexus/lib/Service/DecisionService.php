@@ -31,6 +31,15 @@ class DecisionService {
 	 * @param array<string, mixed> $details
 	 */
 	public function recordTriage(string $userId, Demand $demand, string $code, ?string $rationale, array $details, bool $outOfSequence): Decision {
+		return $this->record($userId, $demand, 'triage', $code, $rationale, $details, $outOfSequence);
+	}
+
+	/**
+	 * Beschluss festhalten (Triage, G2, G3 …). Innerhalb der Transaktion des Vorgangs aufrufen.
+	 *
+	 * @param array<string, mixed> $details
+	 */
+	public function record(string $userId, Demand $demand, string $type, string $outcome, ?string $rationale, array $details, bool $outOfSequence = false): Decision {
 		$now = $this->time->getTime();
 		$mandate = $this->permissions->mandateFor($userId, $demand);
 		$previous = $this->decisions->findLatest(DemandService::ENTITY, $demand->getId(), $demand->getCreatedAt());
@@ -40,8 +49,8 @@ class DecisionService {
 		$d->setDecisionKey('BES-' . date('Y', $now) . '-' . str_pad((string)$sequence, 4, '0', STR_PAD_LEFT));
 		$d->setSubjectType(DemandService::ENTITY);
 		$d->setSubjectId($demand->getId());
-		$d->setDecisionType('triage');
-		$d->setOutcome($code);
+		$d->setDecisionType($type);
+		$d->setOutcome($outcome);
 		$d->setRationale($rationale);
 		$details = array_filter($details, static fn ($v) => $v !== null && $v !== '');
 		$d->setDetails($details === [] ? null : json_encode($details, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));

@@ -39,7 +39,8 @@
 						{{ d.demand.key }} · {{ d.demand.title }}
 					</a>
 					<div class="decision__chips">
-						<span class="nx-chip" :class="'nx-chip--' + outcomeChip(d.outcome)">{{ outcomeLabel(d.outcome) }}</span>
+						<span class="decision__type">{{ decisionTypeLabel(d.decisionType) }}</span>
+						<span class="nx-chip" :class="'nx-chip--' + outcomeChip(d.outcome)" data-test="decision-outcome">{{ outcomeLabel(d.outcome) }}</span>
 						<span v-if="d.outOfSequence" class="decision__flag" data-test="out-of-sequence">{{ t('nc_nexus', 'outside the regular step') }}</span>
 						<span v-if="supersededIds.has(d.id)" class="decision__flag">{{ t('nc_nexus', 'replaced') }}</span>
 						<span v-if="d.supersedesId" class="decision__meta">{{ t('nc_nexus', 'replaces {key}', { key: keyOf(d.supersedesId) }) }}</span>
@@ -71,7 +72,7 @@ import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 import { errorMessage, listDecisions } from '../api.js'
-import { formatDate, formatIsoDay, orgTree, outcomeChip, outcomeLabel, roleLabel } from '../labels.js'
+import { decisionTypeLabel, formatDate, formatIsoDay, orgTree, outcomeChip, outcomeLabel, roleLabel } from '../labels.js'
 
 export default {
 	name: 'DecisionRegister',
@@ -83,7 +84,7 @@ export default {
 	},
 	emits: ['open'],
 	setup() {
-		return { mdiScaleBalance, n, t, formatDate, outcomeChip, outcomeLabel }
+		return { mdiScaleBalance, n, t, decisionTypeLabel, formatDate, outcomeChip, outcomeLabel }
 	},
 	data() {
 		return { decisions: [], loading: true, search: '' }
@@ -143,6 +144,12 @@ export default {
 			}
 			if (x.analysisOwner) {
 				parts.push(t('nc_nexus', 'Analysis by {user} until {date}', { user: x.analysisOwner, date: formatIsoDay(x.analysisDue) }))
+			}
+			if (x.projectKey) {
+				parts.push(t('nc_nexus', 'Project {key}', { key: x.projectKey }))
+			}
+			if (x.businessCaseVersion) {
+				parts.push(t('nc_nexus', 'business case version {v}', { v: x.businessCaseVersion }))
 			}
 			if (x.duplicateOfId) {
 				parts.push(t('nc_nexus', 'Duplicate of demand #{id}', { id: x.duplicateOfId }))
@@ -249,6 +256,11 @@ export default {
 		align-items: center;
 		gap: 8px;
 		margin-top: 6px;
+	}
+
+	&__type {
+		font-size: 13px;
+		font-weight: 600;
 	}
 
 	&__flag {

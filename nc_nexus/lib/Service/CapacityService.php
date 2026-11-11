@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\Nexus\Service;
 
+use OCA\Nexus\Db\AllocationMapper;
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\DemandMapper;
 use OCA\Nexus\Db\Pool;
@@ -33,7 +34,7 @@ use OCP\IUserManager;
 class CapacityService {
 	public const TYPES = ['internal', 'external', 'business'];
 	/** Status, deren Bedarf die Auslastung belastet (Entwürfe privat, Zurückgestellte ruhen) */
-	public const LOAD_STATUSES = ['submitted', 'query', 'further_analysis', 'in_qualification'];
+	public const LOAD_STATUSES = ['submitted', 'query', 'further_analysis', 'in_qualification', 'candidate', 'prioritized', 'released'];
 	private const MAX_MONTHS = 24;
 	private const SEE_ROLES = ['portfolio_manager', 'pool_manager', 'board_member', 'steering_member', 'auditor', 'admin'];
 
@@ -41,6 +42,7 @@ class CapacityService {
 		private PoolMapper $pools,
 		private PoolCapacityMapper $capacities,
 		private ResourceNeedMapper $needs,
+		private AllocationMapper $allocations,
 		private DemandMapper $demands,
 		private DemandService $demandService,
 		private PermissionService $permissions,
@@ -163,7 +165,7 @@ class CapacityService {
 			throw new ForbiddenException('Only the portfolio office may manage pools');
 		}
 		$pool = $this->pool($id);
-		if ($this->needs->countForPool($id) > 0) {
+		if ($this->needs->countForPool($id) > 0 || $this->allocations->countForPool($id) > 0) {
 			throw new ValidationException('Demands still need this pool');
 		}
 		$this->db->beginTransaction();

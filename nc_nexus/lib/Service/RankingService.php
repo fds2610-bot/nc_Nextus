@@ -20,7 +20,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
  */
 class RankingService {
 	/** Status, die um Kapazität konkurrieren */
-	public const RANKED = ['in_qualification', 'candidate'];
+	public const RANKED = ['in_qualification', 'candidate', 'prioritized'];
 	private const OVERRIDE_ROLES = ['board_member', 'portfolio_manager', 'admin'];
 
 	public function __construct(

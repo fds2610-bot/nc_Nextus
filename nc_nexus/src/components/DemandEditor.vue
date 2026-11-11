@@ -56,6 +56,10 @@
 						{{ t('nc_nexus', 'Channel') }}
 						<b>{{ channelLabel(demand.intakeChannel) }}</b>
 					</div>
+					<div v-if="demand.projectKey" class="nx-fact">
+						{{ t('nc_nexus', 'Project') }}
+						<b data-test="project-key">{{ demand.projectKey }}</b>
+					</div>
 					<div v-if="demand.projectClass" class="nx-fact">
 						{{ t('nc_nexus', 'Project class') }}
 						<b>{{ demand.projectClass }}</b>
@@ -231,6 +235,29 @@
 						</label>
 					</div>
 
+					<div v-if="demand && gate && (gate.step || gate.allocations.length)" class="nx-section" data-test="demand-gate">
+						<h3>{{ gate.step ? gateLabel(gate.step) : t('nc_nexus', 'Firm commitments') }}</h3>
+						<ul v-if="gate.step" class="editor__checks">
+							<li v-for="c in gate.checks" :key="c.key" :class="c.ok ? 'editor__check--ok' : 'editor__check--fail'">
+								{{ c.ok ? '✓' : '✗' }} {{ checkLabel(c.key) }}<template v-if="!c.ok && c.detail">
+									· {{ c.detail }}
+								</template>
+							</li>
+						</ul>
+						<p v-if="gate.step && !gate.canDecide" class="editor__next">
+							{{ gate.step === 'candidate' ? t('nc_nexus', 'The portfolio office puts the project up for prioritization once everything is complete.') : t('nc_nexus', 'The board or the portfolio office of the area decides.') }}
+						</p>
+						<table v-if="gate.allocations.length" class="editor__alloc" data-test="allocations">
+							<tbody>
+								<tr v-for="(a, i) in gate.allocations" :key="i">
+									<td>{{ poolName(a.poolId) }}</td>
+									<td>{{ formatMonth(a.period) }}</td>
+									<td>{{ formatNumber(a.personDays) }} {{ t('nc_nexus', 'PD') }}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
 					<div v-if="demand && businessCase && (businessCase.canEdit || businessCase.versions.length)"
 						class="nx-section"
 						data-test="demand-business-case">
@@ -367,6 +394,13 @@
 					{{ t('nc_nexus', 'Complete analysis') }}
 				</NcButton>
 				<!-- Für das PMO sichtbar; ausgegraut, solange keine Triage fällig ist (Grund im Abschnitt „Triage“) -->
+				<NcButton v-if="demand && gate && gate.step && gate.canDecide"
+					:variant="gate.ready ? 'primary' : 'secondary'"
+					data-test="open-gate"
+					:disabled="busy"
+					@click="gateOpen = true">
+					{{ gateLabel(gate.step) }}
+				</NcButton>
 				<!-- PMO: außerplanmäßig neu entscheiden (Begründung Pflicht), bewusst zurückhaltend -->
 				<NcButton v-if="demand && demand.can.retriage"
 					variant="tertiary"
@@ -407,6 +441,12 @@
 			@ready="el => trapElements = [el]"
 			@close="triageOpen = false; trapElements = []"
 			@decided="onDecided" />
+		<GateDialog v-if="gateOpen && gate"
+			:demand="demand"
+			:gate="gate"
+			@ready="el => trapElements = [el]"
+			@close="gateOpen = false; trapElements = []"
+			@decided="onGate" />
 		<BusinessCaseDialog v-if="bcOpen && businessCase"
 			:demand="demand"
 			:business-case="businessCase"
@@ -438,21 +478,22 @@ import { getCanonicalLocale, t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
-import { createDemand, deleteDemand, demandAssessments, demandHistory, demandNeeds, demandObjectives, errorMessage, getBusinessCase, getDemand, saveDemandNeeds, saveDemandObjectives, submitDemand, updateDemand } from '../api.js'
+import { createDemand, deleteDemand, demandAssessments, demandHistory, demandNeeds, demandObjectives, errorMessage, gateStatus, getBusinessCase, getDemand, saveDemandNeeds, saveDemandObjectives, submitDemand, updateDemand } from '../api.js'
 import AnalysisDialog from './AnalysisDialog.vue'
 import AssessmentDialog from './AssessmentDialog.vue'
 import BusinessCaseDialog from './BusinessCaseDialog.vue'
+import GateDialog from './GateDialog.vue'
 import CommentThread from './CommentThread.vue'
 import NeedsEditor from './NeedsEditor.vue'
 import SimilarDemands from './SimilarDemands.vue'
 import TriageDialog from './TriageDialog.vue'
-import { actionLabel, assessmentKindLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, formatMoney, indented, objectiveTree, orgTree, qualityLabel, statusChip, statusLabel, typeLabel } from '../labels.js'
+import { actionLabel, assessmentKindLabel, channelLabel, checkLabel, fieldLabel, formatDate, formatDay, formatIsoDay, formatMoney, formatMonth, formatNumber, gateLabel, indented, objectiveTree, orgTree, qualityLabel, statusChip, statusLabel, typeLabel } from '../labels.js'
 
 const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, deadline: '', problemStatement: '', description: '', expectedBenefit: '' })
 
 export default {
 	name: 'DemandEditor',
-	components: { AnalysisDialog, AssessmentDialog, BusinessCaseDialog, CommentThread, NcButton, NeedsEditor, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
+	components: { AnalysisDialog, AssessmentDialog, BusinessCaseDialog, GateDialog, CommentThread, NcButton, NeedsEditor, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
 	props: {
 		demandId: { type: Number, default: null },
 		orgUnits: { type: Array, default: () => [] },
@@ -463,7 +504,7 @@ export default {
 	},
 	emits: ['close', 'changed'],
 	setup() {
-		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, statusChip, statusLabel, typeLabel, assessmentKindLabel, qualityLabel, formatMoney }
+		return { indented, t, actionLabel, channelLabel, fieldLabel, formatDate, formatDay, formatIsoDay, statusChip, statusLabel, typeLabel, assessmentKindLabel, qualityLabel, formatMoney, checkLabel, gateLabel, formatMonth, formatNumber }
 	},
 	data() {
 		return {
@@ -479,6 +520,8 @@ export default {
 			needs: [],
 			rating: null,
 			businessCase: null,
+			gate: null,
+			gateOpen: false,
 			bcOpen: false,
 			assessKind: null,
 			objectiveIds: [],
@@ -522,6 +565,7 @@ export default {
 				return false
 			}
 			return !this.dirty && !this.demand.can.submit && !this.demand.can.triage && !this.demand.can.completeAnalysis
+				&& !(this.gate?.step && this.gate.canDecide && this.gate.ready)
 		},
 		dirtyForm() {
 			return !this.readonly && (JSON.stringify(this.form) !== this.saved || JSON.stringify(this.needs) !== this.needsSaved || this.objectivesChanged())
@@ -576,6 +620,7 @@ export default {
 				this.setObjectives(await demandObjectives(this.id))
 				this.rating = await demandAssessments(this.id)
 				this.businessCase = await getBusinessCase(this.id)
+				this.gate = await gateStatus(this.id)
 				this.history = await demandHistory(this.id)
 			} catch (e) {
 				showError(errorMessage(e))
@@ -609,13 +654,27 @@ export default {
 		formatNumber2(value) {
 			return Number(value).toLocaleString(getCanonicalLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 		},
+		poolName(id) {
+			return this.pools.find(p => p.id === id)?.name ?? '?'
+		},
+		async onGate() {
+			// über den Antrags-Endpunkt neu laden: nur er liefert die Rechte (can) des Kontos
+			this.setDemand(await getDemand(this.id))
+			this.$emit('changed')
+			this.$nextTick(() => this.$refs.closeButton?.$el?.focus())
+			this.gate = await gateStatus(this.id)
+			this.businessCase = await getBusinessCase(this.id)
+			this.history = await demandHistory(this.id)
+		},
 		async onBusinessCase(bc) {
 			this.businessCase = bc
+			this.gate = await gateStatus(this.id)
 			this.$emit('changed')
 			this.history = await demandHistory(this.id)
 		},
 		async onAssessed(rating) {
 			this.rating = rating
+			this.gate = await gateStatus(this.id)
 			this.$emit('changed')
 			this.setDemand(await getDemand(this.id))
 			this.history = await demandHistory(this.id)
@@ -626,7 +685,7 @@ export default {
 		},
 		onEscape() {
 			// Liegt ein innerer Dialog darüber, schließt Esc nur diesen
-			if (!this.triageOpen && !this.analysisOpen && !this.assessKind && !this.bcOpen) {
+			if (!this.triageOpen && !this.analysisOpen && !this.assessKind && !this.bcOpen && !this.gateOpen) {
 				this.$emit('close')
 			}
 		},
@@ -788,6 +847,30 @@ export default {
 	&__objective-code,
 	&__muted {
 		color: var(--color-text-maxcontrast);
+	}
+
+	&__checks {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	&__check--ok {
+		color: var(--color-success-text);
+	}
+
+	&__check--fail {
+		color: var(--color-error-text);
+	}
+
+	&__alloc {
+		margin-top: 8px;
+		border-collapse: collapse;
+		font-variant-numeric: tabular-nums;
+
+		td {
+			padding: 2px 16px 2px 0;
+		}
 	}
 
 	&__date.nx-input.nx-input {

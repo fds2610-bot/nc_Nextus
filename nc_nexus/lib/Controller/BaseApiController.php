@@ -44,7 +44,7 @@ abstract class BaseApiController extends OCSController {
 		} catch (ForbiddenException $e) {
 			return new DataResponse(['message' => $this->l10n->t($e->getMessage())], Http::STATUS_FORBIDDEN);
 		} catch (ValidationException $e) {
-			return new DataResponse(['message' => $this->l10n->t($e->getMessage())], Http::STATUS_BAD_REQUEST);
+			return new DataResponse(['message' => $this->l10n->t($e->key, $e->params)], Http::STATUS_BAD_REQUEST);
 		}
 	}
 

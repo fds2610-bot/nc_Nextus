@@ -89,3 +89,7 @@ export const overrideRank = async (id, rank, reason) => data(await axios.put(v1(
 export const getBusinessCase = async (id) => data(await axios.get(v1(`/demands/${id}/business-case`)))
 export const saveBusinessCase = async (id, content) => data(await axios.put(v1(`/demands/${id}/business-case`), { content }))
 export const benefitRegister = async () => data(await axios.get(v1('/benefits')))
+
+export const gateStatus = async (id) => data(await axios.get(v1(`/demands/${id}/gate`)))
+export const decideGate = async (id, decision) => data(await axios.post(v1(`/demands/${id}/gate`), decision))
+export const capacityCut = async () => data(await axios.get(v1('/capacity/cut')))

@@ -3,6 +3,13 @@
 		<div class="ranking__header">
 			<h2>{{ t('nc_nexus', 'Prioritization') }}</h2>
 			<span class="ranking__count">{{ n('nc_nexus', '%n project in the ranking', '%n projects in the ranking', total) }}</span>
+			<NcButton class="ranking__cut"
+				:variant="cut ? 'secondary' : 'primary'"
+				:disabled="cutting"
+				data-test="run-cut"
+				@click="runCut">
+				{{ cut ? t('nc_nexus', 'Recalculate capacity cut') : t('nc_nexus', 'Calculate capacity cut') }}
+			</NcButton>
 		</div>
 		<p class="ranking__intro">
 			{{ t('nc_nexus', 'Competition takes place within a bucket. Rank = value density (benefit per unit of capacity); the mandatory bucket is ranked by deadline and effort. Scoring supports the decision, it does not replace it.') }}
@@ -32,6 +39,7 @@
 					<span>{{ t('nc_nexus', 'Effort') }}</span>
 					<span>{{ t('nc_nexus', 'Risk') }}</span>
 					<span>{{ t('nc_nexus', 'PD') }}</span>
+					<span>{{ t('nc_nexus', 'Start plan') }}</span>
 					<span />
 				</div>
 				<div v-for="item in bucket.items"
@@ -45,7 +53,7 @@
 					</span>
 					<span class="rank__name">
 						<a href="#" @click.prevent="$emit('open', item.id)">{{ item.title }}</a>
-						<small>{{ item.key }}<template v-if="item.rankOverride !== null"> · {{ item.overrideReason }}</template></small>
+						<small>{{ item.key }} · {{ statusLabel(item.status) }}<template v-if="item.rankOverride !== null"> · {{ item.overrideReason }}</template></small>
 					</span>
 					<template v-if="item.assessment">
 						<span v-if="bucket.scored" class="rank__density">
@@ -60,6 +68,10 @@
 					</template>
 					<span v-else class="rank__missing">{{ t('nc_nexus', 'not assessed yet') }}</span>
 					<span>{{ item.personDays ? formatNumber(item.personDays) : '–' }}</span>
+					<span class="rank__plan" :data-test="'plan-' + item.key">
+						<span v-if="cut && cut.results[item.id]" class="nx-chip" :class="'nx-chip--' + planChip(cut.results[item.id])">{{ planText(cut.results[item.id]) }}</span>
+						<span v-else class="rank__muted">–</span>
+					</span>
 					<span class="rank__actions">
 						<NcButton v-if="item.canOverride"
 							variant="tertiary"
@@ -128,8 +140,8 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NxDialog from '../components/NxDialog.vue'
-import { errorMessage, getRanking, overrideRank } from '../api.js'
-import { formatIsoDay, formatNumber } from '../labels.js'
+import { capacityCut, errorMessage, getRanking, overrideRank } from '../api.js'
+import { formatIsoDay, formatMonth, formatNumber, statusLabel } from '../labels.js'
 
 export default {
 	name: 'RankingView',
@@ -139,10 +151,10 @@ export default {
 	},
 	emits: ['open'],
 	setup() {
-		return { mdiSwapVertical, n, t, formatIsoDay, formatNumber }
+		return { mdiSwapVertical, n, t, formatIsoDay, formatNumber, statusLabel }
 	},
 	data() {
-		return { buckets: [], loading: true, dialog: null, busy: false }
+		return { buckets: [], loading: true, dialog: null, busy: false, cut: null, cutting: false }
 	},
 	computed: {
 		total() {
@@ -166,6 +178,28 @@ export default {
 				showError(errorMessage(e))
 			} finally {
 				this.loading = false
+			}
+		},
+		async runCut() {
+			this.cutting = true
+			try {
+				this.cut = await capacityCut()
+			} catch (e) {
+				showError(errorMessage(e))
+			} finally {
+				this.cutting = false
+			}
+		},
+		planChip(r) {
+			return { startable: 'accepted', shifted: 'on-hold', waiting: 'rejected', budget: 'rejected', unassessed: 'draft' }[r.state] || 'draft'
+		},
+		planText(r) {
+			switch (r.state) {
+			case 'startable': return t('nc_nexus', 'startable')
+			case 'shifted': return t('nc_nexus', 'startable from {month}', { month: formatMonth(r.start) })
+			case 'waiting': return r.pool ? t('nc_nexus', 'waiting for pool {pool}', { pool: r.pool }) : t('nc_nexus', 'waiting')
+			case 'budget': return t('nc_nexus', 'waiting for budget')
+			default: return t('nc_nexus', 'not assessed yet')
 			}
 		},
 		f2(value) {
@@ -211,6 +245,10 @@ export default {
 			font-size: 20px;
 			font-weight: 600;
 		}
+	}
+
+	&__cut {
+		margin-inline-start: auto;
 	}
 
 	&__count,
@@ -261,7 +299,7 @@ export default {
 
 .rank {
 	display: grid;
-	grid-template-columns: 70px minmax(0, 1fr) 100px 70px 80px 70px 60px 60px 44px;
+	grid-template-columns: 70px minmax(0, 1fr) 100px 70px 80px 70px 60px 60px 190px 44px;
 	align-items: center;
 	gap: 10px;
 	min-height: 52px;
@@ -311,6 +349,10 @@ export default {
 			white-space: nowrap;
 			text-overflow: ellipsis;
 		}
+	}
+
+	&__muted {
+		color: var(--color-text-maxcontrast);
 	}
 
 	&__missing {
