@@ -68,3 +68,12 @@ export default {
 	},
 }
 </script>
+
+<style scoped>
+/* NcSelect bringt eine Mindestbreite von 260 px mit und läuft sonst in schmalen Spalten über die Nachbarfelder. */
+.select {
+	width: 100%;
+	min-width: 0 !important;
+	margin: 0 !important;
+}
+</style>

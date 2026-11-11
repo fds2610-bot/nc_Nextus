@@ -4,109 +4,132 @@
 		data-test="body-dialog"
 		@ready="$emit('ready', $event)"
 		@close="$emit('close')">
-		<div class="nx-field-row">
-			<label class="nx-field body__code" data-test="field-body-code">
-				<span>{{ t('nc_nexus', 'Code') }} *</span>
-				<input v-model="form.code" class="nx-input" maxlength="16">
-			</label>
-			<label class="nx-field" data-test="field-body-name">
-				<span>{{ t('nc_nexus', 'Name') }} *</span>
-				<input v-model="form.name" class="nx-input">
-			</label>
-		</div>
-		<div class="nx-field-row">
-			<label class="nx-field" data-test="field-body-type">
-				<span>{{ t('nc_nexus', 'Type') }}</span>
-				<select v-model="form.bodyType" class="nx-input">
-					<option v-for="type in types" :key="type" :value="type">{{ bodyTypeLabel(type) }}</option>
-				</select>
-			</label>
-			<div class="nx-field" data-test="field-body-chair">
-				<span>{{ t('nc_nexus', 'Chair') }}</span>
-				<UserSelect v-model="form.chairId" :label="t('nc_nexus', 'Chair')" />
+		<div class="nx-section">
+			<h3>{{ t('nc_nexus', 'Basic data') }}</h3>
+			<div class="nx-field-row body__name-row">
+				<label class="nx-field" data-test="field-body-name">
+					<span>{{ t('nc_nexus', 'Name') }} *</span>
+					<input v-model="form.name" class="nx-input">
+				</label>
+				<label class="nx-field" data-test="field-body-code">
+					<span>{{ t('nc_nexus', 'Code') }} *</span>
+					<input v-model="form.code" class="nx-input" maxlength="16">
+				</label>
 			</div>
-		</div>
-		<div class="nx-field-row">
-			<label class="nx-field" data-test="field-body-quorum">
-				<span>{{ t('nc_nexus', 'Quorum (minimum votes)') }} *</span>
-				<NxNumberInput v-model="form.quorumMin"
-					:min="1"
-					:max="99"
-					:max-decimals="0"
-					class="nx-input" />
+			<div class="nx-field-row">
+				<label class="nx-field" data-test="field-body-type">
+					<span>{{ t('nc_nexus', 'Type') }}</span>
+					<select v-model="form.bodyType" class="nx-input">
+						<option v-for="type in types" :key="type" :value="type">{{ bodyTypeLabel(type) }}</option>
+					</select>
+				</label>
+				<div class="nx-field">
+					<span>{{ t('nc_nexus', 'Status') }}</span>
+					<label class="body__check" data-test="field-body-active">
+						<input v-model="form.active" type="checkbox">
+						<span>{{ t('nc_nexus', 'active') }}</span>
+					</label>
+				</div>
+			</div>
+			<label class="nx-field" data-test="field-body-description">
+				<span>{{ t('nc_nexus', 'Description') }}</span>
+				<textarea v-model="form.description" class="nx-input" rows="3" />
 			</label>
+		</div>
+
+		<div class="nx-section">
+			<h3>{{ t('nc_nexus', 'Decision-making') }}</h3>
+			<div class="nx-field-row">
+				<div class="nx-field" data-test="field-body-chair">
+					<span>{{ t('nc_nexus', 'Chair') }}</span>
+					<UserSelect v-model="form.chairId" :label="t('nc_nexus', 'Chair')" />
+				</div>
+				<label class="nx-field" data-test="field-body-quorum">
+					<span>{{ t('nc_nexus', 'Quorum (minimum votes)') }} *</span>
+					<NxNumberInput v-model="form.quorumMin"
+						:min="1"
+						:max="99"
+						:max-decimals="0"
+						class="nx-input" />
+				</label>
+			</div>
 			<label class="nx-field" data-test="field-body-seats">
 				<span>{{ t('nc_nexus', 'Required seats (comma-separated)') }}</span>
 				<input v-model="seats" class="nx-input" :placeholder="t('nc_nexus', 'e.g. Finance, IT')">
+				<small class="nx-hint">{{ t('nc_nexus', 'Each required seat must have cast a vote for a decision.') }}</small>
 			</label>
 		</div>
-		<label class="nx-field">
-			<span>{{ t('nc_nexus', 'Description') }}</span>
-			<textarea v-model="form.description" class="nx-input" />
-		</label>
-		<label class="body__active">
-			<input v-model="form.active" type="checkbox">
-			<span>{{ t('nc_nexus', 'active') }}</span>
-		</label>
 
-		<div v-if="current" class="nx-section" data-test="body-members">
+		<div class="nx-section" data-test="body-members">
 			<h3>{{ t('nc_nexus', 'Members') }}</h3>
-			<table v-if="current.members.length" class="body__members">
-				<thead>
-					<tr>
-						<th>{{ t('nc_nexus', 'Account') }}</th>
-						<th>{{ t('nc_nexus', 'Seat') }}</th>
-						<th>{{ t('nc_nexus', 'Voting') }}</th>
-						<th>{{ t('nc_nexus', 'Deputy') }}</th>
-						<th />
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="m in current.members" :key="m.id" :data-test="'member-' + m.userId">
-						<td>{{ m.userId }}</td>
-						<td>{{ m.seat || '–' }}</td>
-						<td>{{ m.voting ? t('nc_nexus', 'Yes') : t('nc_nexus', 'No') }}</td>
-						<td>{{ m.deputyId || '–' }}</td>
-						<td>
-							<NcButton variant="tertiary"
-								:aria-label="t('nc_nexus', 'Remove member')"
-								:data-test="'remove-member-' + m.userId"
-								@click="remove(m)">
-								<template #icon>
-									<NcIconSvgWrapper :path="mdiClose" />
-								</template>
-							</NcButton>
-						</td>
-					</tr>
-				</tbody>
-			</table>
-			<p v-else class="nx-hint">
-				{{ t('nc_nexus', 'No members yet.') }}
+			<p v-if="!current" class="nx-hint">
+				{{ t('nc_nexus', 'Save the body first, then add members.') }}
 			</p>
-			<div class="body__add">
-				<div class="nx-field" data-test="member-user">
-					<span>{{ t('nc_nexus', 'Account') }}</span>
-					<UserSelect v-model="member.userId" :label="t('nc_nexus', 'Account')" />
+			<template v-else>
+				<table v-if="current.members.length" class="body__members">
+					<thead>
+						<tr>
+							<th>{{ t('nc_nexus', 'Account') }}</th>
+							<th>{{ t('nc_nexus', 'Seat') }}</th>
+							<th>{{ t('nc_nexus', 'Voting') }}</th>
+							<th>{{ t('nc_nexus', 'Deputy') }}</th>
+							<th />
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="m in current.members" :key="m.id" :data-test="'member-' + m.userId">
+							<td>{{ m.userId }}</td>
+							<td>{{ m.seat || '–' }}</td>
+							<td>{{ m.voting ? t('nc_nexus', 'Yes') : t('nc_nexus', 'No') }}</td>
+							<td>{{ m.deputyId || '–' }}</td>
+							<td class="body__remove">
+								<NcButton variant="tertiary"
+									:aria-label="t('nc_nexus', 'Remove member')"
+									:data-test="'remove-member-' + m.userId"
+									@click="remove(m)">
+									<template #icon>
+										<NcIconSvgWrapper :path="mdiClose" />
+									</template>
+								</NcButton>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<p v-else class="nx-hint body__empty">
+					{{ t('nc_nexus', 'No members yet.') }}
+				</p>
+				<div class="body__add">
+					<h4>{{ t('nc_nexus', 'Add member') }}</h4>
+					<div class="nx-field-row">
+						<div class="nx-field" data-test="member-user">
+							<span>{{ t('nc_nexus', 'Account') }} *</span>
+							<UserSelect v-model="member.userId" :label="t('nc_nexus', 'Account')" />
+						</div>
+						<label class="nx-field" data-test="member-seat">
+							<span>{{ t('nc_nexus', 'Seat') }}</span>
+							<input v-model="member.seat" class="nx-input" :placeholder="t('nc_nexus', 'e.g. Finance')">
+						</label>
+					</div>
+					<div class="nx-field-row">
+						<div class="nx-field" data-test="member-deputy">
+							<span>{{ t('nc_nexus', 'Deputy') }}</span>
+							<UserSelect v-model="member.deputyId" :label="t('nc_nexus', 'Deputy')" />
+						</div>
+						<div class="body__add-actions">
+							<label class="body__check">
+								<input v-model="member.voting" type="checkbox">
+								<span>{{ t('nc_nexus', 'Voting member') }}</span>
+							</label>
+							<NcButton variant="secondary"
+								:disabled="busy || !member.userId"
+								data-test="add-member"
+								@click="add">
+								{{ t('nc_nexus', 'Add') }}
+							</NcButton>
+						</div>
+					</div>
 				</div>
-				<label class="nx-field" data-test="member-seat">
-					<span>{{ t('nc_nexus', 'Seat') }}</span>
-					<input v-model="member.seat" class="nx-input" :placeholder="t('nc_nexus', 'e.g. Finance')">
-				</label>
-				<div class="nx-field" data-test="member-deputy">
-					<span>{{ t('nc_nexus', 'Deputy') }}</span>
-					<UserSelect v-model="member.deputyId" :label="t('nc_nexus', 'Deputy')" />
-				</div>
-				<label class="body__voting">
-					<input v-model="member.voting" type="checkbox">
-					<span>{{ t('nc_nexus', 'Voting') }}</span>
-				</label>
-				<NcButton variant="secondary"
-					:disabled="busy || !member.userId"
-					data-test="add-member"
-					@click="add">
-					{{ t('nc_nexus', 'Add') }}
-				</NcButton>
-			</div>
+			</template>
 		</div>
 		<template #actions>
 			<NcButton v-if="current"
@@ -226,26 +249,27 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.body__code {
-	max-width: 140px;
+.body__name-row {
+	grid-template-columns: minmax(0, 1fr) 160px;
 }
 
-.body__active,
-.body__voting {
+.body__check {
 	display: flex;
 	gap: 6px;
 	align-items: center;
+	min-height: 36px;
 	white-space: nowrap;
 }
 
 .body__members {
 	width: 100%;
-	margin-bottom: 10px;
+	margin-bottom: 14px;
 	border-collapse: collapse;
 
 	th, td {
 		padding: 4px 6px 4px 0;
 		text-align: start;
+		border-bottom: 1px solid var(--color-border-light, var(--color-border));
 	}
 
 	thead th {
@@ -253,26 +277,36 @@ export default {
 		font-weight: normal;
 		color: var(--color-text-maxcontrast);
 	}
-}
 
-.body__add {
-	display: grid;
-	// zwei Reihen: Konto und Sitz, darunter Stellvertretung, Stimmrecht und Hinzufügen
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-	gap: 6px 10px;
-	align-items: end;
-
-	.nx-field {
-		min-width: 0;
-		margin-bottom: 0;
+	.body__remove {
+		width: 44px;
+		text-align: end;
 	}
 }
 
-.body__add > :first-child {
-	grid-column: 1 / 2;
+.body__empty {
+	margin-bottom: 14px;
 }
 
-.body__add > :nth-child(2) {
-	grid-column: 2 / 4;
+.body__add {
+	padding: 12px 14px 14px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large, 10px);
+	background: var(--color-background-hover);
+
+	h4 {
+		margin: 0 0 10px;
+		font-size: 13px;
+		font-weight: 600;
+	}
+}
+
+.body__add-actions {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	justify-content: space-between;
+	align-self: end;
+	min-height: 36px;
 }
 </style>
