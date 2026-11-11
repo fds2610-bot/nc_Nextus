@@ -106,7 +106,8 @@ test.describe('Bewertung und Priorisierung', () => {
 			await n2.fill(String(w2 - 5))
 			await page.locator('[data-test="criteria-note"]').fill('E2E: Gewichte angepasst')
 			await page.locator('[data-test="save-criteria"]').click()
-			await expect(page.locator('[data-test="criteria-versions"]')).toContainText(`${before.set.version + 1}`)
+			// gezielt auf „Version n“ warten – eine bloße Ziffer steckt auch in jedem Datum
+			await expect(page.locator('[data-test="criteria-versions"]')).toContainText(`Version ${before.set.version + 1}`)
 			const after = await call(admin, 'get', '/scoring/model')
 			expect(after.set.version).toBe(before.set.version + 1)
 			const old = await call(admin, 'get', `/demands/${demand.id}/assessments`)

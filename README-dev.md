@@ -73,6 +73,17 @@ mit eigenen Volumes und eigenem Port (8092–8127), mehrere können parallel lau
 binden Apps read-only aus den Nachbarprojekten ein (fehlt ein Projekt, wird es übersprungen),
 `store`-Einträge werden aus dem App-Store installiert.
 
+## Beispieldaten
+
+```bash
+./dev.sh destroy && ./dev.sh up      # frische Instanz
+scripts/seed-demo.sh                 # Konten anna, ben, paula (PMO), boris (Board), sven (Pool)
+```
+
+Legt Organisation, Rollen, Ziele, Pools mit Kapazität und zehn Vorhaben in allen Stufen an
+(freigegeben mit Zusage, Kandidaten, Pflichtvorhaben, Triage, Analyse, Rückfrage, zurückgestellt,
+abgelehnt, Entwurf). Passwort der Demo-Konten: `DEMO_PASSWORD` (Standard siehe Skript).
+
 ## Tests
 
 ```bash

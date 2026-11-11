@@ -7,12 +7,17 @@
     <summary lang="de">Projekt-Governance: Strategie, Anträge, Portfolio, Ressourcen und Entscheidungen an einem Ort</summary>
     <description><![CDATA[**Nexus** brings project portfolio governance into Nextcloud: one intake for all project demands, binding decisions, capacity-based prioritisation and transparent steering up to the benefits review.
 
-This is an early development version. Currently available:
+Development version; stage 1 and 2 of the concept (MVP) are available:
 
 * **Demand intake**: record demands with type, problem statement and expected benefit, save drafts and submit them.
 * **Organization and roles**: hierarchical organizational units; context-bound roles (portfolio office, board, sponsor, pool manager, auditor …) for accounts or groups, globally or per unit including subunits, optionally for a limited period (deputies).
 * **Visibility by role**: requestors see their own demands, roles see the submitted demands of their area; drafts stay private.
 * **Duplicate suggestion**: while typing, similar open or deferred demands are shown; demands the account may not read do not appear. The portfolio office sees possible duplicates during triage.
+* **Strategic objectives**: objective hierarchy with versions; demands are assigned to objectives, the coverage shows gaps.
+* **Assessment and prioritization**: versioned criteria catalog (benefit, urgency, risk on the scale 0/1/3/5/8 with anchor texts), immutable self-assessment and review, value density; ranking within investment buckets A–D, board correction with reason.
+* **Business case and benefit register**: costs, benefit items with owner and baseline, assumptions; key figures (TCO, payback, net present value); versions frozen at the gates.
+* **Gates G2/G3 and capacity cut**: prioritization turns a demand into a project; release commits the needs firmly and is refused if a bottleneck pool lacks capacity. The capacity cut turns the ranking into a start plan (startable, startable from month X, waiting for pool or budget).
+* **Planning integration**: connect released projects with nc_gantt and read progress and dates from the plan.
 * **Portfolio overview**: demands by organizational unit (parent units roll up their subunits) and portfolio phase, with person days, plus open resource needs per quarter; every number opens the filtered list.
 * **Resource pools and capacity**: pools (skill or role groups, incl. business departments) with absence, line-work, overhead and reserve rates; capacity per month calculated from FTE and working days (gross → net → project capacity, optional justified override); resource needs per demand in person days per pool and month; load heat map with drill-down to the demands.
 * **Decision register**: every triage decision becomes an immutable decision with mandate (role and scope), reason and details; a new decision on the same demand replaces the previous one. The portfolio office may decide again at any time outside the regular step – with a mandatory reason.
@@ -21,12 +26,17 @@ This is an early development version. Currently available:
 * **Audit log**: every creation, change and status transition is recorded with the account that made it.]]></description>
     <description lang="de"><![CDATA[**Nexus** bringt Projekt-Governance in die Nextcloud: ein Eingang für alle Projektanträge, verbindliche Entscheidungen, Priorisierung gegen die verfügbare Kapazität und transparente Steuerung bis zum Nutzenreview.
 
-Dies ist eine frühe Entwicklungsversion. Derzeit verfügbar:
+Entwicklungsversion; Stufe 1 und 2 des Konzepts (MVP) sind verfügbar:
 
 * **Antragseingang**: Anträge mit Typ, Problembeschreibung und erwartetem Nutzen erfassen, als Entwurf speichern und einreichen.
 * **Organisation und Rollen**: hierarchische Org-Einheiten; kontextgebundene Rollen (Portfolio-Office, Board, Sponsor, Pool-Management, Revision …) für Konten oder Gruppen, global oder je Einheit samt Untereinheiten, auf Wunsch befristet (Vertretungen).
 * **Sichtbarkeit nach Rolle**: Antragsteller sehen ihre eigenen Anträge, Rollen die eingereichten Anträge ihres Bereichs; Entwürfe bleiben privat.
 * **Dublettenvorschlag**: Beim Tippen erscheinen ähnliche offene oder zurückgestellte Anträge; Anträge ohne Leserecht erscheinen nicht. Das Portfolio-Office sieht mögliche Dubletten bei der Triage.
+* **Strategische Ziele**: Zielhierarchie mit Versionen; Anträge werden Zielen zugeordnet, die Abdeckung zeigt Lücken.
+* **Bewertung und Priorisierung**: versionierter Kriterienkatalog (Nutzen, Dringlichkeit, Risiko auf der Skala 0/1/3/5/8 mit Ankertexten), unveränderliche Selbst- und Fremdbewertung, Wertdichte; Rangliste je Investment-Bucket A–D, Board-Korrektur mit Begründung.
+* **Business Case und Nutzenregister**: Kosten, Nutzenpositionen mit Verantwortlichem und Ausgangswert, Annahmen; Kennzahlen (TCO, Amortisation, Kapitalwert); an den Gates eingefrorene Versionen.
+* **Gates G2/G3 und Kapazitätsschnitt**: Mit der Priorisierung wird ein Antrag zum Projekt; die Freigabe sagt den Bedarf verbindlich zu und wird abgelehnt, wenn ein Engpass-Pool zu wenig Kapazität hat. Der Kapazitätsschnitt macht aus der Rangliste einen Startplan (startfähig, startfähig ab Monat X, wartet auf Pool oder Budget).
+* **Planungs-Integration**: freigegebene Projekte mit nc_gantt verbinden, Fortschritt und Termine aus dem Plan lesen.
 * **Portfolioübersicht**: Vorhaben nach Org-Einheit (übergeordnete Einheiten fassen ihre Untereinheiten zusammen) und Portfoliophase, mit Personentagen, dazu offener Ressourcenbedarf je Quartal; jede Zahl öffnet die gefilterte Liste.
 * **Ressourcenpools und Kapazität**: Pools (Skill- oder Rollengruppen, auch Fachbereiche) mit Quoten für Abwesenheit, Linienarbeit, Overhead und Reserve; Kapazität je Monat aus FTE und Arbeitstagen berechnet (Brutto → Netto → Projekt-Kapazität, optional begründet übersteuert); Ressourcenbedarf je Antrag in Personentagen je Pool und Monat; Auslastungs-Heatmap mit Aufschlüsselung auf die Anträge.
 * **Entscheidungsregister**: Jede Triage-Entscheidung wird zum unveränderlichen Beschluss mit Mandat (Rolle und Geltungsbereich), Begründung und Details; ein neuer Beschluss zum selben Antrag ersetzt den vorigen. Das Portfolio-Office kann jederzeit außerplanmäßig neu entscheiden – mit Begründungspflicht.
