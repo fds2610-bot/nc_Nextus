@@ -19,36 +19,67 @@
 				{{ t('nc_nexus', 'No units yet. Demands without a unit are visible only to their requestor and to global roles.') }}
 			</p>
 			<div v-else class="org-view__table">
-				<div v-for="unit in tree"
-					:key="unit.id"
-					class="org-row"
-					:data-test="'unit-' + unit.name"
-					@click="unitDialog = { unit }">
-					<NcIconSvgWrapper class="org-row__icon"
-						:path="mdiDomain"
-						:style="{ marginInlineStart: (unit.depth * 24) + 'px' }" />
-					<div class="org-row__name">
-						<span class="org-row__title">{{ unit.name }}</span>
-						<span v-if="unit.costCenter" class="org-row__meta">{{ t('nc_nexus', 'Cost center {cc}', { cc: unit.costCenter }) }}</span>
+				<template v-for="unit in tree" :key="unit.id">
+					<div class="org-row"
+						:data-test="'unit-' + unit.name"
+						:aria-expanded="isOpen('unit', unit.id)"
+						@click="toggle('unit', unit.id)">
+						<NcIconSvgWrapper class="org-row__chevron"
+							:path="isOpen('unit', unit.id) ? mdiChevronDown : mdiChevronRight"
+							:style="{ marginInlineStart: (unit.depth * 24) + 'px' }" />
+						<NcIconSvgWrapper class="org-row__icon" :path="mdiDomain" />
+						<div class="org-row__name">
+							<span class="org-row__title">{{ unit.name }}</span>
+							<span v-if="unit.costCenter" class="org-row__meta">{{ t('nc_nexus', 'Cost center {cc}', { cc: unit.costCenter }) }}</span>
+						</div>
+						<span class="org-row__meta">{{ n('nc_nexus', '%n role', '%n roles', rolesFor(unit.id).length) }}</span>
+						<div class="org-row__actions" @click.stop>
+							<NcActions>
+								<NcActionButton close-after-click @click="unitDialog = { unit }">
+									<template #icon>
+										<NcIconSvgWrapper :path="mdiPencil" />
+									</template>
+									{{ t('nc_nexus', 'Edit') }}
+								</NcActionButton>
+								<NcActionButton close-after-click @click="roleDialog = { scopeId: unit.id }">
+									<template #icon>
+										<NcIconSvgWrapper :path="mdiAccountPlus" />
+									</template>
+									{{ t('nc_nexus', 'Assign role') }}
+								</NcActionButton>
+							</NcActions>
+						</div>
 					</div>
-					<span class="org-row__meta">{{ n('nc_nexus', '%n role', '%n roles', rolesFor(unit.id).length) }}</span>
-					<div class="org-row__actions" @click.stop>
-						<NcActions>
-							<NcActionButton close-after-click @click="unitDialog = { unit }">
-								<template #icon>
-									<NcIconSvgWrapper :path="mdiPencil" />
-								</template>
-								{{ t('nc_nexus', 'Edit') }}
-							</NcActionButton>
-							<NcActionButton close-after-click @click="roleDialog = { scopeId: unit.id }">
-								<template #icon>
-									<NcIconSvgWrapper :path="mdiAccountPlus" />
-								</template>
-								{{ t('nc_nexus', 'Assign role') }}
-							</NcActionButton>
-						</NcActions>
-					</div>
-				</div>
+					<template v-if="isOpen('unit', unit.id)">
+						<div v-for="a in rolesFor(unit.id)"
+							:key="a.id"
+							class="role-row"
+							:style="{ paddingInlineStart: (unit.depth * 24 + 12) + 'px' }"
+							:data-test="'unit-role-' + a.principalId + '-' + a.role">
+							<span class="role-row__indent" />
+							<NcAvatar v-if="a.principalType === 'user'"
+								:user="a.principalId"
+								:size="28"
+								:disable-menu="true" />
+							<NcIconSvgWrapper v-else :path="mdiAccountGroup" class="role-row__group" />
+							<div class="org-row__name">
+								<span class="org-row__title">{{ a.principalId }}</span>
+								<span class="org-row__meta">{{ a.principalType === 'group' ? t('nc_nexus', 'Group') : t('nc_nexus', 'Account') }}</span>
+							</div>
+							<span class="org-row__meta">{{ roleLabel(a.role) }}</span>
+							<span class="org-row__meta">{{ validity(a) }}</span>
+							<div class="org-row__actions">
+								<NcButton variant="tertiary"
+									:aria-label="t('nc_nexus', 'Remove role')"
+									@click="remove(a)">
+									<template #icon>
+										<NcIconSvgWrapper :path="mdiClose" />
+									</template>
+								</NcButton>
+							</div>
+						</div>
+					</template>
+				</template>
 			</div>
 		</section>
 
@@ -68,14 +99,17 @@
 			<div class="org-view__table" data-test="role-tree">
 				<template v-for="group in roleGroups" :key="group.role">
 					<div class="org-row role-head"
-						:data-test="'role-group-' + group.role">
+						:data-test="'role-group-' + group.role"
+						:aria-expanded="isOpen('role', group.role)"
+						@click="toggle('role', group.role)">
+						<NcIconSvgWrapper class="org-row__chevron" :path="isOpen('role', group.role) ? mdiChevronDown : mdiChevronRight" />
 						<NcIconSvgWrapper class="org-row__icon" :path="mdiShieldAccount" />
 						<div class="org-row__name">
 							<span class="org-row__title">{{ roleLabel(group.role) }}</span>
 							<span class="org-row__meta">{{ roleHint(group.role) }}</span>
 						</div>
 						<span class="org-row__meta">{{ n('nc_nexus', '%n assignment', '%n assignments', group.items.length) }}</span>
-						<div class="org-row__actions">
+						<div class="org-row__actions" @click.stop>
 							<NcButton variant="tertiary"
 								:aria-label="t('nc_nexus', 'Assign role') + ': ' + roleLabel(group.role)"
 								:data-test="'assign-' + group.role"
@@ -86,7 +120,7 @@
 							</NcButton>
 						</div>
 					</div>
-					<div v-for="a in group.items"
+					<div v-for="a in (isOpen('role', group.role) ? group.items : [])"
 						:key="a.id"
 						class="role-row"
 						:data-test="'role-' + a.principalId + '-' + a.role">
@@ -132,7 +166,7 @@
 </template>
 
 <script>
-import { mdiAccountGroup, mdiAccountPlus, mdiClose, mdiDomain, mdiPencil, mdiPlus, mdiShieldAccount } from '@mdi/js'
+import { mdiAccountGroup, mdiAccountPlus, mdiChevronDown, mdiChevronRight, mdiClose, mdiDomain, mdiPencil, mdiPlus, mdiShieldAccount } from '@mdi/js'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { n, t } from '@nextcloud/l10n'
 import NcActionButton from '@nextcloud/vue/components/NcActionButton'
@@ -154,10 +188,10 @@ export default {
 	},
 	emits: ['changed'],
 	setup() {
-		return { mdiAccountGroup, mdiAccountPlus, mdiClose, mdiDomain, mdiPencil, mdiPlus, mdiShieldAccount, n, t, roleHint, roleLabel }
+		return { mdiAccountGroup, mdiAccountPlus, mdiChevronDown, mdiChevronRight, mdiClose, mdiDomain, mdiPencil, mdiPlus, mdiShieldAccount, n, t, roleHint, roleLabel }
 	},
 	data() {
-		return { unitDialog: null, roleDialog: null }
+		return { unitDialog: null, roleDialog: null, open: new Set() }
 	},
 	computed: {
 		tree() {
@@ -180,6 +214,17 @@ export default {
 		},
 	},
 	methods: {
+		isOpen(kind, id) {
+			return this.open.has(kind + ':' + id)
+		},
+		toggle(kind, id) {
+			const key = kind + ':' + id
+			const open = new Set(this.open)
+			if (!open.delete(key)) {
+				open.add(key)
+			}
+			this.open = open
+		},
 		rolesFor(unitId) {
 			return this.assignments.filter(a => a.scopeType === 'org_unit' && a.scopeId === unitId)
 		},
@@ -284,7 +329,7 @@ export default {
 }
 
 .org-row {
-	grid-template-columns: auto minmax(0, 1fr) 100px 44px;
+	grid-template-columns: auto auto minmax(0, 1fr) 100px 44px;
 	cursor: pointer;
 
 	&:hover {
@@ -316,11 +361,14 @@ export default {
 		display: flex;
 		justify-content: flex-end;
 	}
+
+	&__chevron {
+		color: var(--color-text-maxcontrast);
+	}
 }
 
 .role-head {
-	cursor: default;
-	grid-template-columns: auto minmax(0, 1fr) 120px 44px;
+	grid-template-columns: auto auto minmax(0, 1fr) 120px 44px;
 
 	&:hover {
 		background: none;
