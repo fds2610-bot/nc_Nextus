@@ -339,7 +339,6 @@ OC.L10N.register(
         "No resource pools yet": "Noch keine Ressourcenpools",
         "No strategic objectives yet": "Noch keine strategischen Ziele",
         "No units yet. Demands without a unit are visible only to their requestor and to global roles.": "Noch keine Einheiten. Anträge ohne Einheit sehen nur der Antragsteller und globale Rollen.",
-        "Nobody assigned yet.": "Noch niemand zugewiesen.",
         "not assessed yet": "noch nicht bewertet",
         "Not assessed yet.": "Noch nicht bewertet.",
         "Not assigned to any objective.": "Keinem Ziel zugeordnet.",

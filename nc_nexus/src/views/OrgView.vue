@@ -113,10 +113,6 @@
 							</NcButton>
 						</div>
 					</div>
-					<div v-if="!group.items.length" class="role-row role-row--empty">
-						<span class="role-row__indent" />
-						<span class="org-row__meta">{{ t('nc_nexus', 'Nobody assigned yet.') }}</span>
-					</div>
 				</template>
 			</div>
 		</section>
@@ -323,22 +319,17 @@ export default {
 }
 
 .role-head {
-	background: var(--color-background-dark);
 	cursor: default;
 	grid-template-columns: auto minmax(0, 1fr) 120px 44px;
 
 	&:hover {
-		background: var(--color-background-dark);
+		background: none;
 	}
 }
 
 .role-row {
 	grid-template-columns: 24px 28px minmax(0, 1fr) minmax(0, 1fr) 150px 44px;
 	min-height: 44px;
-
-	&--empty {
-		grid-template-columns: 24px minmax(0, 1fr);
-	}
 
 	&__group {
 		color: var(--color-text-maxcontrast);
