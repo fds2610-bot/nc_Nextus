@@ -192,6 +192,64 @@ info() {
 	echo "URL:      http://localhost:$NX_PORT  (admin / ${NX_ADMIN_PASSWORD:-admin123})"
 }
 
+# ---- E2E mit Datensicherung -------------------------------------------------------------------
+# Die Tests legen Anträge, Org-Einheiten, Pools usw. an, die sich teils nicht löschen lassen
+# (eingereichte Anträge bleiben im Register). Darum werden die App-Tabellen (nx_*) vor dem Lauf
+# gesichert und danach – auch bei Abbruch der Tests – wieder eingespielt. Beispieldaten bleiben.
+# NX_E2E_KEEP=1 lässt die Testdaten stehen (z. B. zur Fehlersuche).
+db_tables() {
+	case "$NX_DB" in
+	mariadb) dc exec -T db mariadb -uroot -p"${NX_DB_PASSWORD:-nextcloud}" nextcloud -N -e "show tables like 'oc\\_nx\\_%'" 2>/dev/null ;;
+	pgsql) dc exec -T db psql -U nextcloud -d nextcloud -At -c "select tablename from pg_tables where tablename like 'oc\\_nx\\_%'" ;;
+	esac | tr -d '\r'
+}
+
+snapshot_save() { # $1 = Zieldatei
+	case "$NX_DB" in
+	mariadb)
+		dc exec -T db mariadb-dump -uroot -p"${NX_DB_PASSWORD:-nextcloud}" --no-create-info --skip-triggers --complete-insert nextcloud $(db_tables) >"$1" ;;
+	pgsql)
+		dc exec -T db pg_dump -U nextcloud -d nextcloud --data-only $(db_tables | sed 's/^/-t /') >"$1" ;;
+	sqlite)
+		dc exec -T --user www-data nextcloud cp /var/www/html/data/nextcloud.db /tmp/nx-e2e-snapshot.db ;;
+	esac
+}
+
+snapshot_restore() { # $1 = Sicherungsdatei
+	local tables
+	case "$NX_DB" in
+	mariadb)
+		{ echo 'SET FOREIGN_KEY_CHECKS=0;'; for t in $(db_tables); do echo "TRUNCATE $t;"; done; cat "$1"; } \
+			| dc exec -T db mariadb -uroot -p"${NX_DB_PASSWORD:-nextcloud}" nextcloud ;;
+	pgsql)
+		tables=$(db_tables | paste -sd,)
+		{ echo "TRUNCATE $tables RESTART IDENTITY;"; cat "$1"; } \
+			| dc exec -T db psql -q -v ON_ERROR_STOP=1 -U nextcloud -d nextcloud >/dev/null ;;
+	sqlite)
+		dc exec -T --user www-data nextcloud cp /tmp/nx-e2e-snapshot.db /var/www/html/data/nextcloud.db ;;
+	esac
+}
+
+e2e() {
+	local snap='' rc=0
+	if [ -z "${NX_E2E_KEEP:-}" ]; then
+		snap=$(mktemp)
+		snapshot_save "$snap" || { rm -f "$snap"; die "Sicherung der App-Daten vor den E2E-Tests fehlgeschlagen"; }
+		[ "$NX_DB" = sqlite ] || [ -s "$snap" ] || { rm -f "$snap"; die "Sicherung der App-Daten ist leer"; }
+	fi
+	trap 'rc=130' INT
+	BASE_URL="http://host.docker.internal:$NX_PORT" E2E_PASSWORD="$E2E_PASSWORD" sh "$ROOT/nc_nexus/tests/e2e/run.sh" "${ARGS[@]}" || rc=$?
+	if [ -n "$snap" ]; then
+		if snapshot_restore "$snap"; then
+			echo "E2E-Testdaten entfernt (App-Daten auf den Stand vor dem Lauf zurückgesetzt)"
+		else
+			echo "WARNUNG: App-Daten konnten nicht zurückgesetzt werden" >&2
+		fi
+		rm -f "$snap"
+	fi
+	return "$rc"
+}
+
 case "$CMD" in
 up)
 	build_image
@@ -208,6 +266,6 @@ logs) dc logs -f nextcloud ;;
 shell) dc exec --user www-data nextcloud bash ;;
 info) info ;;
 ls) docker compose ls -a --filter name=nc-nexus- ;;
-e2e) BASE_URL="http://host.docker.internal:$NX_PORT" E2E_PASSWORD="$E2E_PASSWORD" sh "$ROOT/nc_nexus/tests/e2e/run.sh" "${ARGS[@]}" ;;
+e2e) e2e ;;
 *) usage ;;
 esac

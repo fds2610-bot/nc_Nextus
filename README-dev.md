@@ -90,6 +90,8 @@ abgelehnt, Entwurf). Passwort der Demo-Konten: `DEMO_PASSWORD` (Standard siehe S
 scripts/php-check.sh          # PHP 8.3/8.4/8.5: Syntax + PHPUnit, dazu PHPStan
 cd nc_nexus && npm run lint   # ESLint
 ./dev.sh e2e [--db …]         # Playwright über den e2e-runner
+# Hinweis: ./dev.sh e2e sichert vorher die App-Tabellen (nx_*) und spielt sie nach dem Lauf
+# wieder ein, die Testdaten verschwinden also. NX_E2E_KEEP=1 ./dev.sh e2e … behält sie.
 scripts/matrix.sh             # E2E über die ganze Matrix (DBs, NC 34, PHP 8.3)
 ```
 
@@ -103,3 +105,4 @@ scripts/matrix.sh             # E2E über die ganze Matrix (DBs, NC 34, PHP 8.3)
   `./dev.sh occ upgrade`) schützt `docker-dev/upgrade.exclude` das Verzeichnis `apps-extra`
   vor dem rsync des Images.
 - Der Tracing-JIT von PHP 8.5 ist in der DEV-Umgebung abgeschaltet (`opcache-dev.ini`).
+- Qwen3-TTS (0,6B) läuft lokal auf der CPU und schafft bei mir nur rund 15 Minuten Sprache in etwa 1,5 Stunden im Hintergrund. 
