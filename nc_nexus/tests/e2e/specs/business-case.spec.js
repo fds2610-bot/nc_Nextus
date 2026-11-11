@@ -28,7 +28,7 @@ test.describe('Business Case und Nutzenregister', () => {
 			await dialog.locator('[data-test="add-cost"]').click()
 			const cost = dialog.locator('[data-test="cost-0"]')
 			await cost.locator('input').first().fill('Lizenzen und Einführung')
-			await cost.locator('input[type="number"]').fill('60000')
+			await cost.locator('input.bc__amount').fill('60000')
 			await dialog.locator('[data-test="add-benefit"]').click()
 			const benefit = dialog.locator('[data-test="benefit-0"]')
 			await benefit.locator('[data-test="benefit-title"]').fill('Wegfall Altvertrag')

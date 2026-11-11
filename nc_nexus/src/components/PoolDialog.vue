@@ -46,28 +46,26 @@
 					<div class="nx-field-row pool__rates">
 						<label v-for="rate in rates" :key="rate.field" class="nx-field">
 							<span>{{ rate.label }} (%)</span>
-							<input v-model.number="form[rate.field]"
-								type="number"
-								min="0"
-								max="99"
-								step="0.5"
-								class="nx-input">
+							<NxNumberInput v-model="form[rate.field]"
+								:min="0"
+								:max="99"
+								class="nx-input" />
 						</label>
 					</div>
 					<div class="nx-field-row">
 						<label class="nx-field">
 							<span>{{ t('nc_nexus', 'Key persons (number of people with the critical knowledge)') }}</span>
-							<input v-model.number="form.keyPersons"
-								type="number"
-								min="0"
-								class="nx-input">
+							<NxNumberInput v-model="form.keyPersons"
+								:max-decimals="0"
+								:min="0"
+								class="nx-input" />
 						</label>
 						<label class="nx-field">
 							<span>{{ t('nc_nexus', 'WIP limit (parallel projects)') }}</span>
-							<input v-model.number="form.wipLimit"
-								type="number"
-								min="0"
-								class="nx-input">
+							<NxNumberInput v-model="form.wipLimit"
+								:max-decimals="0"
+								:min="0"
+								class="nx-input" />
 						</label>
 					</div>
 				</fieldset>
@@ -97,37 +95,33 @@
 							:data-test="'capacity-' + row.period">
 							<td>{{ formatMonth(row.period) }}</td>
 							<td>
-								<input v-model.number="row.fte"
-									type="number"
-									min="0"
-									step="0.1"
+								<NxNumberInput v-model="row.fte"
+									:min="0"
 									class="nx-input pool__num"
 									:disabled="!canEdit"
 									:aria-label="t('nc_nexus', 'FTE') + ' ' + row.period"
-									@input="row.changed = true">
+									@input="row.changed = true" />
 							</td>
 							<td>
-								<input v-model.number="row.workingDays"
-									type="number"
-									min="0"
-									max="31"
+								<NxNumberInput v-model="row.workingDays"
+									:max-decimals="0"
+									:min="0"
+									:max="31"
 									class="nx-input pool__num"
 									:disabled="!canEdit"
 									:aria-label="t('nc_nexus', 'Working days') + ' ' + row.period"
-									@input="row.changed = true">
+									@input="row.changed = true" />
 							</td>
 							<td>{{ formatNumber(row.gross) }}</td>
 							<td>{{ formatNumber(row.net) }}</td>
 							<td>
-								<input v-model.number="row.overrideDays"
-									type="number"
-									min="0"
-									step="0.5"
+								<NxNumberInput v-model="row.overrideDays"
+									:min="0"
 									class="nx-input pool__num"
 									:disabled="!canEdit"
 									:placeholder="'–'"
 									:aria-label="t('nc_nexus', 'Override') + ' ' + row.period"
-									@input="row.changed = true">
+									@input="row.changed = true" />
 								<input v-if="row.overrideDays !== null && row.overrideDays !== ''"
 									v-model="row.overrideReason"
 									class="nx-input pool__reason"
@@ -171,6 +165,7 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NxDialog from './NxDialog.vue'
+import NxNumberInput from './NxNumberInput.vue'
 import { createPool, deletePool, errorMessage, poolCapacity, setPoolCapacity, updatePool } from '../api.js'
 import { formatMonth, formatNumber, indented, orgTree, poolTypeLabel, thisMonth } from '../labels.js'
 
@@ -191,7 +186,7 @@ const fromPool = (pool) => ({
 
 export default {
 	name: 'PoolDialog',
-	components: { NcButton, NxDialog },
+	components: { NcButton, NxDialog, NxNumberInput },
 	props: {
 		pool: { type: Object, default: null },
 		orgUnits: { type: Array, default: () => [] },

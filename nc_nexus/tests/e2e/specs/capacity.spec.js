@@ -84,7 +84,7 @@ test.describe('Ressourcenpools und Kapazität', () => {
 			const need = editor.locator('[data-test="need-0"]')
 			await need.locator('select').selectOption({ label: `E2E-Pool ${poolCode}` })
 			await need.locator('input[type="month"]').fill(thisMonth())
-			await need.locator('input[type="number"]').fill('15')
+			await need.locator('input.needs__days').fill('15')
 			await editor.locator('[data-test="submit-demand"]').click()
 			await expect(editor.locator('[data-test="demand-status"]')).toHaveText(/Submitted|Eingereicht/)
 			const demand = (await call(own, 'get', '/demands')).find(d => d.title === title)

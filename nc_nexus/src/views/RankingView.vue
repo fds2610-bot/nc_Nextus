@@ -95,10 +95,10 @@
 			<div class="nx-field-row">
 				<label class="nx-field" data-test="field-override-rank">
 					<span>{{ t('nc_nexus', 'Rank in the bucket') }} *</span>
-					<input v-model.number="dialog.rank"
-						type="number"
-						min="1"
-						class="nx-input">
+					<NxNumberInput v-model="dialog.rank"
+						:max-decimals="0"
+						:min="1"
+						class="nx-input" />
 				</label>
 				<div class="nx-field">
 					<span>{{ t('nc_nexus', 'Calculated rank') }}</span>
@@ -140,12 +140,13 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NxDialog from '../components/NxDialog.vue'
+import NxNumberInput from '../components/NxNumberInput.vue'
 import { capacityCut, errorMessage, getRanking, overrideRank } from '../api.js'
 import { formatIsoDay, formatMonth, formatNumber, statusLabel } from '../labels.js'
 
 export default {
 	name: 'RankingView',
-	components: { NcButton, NcIconSvgWrapper, NcLoadingIcon, NxDialog },
+	components: { NcButton, NcIconSvgWrapper, NcLoadingIcon, NxDialog, NxNumberInput },
 	props: {
 		refreshKey: { type: Number, default: 0 },
 	},

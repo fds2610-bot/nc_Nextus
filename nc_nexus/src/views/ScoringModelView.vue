@@ -22,27 +22,30 @@
 						<label class="bucket__field">
 							<span>{{ t('nc_nexus', 'Target share (%)') }}</span>
 							<NxNumberInput v-model="b.targetSharePct"
+								:data-test="'bucket-share-' + b.code"
 								:min="0"
 								:max="100"
 								class="nx-input"
-								:disabled="!model.canManage" />
+								:disabled="!model.canManage"
+								@update:model-value="queueSave(b)" />
 						</label>
 						<label class="bucket__field">
 							<span>{{ t('nc_nexus', 'Budget frame') }}</span>
 							<NxNumberInput v-model="b.targetBudget"
+								:data-test="'bucket-budget-' + b.code"
 								:min="0"
 								:max-decimals="0"
 								class="nx-input"
 								:placeholder="'–'"
-								:disabled="!model.canManage" />
+								:disabled="!model.canManage"
+								@update:model-value="queueSave(b)" />
 						</label>
-						<NcButton v-if="model.canManage"
-							variant="secondary"
-							:disabled="busy || !bucketChanged(b)"
-							:data-test="'save-bucket-' + b.code"
-							@click="saveBucket(b)">
-							{{ t('nc_nexus', 'Save') }}
-						</NcButton>
+						<span v-if="model.canManage"
+							class="bucket__status"
+							role="status"
+							:data-test="'bucket-status-' + b.code">
+							{{ statusText(b.code) }}
+						</span>
 					</div>
 				</div>
 				<p class="nx-hint" :class="{ 'model__warn': shareSum !== 100 }" data-test="share-sum">
@@ -153,7 +156,7 @@ export default {
 		return { t, dimensionLabel, formatDate, formatNumber, dimensions: ['benefit', 'urgency', 'risk'] }
 	},
 	data() {
-		return { busy: false, editing: false, note: '', draft: [], buckets: [] }
+		return { busy: false, editing: false, note: '', draft: [], buckets: [], saved: {}, status: {}, timers: {} }
 	},
 	computed: {
 		criteria() {
@@ -171,6 +174,7 @@ export default {
 			immediate: true,
 			handler(model) {
 				this.buckets = (model?.buckets ?? []).map(b => ({ ...b }))
+				this.saved = Object.fromEntries(this.buckets.map(b => [b.code, { share: b.targetSharePct, budget: b.targetBudget ?? null }]))
 			},
 		},
 	},
@@ -179,8 +183,8 @@ export default {
 			return this.criteria.filter(c => c.dimension === dimension)
 		},
 		bucketChanged(b) {
-			const saved = this.model.buckets.find(x => x.code === b.code)
-			return saved.targetSharePct !== b.targetSharePct || (saved.targetBudget ?? '') !== (b.targetBudget ?? '')
+			const saved = this.saved[b.code]
+			return saved.share !== (b.targetSharePct ?? 0) || saved.budget !== (b.targetBudget ?? null)
 		},
 		startEdit() {
 			this.draft = JSON.parse(JSON.stringify(this.model.set.criteria))
@@ -201,11 +205,44 @@ export default {
 				this.busy = false
 			}
 		},
-		saveBucket(b) {
-			return this.run(
-				() => updateBucket(b.code, { targetSharePct: b.targetSharePct || 0, targetBudget: b.targetBudget === '' || b.targetBudget === null ? null : b.targetBudget }),
-				t('nc_nexus', 'Bucket saved'),
-			)
+		statusText(code) {
+			return {
+				pending: t('nc_nexus', 'Changed …'),
+				saving: t('nc_nexus', 'Saving …'),
+				saved: t('nc_nexus', 'Saved'),
+				error: t('nc_nexus', 'Not saved'),
+			}[this.status[code]] ?? ''
+		},
+		/**
+		 * Änderung nach kurzer Tipppause automatisch speichern.
+		 * @param {object} b Bucket mit den eingegebenen Werten
+		 */
+		queueSave(b) {
+			clearTimeout(this.timers[b.code])
+			this.status[b.code] = 'pending'
+			this.timers[b.code] = setTimeout(() => this.autoSave(b), 600)
+		},
+		async autoSave(b) {
+			if (this.status[b.code] === 'saving') {
+				return this.queueSave(b)
+			}
+			if (!this.bucketChanged(b)) {
+				this.status[b.code] = ''
+				return
+			}
+			this.status[b.code] = 'saving'
+			const values = { targetSharePct: b.targetSharePct ?? 0, targetBudget: b.targetBudget ?? null }
+			try {
+				await updateBucket(b.code, values)
+				this.saved[b.code] = { share: values.targetSharePct, budget: values.targetBudget }
+				this.status[b.code] = this.bucketChanged(b) ? 'pending' : 'saved'
+				if (this.status[b.code] === 'pending') {
+					this.queueSave(b)
+				}
+			} catch (e) {
+				this.status[b.code] = 'error'
+				showError(errorMessage(e))
+			}
 		},
 		async saveCriteria() {
 			if (await this.run(() => saveCriteria(this.draft, this.note), t('nc_nexus', 'New catalog version is active'))) {
@@ -325,6 +362,12 @@ export default {
 
 	&__field span {
 		display: block;
+		font-size: 12px;
+		color: var(--color-text-maxcontrast);
+	}
+
+	&__status {
+		min-width: 90px;
 		font-size: 12px;
 		color: var(--color-text-maxcontrast);
 	}

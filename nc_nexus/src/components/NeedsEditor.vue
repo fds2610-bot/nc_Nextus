@@ -44,14 +44,12 @@
 							<span v-else>{{ formatMonth(row.period) }}</span>
 						</td>
 						<td>
-							<input v-if="!readonly"
-								:value="row.personDays"
-								type="number"
-								min="0"
-								step="0.5"
+							<NxNumberInput v-if="!readonly"
+								:model-value="row.personDays"
+								:min="0"
 								class="nx-input needs__days"
 								:aria-label="t('nc_nexus', 'Person days')"
-								@input="update(i, 'personDays', $event.target.value === '' ? '' : Number($event.target.value))">
+								@update:model-value="update(i, 'personDays', $event ?? '')" />
 							<span v-else>{{ formatNumber(row.personDays) }}</span>
 						</td>
 						<td v-if="!readonly">
@@ -93,11 +91,12 @@ import { mdiClose, mdiPlus } from '@mdi/js'
 import { t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
+import NxNumberInput from './NxNumberInput.vue'
 import { formatMonth, formatNumber, thisMonth } from '../labels.js'
 
 export default {
 	name: 'NeedsEditor',
-	components: { NcButton, NcIconSvgWrapper },
+	components: { NcButton, NcIconSvgWrapper, NxNumberInput },
 	props: {
 		/** Zeilen { poolId, period, personDays } */
 		modelValue: { type: Array, required: true },

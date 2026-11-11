@@ -85,6 +85,29 @@ test.describe('Bewertung und Priorisierung', () => {
 		}
 	})
 
+	test('Buckets werden beim Tippen automatisch gespeichert', async ({ browser }) => {
+		const admin = await adminApi()
+		const before = (await call(admin, 'get', '/scoring/model')).buckets.find(b => b.code === 'D')
+		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
+		try {
+			await page.goto('/apps/nc_nexus/')
+			await page.locator('[data-test="nav-model"]').click()
+			const field = page.locator('[data-test="bucket-budget-D"]')
+			await expect(page.locator('[data-test="save-bucket-D"]')).toHaveCount(0)
+			await field.fill('1234567')
+			await expect(page.locator('[data-test="bucket-status-D"]')).toHaveText(/Gespeichert|Saved/)
+			await field.blur()
+			// nach dem Verlassen mit Tausendertrennzeichen der Sprache angezeigt
+			await expect(field).toHaveValue(/^1\D234\D567$/)
+			const after = (await call(admin, 'get', '/scoring/model')).buckets.find(b => b.code === 'D')
+			expect(Number(after.targetBudget)).toBe(1234567)
+		} finally {
+			await call(admin, 'put', '/scoring/buckets/D', { targetSharePct: before.targetSharePct, targetBudget: before.targetBudget })
+			await context.close()
+			await admin.dispose()
+		}
+	})
+
 	test('Katalog ändern erzeugt eine neue Version, alte Bewertungen behalten ihre', async ({ browser }) => {
 		const admin = await adminApi()
 		const own = await apiAs(E2E_USER)

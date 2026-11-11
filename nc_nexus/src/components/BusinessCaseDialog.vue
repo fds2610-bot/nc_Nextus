@@ -46,12 +46,10 @@
 								</select>
 							</td>
 							<td>
-								<input v-model.number="c.amount"
-									type="number"
-									min="0"
-									step="100"
+								<NxNumberInput v-model="c.amount"
+									:min="0"
 									class="nx-input bc__amount"
-									:aria-label="t('nc_nexus', 'Amount (€)')">
+									:aria-label="t('nc_nexus', 'Amount (€)')" />
 							</td>
 							<td><RemoveButton v-if="canEdit" @click="content.costs.splice(i, 1)" /></td>
 						</tr>
@@ -84,12 +82,10 @@
 						</label>
 						<label v-if="b.type !== 'qualitative'" class="nx-field">
 							<span>{{ t('nc_nexus', 'Amount per year (€)') }}</span>
-							<input v-model.number="b.amount"
-								type="number"
-								min="0"
-								step="1000"
+							<NxNumberInput v-model="b.amount"
+								:min="0"
 								class="nx-input"
-								data-test="benefit-amount">
+								data-test="benefit-amount" />
 						</label>
 					</div>
 					<div class="nx-field-row bc__row3">
@@ -179,12 +175,10 @@
 				</NcButton>
 				<label class="nx-field bc__rate">
 					<span>{{ t('nc_nexus', 'Discount rate (%)') }}</span>
-					<input v-model.number="content.discountRate"
-						type="number"
-						min="0"
-						max="50"
-						step="0.5"
-						class="nx-input">
+					<NxNumberInput v-model="content.discountRate"
+						:min="0"
+						:max="50"
+						class="nx-input" />
 				</label>
 			</div>
 		</fieldset>
@@ -224,6 +218,7 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import { h } from 'vue'
 import NxDialog from './NxDialog.vue'
+import NxNumberInput from './NxNumberInput.vue'
 import { errorMessage, saveBusinessCase } from '../api.js'
 import { benefitTypeLabel, costKindLabel, formatDate, formatMoney, formatNumber } from '../labels.js'
 
@@ -237,7 +232,7 @@ RemoveButton.emits = ['click']
 
 export default {
 	name: 'BusinessCaseDialog',
-	components: { NcButton, NxDialog, RemoveButton },
+	components: { NcButton, NxDialog, NxNumberInput, RemoveButton },
 	props: {
 		demand: { type: Object, required: true },
 		businessCase: { type: Object, required: true },
