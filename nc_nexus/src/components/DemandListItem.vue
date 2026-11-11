@@ -30,6 +30,13 @@
 			</div>
 		</div>
 		<div class="demand-row__status">
+			<span v-if="!stage" class="demand-row__stage" aria-hidden="true" />
+			<span v-else
+				class="demand-row__stage"
+				:class="{ 'demand-row__stage--start': stage === 'submitted' }"
+				:style="{ background: stageColor(stage).fill, color: stageColor(stage).text }"
+				:title="stageTitle"
+				:data-test="'stage-' + stage">{{ stage === 'submitted' ? '' : stage.toUpperCase() }}</span>
 			<span class="nx-chip" :class="'nx-chip--' + statusChip(demand.status)">{{ statusLabel(demand.status) }}</span>
 		</div>
 		<div class="demand-row__date">
@@ -64,7 +71,7 @@ import NcActions from '@nextcloud/vue/components/NcActions'
 import NcAvatar from '@nextcloud/vue/components/NcAvatar'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import { deleteDemand, errorMessage } from '../api.js'
-import { formatDay, statusChip, statusLabel, typeColor, typeLabel } from '../labels.js'
+import { formatDay, passedStage, stageColor, stageLabel, statusChip, statusLabel, typeColor, typeLabel } from '../labels.js'
 
 export default {
 	name: 'DemandListItem',
@@ -75,9 +82,17 @@ export default {
 	},
 	emits: ['open', 'changed'],
 	setup() {
-		return { mdiDelete, mdiEye, mdiPencil, t, formatDay, statusChip, statusLabel, typeColor, typeLabel }
+		return { mdiDelete, mdiEye, mdiPencil, t, formatDay, stageColor, statusChip, statusLabel, typeColor, typeLabel }
 	},
 	computed: {
+		stage() {
+			return passedStage(this.demand.status)
+		},
+		stageTitle() {
+			return this.stage === 'submitted'
+				? t('nc_nexus', 'Submitted, no gate passed yet')
+				: t('nc_nexus', 'Last gate passed: {gate}', { gate: stageLabel(this.stage) })
+		},
 		orgUnitName() {
 			return this.orgUnits.find(u => u.id === this.demand.orgUnitId)?.name ?? ''
 		},
@@ -106,7 +121,7 @@ export default {
 /* Spalten MÜSSEN zu .demand-list__thead in DemandList.vue passen */
 .demand-row {
 	display: grid;
-	grid-template-columns: 32px minmax(0, 1fr) 130px 130px 44px;
+	grid-template-columns: 32px minmax(0, 1fr) 176px 130px 44px;
 	align-items: center;
 	gap: 12px;
 	min-height: 58px;
@@ -169,6 +184,33 @@ export default {
 		margin-inline-end: 3px;
 		border-radius: 50%;
 		vertical-align: 1px;
+	}
+
+	&__status {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	&__stage {
+		flex: none;
+		min-width: 30px;
+		height: 20px;
+		padding: 0 6px;
+		border-radius: 10px;
+		font-size: 11px;
+		font-weight: 700;
+		line-height: 20px;
+		text-align: center;
+
+		&--start {
+			min-width: 12px;
+			width: 12px;
+			height: 12px;
+			padding: 0;
+			margin-inline: 9px;
+		}
 	}
 
 	&__date {

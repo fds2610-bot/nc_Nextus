@@ -82,6 +82,15 @@
 				{{ retired ? n('nc_nexus', '%n earlier version is kept for the audit.', '%n earlier versions are kept for the audit.', retired) : '' }}
 			</p>
 			<div class="nx-view__table">
+				<div class="nx-row gov__right gov__right--fixed"
+					:title="t('nc_nexus', 'Fixed: the portfolio office of the area qualifies every demand; it cannot be changed.')"
+					data-test="rights-g1">
+					<b>G1</b>
+					<span>{{ gateLabel('g1') }}</span>
+					<div class="gov__right-list">
+						<span class="nx-row__meta">{{ t('nc_nexus', 'Portfolio office only') }}</span>
+					</div>
+				</div>
 				<div v-for="g in gates"
 					:key="g"
 					class="nx-row gov__right"
@@ -108,6 +117,7 @@
 					</div>
 				</div>
 			</div>
+			<GateProcess :gate-sets="gateSets" :rights="rights" :bodies="bodies" />
 		</section>
 
 		<section class="nx-view__section">
@@ -141,6 +151,9 @@
 						</span>
 					</div>
 					<div class="nx-gates">
+						<span class="nx-gates__fixed" :title="gateLabel('g1') + ' · ' + t('nc_nexus', 'Portfolio office only')">
+							G1
+						</span>
 						<span v-for="g in s.gates" :key="g.code" :title="g.name + (g.requiredChecks.length ? ': ' + g.requiredChecks.map(checkLabel).join(', ') : '')">
 							{{ g.code.toUpperCase() }}{{ g.budgetTranche ? ' €' : '' }}
 						</span>
@@ -179,6 +192,39 @@
 			</div>
 		</section>
 
+		<section v-if="settings" class="nx-view__section" data-test="project-classes">
+			<div class="nx-view__section-head">
+				<h3>{{ t('nc_nexus', 'Project classes') }}</h3>
+			</div>
+			<p class="nx-view__hint">
+				{{ t('nc_nexus', 'The classes are fixed in the app. The portfolio office assigns them when accepting a demand (G1); they select the gate set, the decision rights and the status report cadence.') }}
+				{{ t('nc_nexus', 'The limits are set under thresholds; the higher criterion counts, a limit of 0 is not used.') }}
+			</p>
+			<div class="nx-view__table">
+				<div v-for="c in classes"
+					:key="c"
+					class="nx-row gov__class"
+					:data-test="'class-' + c">
+					<b>{{ c }}</b>
+					<div class="nx-row__name" data-test="class-criteria">
+						<span class="nx-row__title">{{ classCriteria(c) || '–' }}</span>
+						<span v-if="classNote(c)" class="nx-row__meta">{{ classNote(c) }}</span>
+					</div>
+					<div class="nx-row__name">
+						<span class="nx-row__title">{{ setsForClass(c).map(s => s.name).join(', ') || '–' }}</span>
+						<span class="nx-row__meta">
+							{{ classRights(c).length
+								? t('nc_nexus', 'Own decision rights: {list}', { list: classRights(c).join(', ') })
+								: t('nc_nexus', 'Decision rights for all classes') }}
+						</span>
+					</div>
+					<span class="nx-row__meta">
+						{{ t('nc_nexus', 'Status report every {n} days', { n: classReportDays(c) }) }}
+					</span>
+				</div>
+			</div>
+		</section>
+
 		<BodyDialog v-if="bodyDialog"
 			:body="bodyDialog.body"
 			@close="bodyDialog = null"
@@ -204,18 +250,20 @@ import NcAvatar from '@nextcloud/vue/components/NcAvatar'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import BodyDialog from '../components/BodyDialog.vue'
+import GateProcess from '../components/GateProcess.vue'
 import GateSetDialog from '../components/GateSetDialog.vue'
 import RightDialog from '../components/RightDialog.vue'
+import { loadState } from '@nextcloud/initial-state'
 import { errorMessage, getSettings, governance, saveSettings } from '../api.js'
 import NxNumberInput from '../components/NxNumberInput.vue'
-import { bodyTypeLabel, checkLabel, gateLabel, typeLabel } from '../labels.js'
+import { bodyTypeLabel, checkLabel, formatMoney, formatNumber, gateLabel, typeLabel } from '../labels.js'
 
 export default {
 	name: 'GovernanceView',
-	components: { BodyDialog, GateSetDialog, NcAvatar, NcButton, NcIconSvgWrapper, NxNumberInput, RightDialog },
+	components: { BodyDialog, GateProcess, GateSetDialog, NcAvatar, NcButton, NcIconSvgWrapper, NxNumberInput, RightDialog },
 	emits: ['changed'],
 	setup() {
-		return { mdiAccountGroup, mdiChevronDown, mdiChevronRight, mdiPencil, mdiPlus, mdiSourceBranch, n, t, bodyTypeLabel, checkLabel, gateLabel, typeLabel, gates: ['g2', 'g3', 'g4', 'g5', 'g6', 'change'] }
+		return { mdiAccountGroup, mdiChevronDown, mdiChevronRight, mdiPencil, mdiPlus, mdiSourceBranch, n, t, bodyTypeLabel, checkLabel, gateLabel, typeLabel, gates: ['g2', 'g3', 'g4', 'g5', 'g6', 'change'], classes: loadState('nc_nexus', 'project_classes', []) }
 	},
 	data() {
 		return { canManage: false, bodies: [], rights: [], retired: 0, gateSets: [], checks: [], open: new Set(), bodyDialog: null, rightDialog: null, setDialog: null, settings: null, settingsSaved: '' }
@@ -286,10 +334,65 @@ export default {
 				conflictLevel1Days: t('nc_nexus', 'Conflict: days until resource board'),
 				conflictLevel2Days: t('nc_nexus', 'Conflict: days until portfolio board'),
 				conditionReminderDays: t('nc_nexus', 'Reminder before a condition is due (days)'),
+				classDaysS: t('nc_nexus', 'Class S from (person days)'),
+				classDaysM: t('nc_nexus', 'Class M from (person days)'),
+				classDaysL: t('nc_nexus', 'Class L from (person days)'),
+				classBudgetS: t('nc_nexus', 'Class S from (€)'),
+				classBudgetM: t('nc_nexus', 'Class M from (€)'),
+				classBudgetL: t('nc_nexus', 'Class L from (€)'),
 			}[key] ?? key
 		},
 		rightsFor(gate) {
 			return this.rights.filter(r => r.gateCode === gate)
+		},
+		/**
+		 * Gate-Sets einer Klasse wie gateSetFor(): eigene Sets, sonst die ohne Klasseneinschränkung
+		 *
+		 * @param {string} c Vorhabensklasse
+		 */
+		setsForClass(c) {
+			const own = this.gateSets.filter(s => s.projectClasses.includes(c))
+			return own.length ? own : this.gateSets.filter(s => !s.projectClasses.length)
+		},
+		classRights(c) {
+			return [...new Set(this.rights.filter(r => r.projectClasses?.includes(c)).map(r => r.gateCode === 'change' ? 'CR' : r.gateCode.toUpperCase()))]
+		},
+		/**
+		 * Bereich einer Klasse aus den Untergrenzen (Personentage und Budget, 0 = nicht genutzt)
+		 *
+		 * @param {string} c Vorhabensklasse
+		 */
+		classCriteria(c) {
+			const i = this.classes.indexOf(c)
+			const range = (prefix, format) => {
+				const bound = (k) => (k > 0 && k < this.classes.length ? this.settings[prefix + this.classes[k]] : 0) || 0
+				const lo = bound(i)
+				const hi = bound(i + 1)
+				if (lo && hi) {
+					return format(lo) + '–' + format(hi)
+				}
+				if (hi) {
+					return t('nc_nexus', 'below {value}', { value: format(hi) })
+				}
+				return lo ? t('nc_nexus', 'from {value}', { value: format(lo) }) : ''
+			}
+			const days = range('classDays', v => formatNumber(v))
+			const budget = range('classBudget', formatMoney)
+			return [
+				days ? t('nc_nexus', '{range} person days', { range: days }) : '',
+				budget ? t('nc_nexus', 'budget {range}', { range: budget }) : '',
+			].filter(Boolean).join(' · ')
+		},
+		classNote(c) {
+			return {
+				XS: t('nc_nexus', 'Service request, no bottleneck skill'),
+				S: t('nc_nexus', 'Small undertaking'),
+				M: t('nc_nexus', 'Regular project'),
+				L: t('nc_nexus', 'Major project or programme; also when strategically or regulatorily critical'),
+			}[c] ?? ''
+		},
+		classReportDays(c) {
+			return this.settings[['XS', 'S'].includes(c) ? 'reportDaysSmall' : 'reportDaysLarge'] ?? 0
 		},
 		bodyName(id) {
 			return this.bodies.find(b => b.id === id)?.name ?? '?'
@@ -309,6 +412,15 @@ export default {
 
 .gov__right {
 	grid-template-columns: 34px 220px minmax(0, 1fr);
+}
+
+.gov__right--fixed {
+	opacity: .55;
+	cursor: default;
+}
+
+.nx-gates__fixed {
+	opacity: .55;
 }
 
 .gov__right-list {
@@ -351,6 +463,10 @@ export default {
 	align-items: center;
 	padding: 4px 0;
 	font-size: 13px;
+}
+
+.gov__class {
+	grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) auto;
 }
 
 .gov__set {

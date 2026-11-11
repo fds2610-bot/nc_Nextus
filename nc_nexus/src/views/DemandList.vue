@@ -172,7 +172,7 @@ export default {
 	/* Spalten MÜSSEN zu .demand-row in DemandListItem.vue passen */
 	&__thead {
 		display: grid;
-		grid-template-columns: 32px minmax(0, 1fr) 130px 130px 44px;
+		grid-template-columns: 32px minmax(0, 1fr) 176px 130px 44px;
 		gap: 12px;
 		align-items: center;
 		padding: 10px 4px 10px 12px;

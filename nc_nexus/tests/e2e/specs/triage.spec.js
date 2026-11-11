@@ -47,6 +47,11 @@ test.describe('Triage', () => {
 			await pmo.locator(`[data-test="demand-${demand.key}"]`).click()
 			await pmo.locator('[data-test="open-triage"]').click()
 			const dialog = pmo.locator('[data-test="triage-dialog"]')
+			// jeder Code erklärt sich ausführlich per Tooltip
+			for (const code of ['accepted', 'further_analysis', 'deferred', 'rejected', 'duplicate', 'query']) {
+				await expect(dialog.locator(`[data-test="code-${code}"]`)).toHaveAttribute('title', /.{120,}/)
+			}
+			await expect(dialog.locator('[data-test="code-deferred"]')).toHaveAttribute('title', /Wiedervorlage|resubmission/i)
 			await dialog.locator('[data-test="code-query"]').click()
 			await dialog.locator('[data-test="field-question"] textarea').fill('Welche Systeme sind betroffen?')
 			await dialog.locator('[data-test="field-query-due"] input').fill(isoDay(7))

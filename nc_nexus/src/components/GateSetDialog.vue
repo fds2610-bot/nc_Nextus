@@ -28,6 +28,19 @@
 
 		<div class="nx-section">
 			<h3>{{ t('nc_nexus', 'Gates') }}</h3>
+			<div class="set__gate set__gate--off" data-test="set-gate-g1">
+				<label class="set__gate-head">
+					<input type="checkbox"
+						checked
+						disabled
+						data-test="gate-enabled">
+					<b>G1</b>
+					<input class="nx-input"
+						:value="gateLabel('g1') + ' · ' + t('nc_nexus', 'Portfolio office only')"
+						disabled
+						:aria-label="t('nc_nexus', 'Name')">
+				</label>
+			</div>
 			<div v-for="g in form.gates"
 				:key="g.code"
 				class="set__gate"
@@ -100,7 +113,7 @@ export default {
 	},
 	emits: ['close', 'changed', 'ready'],
 	setup() {
-		return { t, checkLabel, typeLabel, classes: ['XS', 'S', 'M', 'L'], types: ['mandatory', 'strategic', 'efficiency', 'lifecycle', 'innovation'] }
+		return { t, checkLabel, gateLabel, typeLabel, classes: ['XS', 'S', 'M', 'L'], types: ['mandatory', 'strategic', 'efficiency', 'lifecycle', 'innovation'] }
 	},
 	data() {
 		const byCode = Object.fromEntries((this.set?.gates ?? []).map(g => [g.code, g]))

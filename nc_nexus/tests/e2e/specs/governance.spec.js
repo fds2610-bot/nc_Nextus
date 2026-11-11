@@ -102,6 +102,8 @@ test.describe('Entscheidungsprozess (Stufe 3)', () => {
 			const direct = await admin.post(`${PATH}/${demand.id}/gate`, { data: { step: 'g2', outcome: 'approved' } })
 			expect(direct.status()).toBe(403)
 			await page.locator('[data-test="nav-all"]').click()
+			// Kandidat: G1 durchlaufen, in der Farbe des Prozessbilds
+			await expect(page.locator(`[data-test="demand-${demand.key}"] [data-test="stage-g1"]`)).toHaveText('G1')
 			await page.locator(`[data-test="demand-${demand.key}"]`).click()
 			const editor = page.locator('[data-test="demand-editor"]')
 			await expect(editor.locator('[data-test="gate-decider"]')).toContainText(`E2E-Board ${t}`)
@@ -267,6 +269,10 @@ test.describe('Entscheidungsprozess (Stufe 3)', () => {
 		const admin = await adminApi()
 		const own = await apiAs(E2E_USER)
 		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
+		// Gate-Set vorher sichern und am Ende als neue Version wiederherstellen
+		const findSet = async () => (await call(admin, 'get', '/governance')).gateSets.find(s => s.name === 'Verkürzter Pfad')
+		const original = await findSet()
+		const hadG6 = original.gates.some(g => g.code === 'g6')
 		try {
 			// Antrag ohne Org-Einheit → Befund im Cockpit
 			const d = await createDemand(own, { title: `E2E-Qualität ${t}`, demandType: 'innovation', problemStatement: 'x' })
@@ -274,13 +280,48 @@ test.describe('Entscheidungsprozess (Stufe 3)', () => {
 
 			await page.goto('/apps/nc_nexus/')
 			await page.locator('[data-test="nav-governance"]').click()
+			// Prozessbild: Einreichung, G1 (nur PMO) bis G6, Gate-Sets mit ihren Gates
+			const process = page.locator('[data-test="gate-process"]')
+			await expect(process.locator('[data-test="process-g1"]')).toContainText('nur PMO')
+			await expect(process.locator('[data-test="process-g6"] circle')).toHaveAttribute('fill', '#FACC15')
+			const chips = page.locator('[data-test="gate-set-Verkürzter Pfad"] .nx-gates span')
+			await expect(process.locator('[data-test="process-set-Verkürzter Pfad"] circle')).toHaveCount(await chips.count())
+			// G1 steht fest vorne und ist nicht änderbar (nur PMO)
+			await expect(page.locator('[data-test="rights-g1"]')).toContainText('nur PMO')
+			await expect(page.locator('[data-test="rights-g1"] button')).toHaveCount(0)
+			// Vorhabensklassen: nur zur Ansicht, mit Gate-Set und Berichtstakt
+			const classes = page.locator('[data-test="project-classes"]')
+			await expect(classes.locator('.gov__class')).toHaveCount(4)
+			await expect(classes.locator('[data-test="class-XS"]')).toContainText('Verkürzter Pfad')
+			await expect(classes.locator('[data-test="class-L"]')).not.toContainText('Verkürzter Pfad')
+			await expect(classes.locator('[data-test="class-M"]')).toContainText(/Statusbericht alle \d+ Tage/)
+			await expect(classes.locator('input, button')).toHaveCount(0)
+			// Bereiche aus den Klassengrenzen (Personentage und Budget), live aus den Schwellwerten
+			const settings = (await call(admin, 'get', '/settings')).values
+			const dayS = page.locator('[data-test="threshold-classDaysS"] input')
+			await expect(classes.locator('[data-test="class-XS"] [data-test="class-criteria"]')).toContainText(/unter \d+ PT/)
+			await expect(classes.locator('[data-test="class-M"] [data-test="class-criteria"]')).toContainText(/\d+–\d+ PT · Budget .*€/)
+			await dayS.fill(String(settings.classDaysS + 1))
+			await expect(classes.locator('[data-test="class-XS"]')).toContainText(`unter ${settings.classDaysS + 1} PT`)
+			// Grenzen müssen von S nach L ansteigen
+			await dayS.fill(String(settings.classDaysL + 1))
+			await page.locator('[data-test="save-thresholds"]').click()
+			await expect(page.getByText('Klassengrenzen müssen von S nach L ansteigen')).toBeVisible()
+			expect((await call(admin, 'get', '/settings')).values.classDaysS).toBe(settings.classDaysS)
+			await page.reload()
+			await page.locator('[data-test="nav-governance"]').click()
 			await page.locator('[data-test="gate-set-Verkürzter Pfad"]').click()
 			const dialog = page.locator('[data-test="gate-set-dialog"]')
+			await expect(dialog.locator('[data-test="set-gate-g1"] [data-test="gate-enabled"]')).toBeDisabled()
+			await expect(dialog.locator('[data-test="set-gate-g1"] input.nx-input')).toHaveValue(/nur PMO/)
 			await expect(dialog.locator('[data-test="set-gate-g2"] [data-test="gate-enabled"]')).toBeDisabled()
-			await dialog.locator('[data-test="set-gate-g6"] [data-test="gate-enabled"]').check()
+			// G6 umschalten → neue Version; das Prozessbild folgt
+			await dialog.locator('[data-test="set-gate-g6"] [data-test="gate-enabled"]').setChecked(!hadG6)
 			await dialog.locator('[data-test="save-set"]').click()
-			await expect(page.locator('[data-test="gate-set-Verkürzter Pfad"]')).toContainText(/Version 2/)
-			await expect(page.locator('[data-test="gate-set-Verkürzter Pfad"]')).toContainText('G6')
+			const row = page.locator('[data-test="gate-set-Verkürzter Pfad"]')
+			await expect(row).toContainText(`Version ${original.version + 1}`)
+			await expect(row.locator('.nx-gates span', { hasText: 'G6' })).toHaveCount(hadG6 ? 0 : 1)
+			await expect(process.locator('[data-test="process-set-Verkürzter Pfad"] circle')).toHaveCount(await chips.count())
 
 			await page.locator('[data-test="nav-quality"]').click()
 			await expect(page.locator('[data-test="quality-score"]')).toBeVisible()
@@ -291,6 +332,13 @@ test.describe('Entscheidungsprozess (Stufe 3)', () => {
 			await page.locator('[data-test="quality-view"]').getByText(`E2E-Qualität ${t}`).click()
 			await expect(page.locator('[data-test="demand-editor"]')).toBeVisible()
 		} finally {
+			const current = await findSet()
+			if (current.id !== original.id) {
+				await call(admin, 'put', `/gate-sets/${current.id}`, {
+					name: original.name, projectClasses: original.projectClasses, demandTypes: original.demandTypes,
+					gates: original.gates, note: 'E2E: wiederhergestellt',
+				}, 200)
+			}
 			await context.close()
 			await own.dispose()
 			await admin.dispose()

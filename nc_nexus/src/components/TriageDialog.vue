@@ -16,6 +16,7 @@
 					:key="option"
 					class="triage__code"
 					:class="{ 'triage__code--active': code === option }"
+					:title="codeTooltip(option)"
 					:data-test="'code-' + option">
 					<input v-model="code" type="radio" :value="option">
 					<span>
@@ -117,7 +118,7 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NxDialog from './NxDialog.vue'
 import { errorMessage, queryDemand, searchPrincipals, similarDemands, triageDemand } from '../api.js'
-import { codeHint, codeLabel, today, TRIAGE_CODES } from '../labels.js'
+import { codeHint, codeLabel, codeTooltip, today, TRIAGE_CODES } from '../labels.js'
 
 export default {
 	name: 'TriageDialog',
@@ -130,7 +131,7 @@ export default {
 	},
 	emits: ['close', 'decided', 'ready'],
 	setup() {
-		return { t, codeHint, codeLabel, today: today(), classes: loadState('nc_nexus', 'project_classes', []) }
+		return { t, codeHint, codeLabel, codeTooltip, today: today(), classes: loadState('nc_nexus', 'project_classes', []) }
 	},
 	data() {
 		return {

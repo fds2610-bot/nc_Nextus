@@ -244,8 +244,15 @@
 				</NcAppNavigationItem>
 			</NcAppNavigationList>
 
-			<template v-if="me.canManageOrg || me.canTriage || poolInfo.canSee" #footer>
+			<template #footer>
 				<ul class="app-navigation-entry__settings">
+					<NcAppNavigationItem :name="t('nc_nexus', 'Glossary')"
+						data-test="nav-glossary"
+						@click="glossaryOpen = true">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiBookOpenVariant" />
+						</template>
+					</NcAppNavigationItem>
 					<NcAppNavigationItem v-if="poolInfo.canSee"
 						:name="t('nc_nexus', 'Assessment model')"
 						:active="view === 'model'"
@@ -364,12 +371,13 @@
 				@close="editorOpen = false"
 				@open-project="id => { editorOpen = false; openProjects(id) }"
 				@changed="onChanged" />
+			<GlossaryDialog v-if="glossaryOpen" @close="glossaryOpen = false" />
 		</NcAppContent>
 	</NcContent>
 </template>
 
 <script>
-import { mdiAccountQuestion, mdiAlertOutline, mdiArchiveOutline, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiBullseyeArrow, mdiCancel, mdiFlagCheckered, mdiPlayCircleOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
+import { mdiAccountQuestion, mdiBookOpenVariant, mdiAlertOutline, mdiArchiveOutline, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiBullseyeArrow, mdiCancel, mdiFlagCheckered, mdiPlayCircleOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -384,6 +392,7 @@ import NcCounterBubble from '@nextcloud/vue/components/NcCounterBubble'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 import DemandEditor from './components/DemandEditor.vue'
+import GlossaryDialog from './components/GlossaryDialog.vue'
 import DemandList from './views/DemandList.vue'
 import BenefitRegister from './views/BenefitRegister.vue'
 import CapacityView from './views/CapacityView.vue'
@@ -429,6 +438,7 @@ export default {
 		GovernanceView,
 		QualityView,
 		SessionsView,
+		GlossaryDialog,
 		DecisionRegister,
 		ObjectivesView,
 		OrgView,
@@ -437,10 +447,11 @@ export default {
 		ScoringModelView,
 	},
 	setup() {
-		return { mdiAlertOutline, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiAlertOutline, mdiBookOpenVariant, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
+			glossaryOpen: false,
 			demands: [],
 			loading: true,
 			editorOpen: false,

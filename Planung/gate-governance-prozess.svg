@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="track" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4F6DF5"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="420" fill="#F8FAFC"/>
+
+  <!-- Title -->
+  <text x="60" y="56" font-size="26" font-weight="700" fill="#0F172A">Projekt-Governance: Gates</text>
+  <text x="60" y="82" font-size="14" fill="#64748B">Entscheidungsgremien: Board oder PMO des Bereichs (direkt)</text>
+
+  <!-- Track -->
+  <rect x="90" y="192" width="1100" height="6" rx="3" fill="url(#track)"/>
+
+  <!-- Gates -->
+  <g text-anchor="middle">
+    <!-- G1 -->
+    <g>
+      <circle cx="140" cy="195" r="26" fill="#3B82F6" filter="url(#shadow)"/>
+      <text x="140" y="202" font-size="17" font-weight="700" fill="#FFFFFF">G1</text>
+      <text x="140" y="150" font-size="14" font-weight="600" fill="#0F172A">Triage</text>
+      <text x="140" y="252" font-size="11.5" fill="#64748B">PMO</text>
+    </g>
+    <!-- G2 -->
+    <g>
+      <circle cx="340" cy="195" r="26" fill="#4F6DF5" filter="url(#shadow)"/>
+      <text x="340" y="202" font-size="17" font-weight="700" fill="#FFFFFF">G2</text>
+      <text x="340" y="150" font-size="14" font-weight="600" fill="#0F172A">Priorisierung</text>
+      <text x="340" y="252" font-size="11.5" fill="#64748B">Board / PMO</text>
+    </g>
+    <!-- G3 -->
+    <g>
+      <circle cx="540" cy="195" r="26" fill="#5B6BF0" filter="url(#shadow)"/>
+      <text x="540" y="202" font-size="17" font-weight="700" fill="#FFFFFF">G3</text>
+      <text x="540" y="150" font-size="14" font-weight="600" fill="#0F172A">Freigabe</text>
+      <text x="540" y="252" font-size="11.5" fill="#64748B">Board / PMO</text>
+    </g>
+    <!-- G4 -->
+    <g>
+      <circle cx="740" cy="195" r="26" fill="#6A6AEC" filter="url(#shadow)"/>
+      <text x="740" y="202" font-size="17" font-weight="700" fill="#FFFFFF">G4</text>
+      <text x="740" y="150" font-size="14" font-weight="600" fill="#0F172A">Phasenfreigabe</text>
+      <text x="740" y="252" font-size="11.5" fill="#64748B">Board / PMO</text>
+    </g>
+    <!-- G5 -->
+    <g>
+      <circle cx="940" cy="195" r="26" fill="#22C55E" filter="url(#shadow)"/>
+      <text x="940" y="202" font-size="17" font-weight="700" fill="#FFFFFF">G5</text>
+      <text x="940" y="150" font-size="14" font-weight="600" fill="#0F172A">Abnahme / Go-Live</text>
+      <text x="940" y="252" font-size="11.5" fill="#64748B">Board / PMO</text>
+    </g>
+    <!-- G6 -->
+    <g>
+      <circle cx="1140" cy="195" r="26" fill="#FDE047" filter="url(#shadow)"/>
+      <text x="1140" y="202" font-size="17" font-weight="700" fill="#FFFFFF">G6</text>
+      <text x="1140" y="150" font-size="14" font-weight="600" fill="#0F172A">Nutzenreview</text>
+      <text x="1140" y="252" font-size="11.5" fill="#64748B">Board / PMO</text>
+    </g>
+  </g>
+
+  <!-- CR card below -->
+  <g>
+    <rect x="90" y="310" width="1100" height="72" rx="14" fill="#FFFFFF" stroke="#E2E8F0" filter="url(#shadow)"/>
+    <rect x="90" y="310" width="6" height="72" rx="3" fill="#F59E0B"/>
+    <text x="126" y="340" font-size="14" font-weight="700" fill="#0F172A">CR – Change Request oberhalb der Schwelle</text>
+    <text x="126" y="362" font-size="12" fill="#64748B">Jederzeit möglich · Entscheidung: Board oder PMO des Bereichs (direkt)</text>
+  </g>
+
+  <!-- Gate-Set legend -->
+  <g font-size="11.5" fill="#475569">
+    <text x="90" y="128" font-size="12" font-weight="700" fill="#334155" letter-spacing="1">GATE-SETS</text>
+    <rect x="210" y="112" width="14" height="14" rx="3" fill="#4F6DF5"/>
+    <text x="232" y="123">Standard (G2–G6) · alle Klassen</text>
+    <rect x="450" y="112" width="14" height="14" rx="3" fill="#8B5CF6"/>
+    <text x="472" y="123">Verkürzter Pfad (G2, G3, G5) · Klassen XS / S</text>
+  </g>
+</svg>

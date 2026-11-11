@@ -102,6 +102,16 @@ export const codeHint = (code) => ({
 	query: t('nc_nexus', 'Information is missing; the requestor completes the demand and submits it again.'),
 })[code] || ''
 
+// Ausführliche Erklärung je Triage-Code für den Tooltip im Triage-Dialog
+export const codeTooltip = (code) => ({
+	accepted: t('nc_nexus', 'Accept: the demand is understandable, plausible and worth pursuing. It moves on to qualification: the requestor or the area prepares the business case, the assessment and the resource demand, so that the board can compare it with other demands at G2. Optionally set the project class now (XS/S use the shortened path). A reason is optional.'),
+	further_analysis: t('nc_nexus', 'Further analysis: a sound decision is not possible yet, e.g. because the effort, the technical feasibility or the benefit is unclear. Name a person who clarifies the open points and a due date. The analysis appears in their work queue; when it is completed, the demand comes back to triage with the result.'),
+	deferred: t('nc_nexus', 'Defer: the demand is sensible, but not now – e.g. no capacity, dependence on another project or a better time later. A resubmission date is mandatory; on that date the demand reappears under “Resubmission due” and is triaged again. Deferred demands are not lost and do not block capacity.'),
+	rejected: t('nc_nexus', 'Reject: the demand is bindingly not pursued, e.g. because it does not fit the strategy, the benefit is too low or a different solution exists. A reason is mandatory; it is visible to the requestor and stays in the decision register, so that the same demand is not submitted again without new arguments.'),
+	duplicate: t('nc_nexus', 'Duplicate: the same or a very similar need has already been submitted. Choose the leading demand; similar demands found by the system are listed first. This demand is closed and refers to the leading one, which continues alone; the decision remains traceable in the decision register.'),
+	query: t('nc_nexus', 'Query to requestor: information is missing for a decision, e.g. the problem description or the expected benefit is too vague. Write your question and a due date. The demand goes back to the requestor (status “query”), who answers in the comment thread, completes the demand and submits it again; then it is back in triage.'),
+})[code] || ''
+
 /** Heute als JJJJ-MM-TT (lokale Zeit) */
 export const today = () => {
 	const d = new Date()
@@ -361,6 +371,7 @@ export const formatMoney = (value) => value === null || value === undefined
 
 export const gateLabel = (step) => ({
 	candidate: t('nc_nexus', 'Ready for prioritization'),
+	g1: t('nc_nexus', 'G1 – qualification'),
 	g2: t('nc_nexus', 'G2 – prioritization'),
 	g3: t('nc_nexus', 'G3 – release'),
 	g4: t('nc_nexus', 'G4 – phase release'),
@@ -557,3 +568,40 @@ export const escalationLabel = (level) => ({
 })[level] || String(level)
 
 export const ragChip = (rag) => ({ green: 'nx-chip--accepted', yellow: 'nx-chip--on-hold', red: 'nx-chip--rejected' })[rag] || 'nx-chip--draft'
+
+/**
+ * Prozessfarben (Governance-Diagramm und Antragsliste): von der Einreichung bis zur Abnahme (G5)
+ * gleichmäßig von Hell- nach Dunkelblau; das Nutzenreview (G6, nach Projektende) immer gelb.
+ */
+export const PROCESS_STAGES = ['submitted', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6']
+const BLUE_STEPS = PROCESS_STAGES.length - 2
+export const stageColor = (stage) => {
+	if (stage === 'g6') {
+		return { fill: '#FACC15', text: '#1F2937' }
+	}
+	const i = Math.max(0, PROCESS_STAGES.indexOf(stage))
+	const light = 86 - (86 - 26) * i / BLUE_STEPS
+	return { fill: `hsl(214 82% ${light}%)`, text: light > 58 ? '#0F2A4D' : '#FFFFFF' }
+}
+
+/**
+ * Zuletzt durchlaufene Stufe eines Antrags (null = noch nicht eingereicht oder ausgeschieden).
+ * G1 gilt mit „Zur Priorisierung“ als bestanden; G4 mit dem Wechsel in die Umsetzung.
+ *
+ * @param {string} status Status des Antrags
+ */
+export const passedStage = (status) => ({
+	submitted: 'submitted',
+	query: 'submitted',
+	further_analysis: 'submitted',
+	in_qualification: 'submitted',
+	candidate: 'g1',
+	prioritized: 'g2',
+	released: 'g3',
+	paused: 'g3',
+	in_execution: 'g4',
+	completed: 'g5',
+	closed: 'g6',
+})[status] ?? null
+
+export const stageLabel = (stage) => stage === 'submitted' ? t('nc_nexus', 'Submitted') : gateLabel(stage)

@@ -27,6 +27,14 @@ class SettingsService {
 		'conflictLevel1Days' => 7.0,  // Stufe 1 bilateral, dann Ressourcen-Board
 		'conflictLevel2Days' => 30.0, // Stufe 2 Ressourcen-Board, dann Portfolio-Board
 		'conditionReminderDays' => 7.0, // Erinnerung vor Fälligkeit einer Auflage
+		// Vorhabensklassen (01 §6.1): Untergrenzen je Klasse in Personentagen und Euro; 0 = Kriterium
+		// nicht genutzt. Maßgeblich ist das höhere Kriterium.
+		'classDaysS' => 5.0,
+		'classDaysM' => 30.0,
+		'classDaysL' => 200.0,
+		'classBudgetS' => 0.0,
+		'classBudgetM' => 25000.0,
+		'classBudgetL' => 250000.0,
 	];
 
 	public function __construct(
@@ -71,6 +79,14 @@ class SettingsService {
 				throw new ValidationException('Thresholds must be positive numbers');
 			}
 			$values[(string)$key] = (float)$value;
+		}
+		foreach (['classDays', 'classBudget'] as $prefix) {
+			$bounds = array_filter([$values[$prefix . 'S'], $values[$prefix . 'M'], $values[$prefix . 'L']], static fn (float $v) => $v > 0);
+			$sorted = $bounds;
+			sort($sorted);
+			if (array_values($bounds) !== $sorted || count(array_unique($bounds)) !== count($bounds)) {
+				throw new ValidationException('Class limits must increase from S to L');
+			}
 		}
 		$this->config->setValueString(Application::APP_ID, 'thresholds', json_encode($values, JSON_THROW_ON_ERROR));
 		$changes = [];
