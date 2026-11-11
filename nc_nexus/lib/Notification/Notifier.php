@@ -50,6 +50,7 @@ class Notifier implements INotifier {
 			'report_overdue' => $l->t('Status report for %1$s is overdue', [(string)($p['title'] ?? '')]),
 			'conflict_detected' => $l->t('Resource conflict in %1$s (%2$s)', [(string)($p['pool'] ?? ''), (string)($p['period'] ?? '')]),
 			'conflict_escalated' => $l->t('Resource conflict escalated to level %1$s: %2$s', [(string)($p['level'] ?? ''), (string)($p['pool'] ?? '')]),
+			'benefit_review_due' => $l->t('Benefit review due since %1$s: %2$s (%3$s)', [(string)($p['due'] ?? ''), (string)($p['title'] ?? ''), (string)($p['project'] ?? '')]),
 			'change_submitted' => $l->t('Change request submitted for %1$s: %2$s', [(string)($p['project'] ?? ''), (string)($p['title'] ?? '')]),
 			'digest' => $l->t('Daily overview: %1$s to triage, %2$s overdue conditions, %3$s open conflicts, %4$s overdue status reports', [
 				(string)($p['triage'] ?? 0), (string)($p['conditions'] ?? 0), (string)($p['conflicts'] ?? 0), (string)($p['reports'] ?? 0),

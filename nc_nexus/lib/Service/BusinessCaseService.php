@@ -190,41 +190,41 @@ class BusinessCaseService {
 		];
 	}
 
+	/** Kennung einer Position ohne gespeicherten Schlüssel (ältere Business Cases): ihre Nummer. */
+	public static function positionKey(int $index): string {
+		return 'p' . ($index + 1);
+	}
+
 	/**
-	 * Nutzenregister: alle Nutzenpositionen der Vorhaben, die das Konto lesen darf.
+	 * Nutzenpositionen des maßgeblichen Business Case je lesbarem Vorhaben (ohne Entwürfe von Anträgen).
 	 *
-	 * @return list<array<string, mixed>>
+	 * @param list<Demand> $demands
+	 * @return array<int, array{version: int, status: string, benefits: list<array<string, mixed>>}>
 	 */
-	public function register(string $userId): array {
-		$demands = [];
-		foreach ($this->demands->findAll($userId) as $d) {
-			if ($d->getStatus() !== DemandService::STATUS_DRAFT) {
-				$demands[$d->getId()] = $d;
-			}
+	public function benefitsOf(array $demands): array {
+		$byId = [];
+		foreach ($demands as $d) {
+			$byId[$d->getId()] = $d;
 		}
-		$byDemand = [];
+		$versions = [];
 		foreach ($this->cases->versions() as $v) {
-			if (isset($demands[$v['demandId']])) {
-				$byDemand[$v['demandId']][] = $v;
+			if (isset($byId[$v['demandId']])) {
+				$versions[$v['demandId']][] = $v;
 			}
 		}
-		$rows = [];
-		foreach ($byDemand as $demandId => $versions) {
-			$demand = $demands[$demandId];
-			$current = $this->current($this->valid($demand, $versions));
+		$result = [];
+		foreach ($versions as $demandId => $list) {
+			$current = $this->current($this->valid($byId[$demandId], $list));
+			if ($current === null) {
+				continue;
+			}
+			$benefits = [];
 			foreach ($current['content']['benefits'] ?? [] as $i => $b) {
-				$rows[] = $b + [
-					'demandId' => $demandId,
-					'demandKey' => $demand->getDemandKey(),
-					'demandTitle' => $demand->getTitle(),
-					'demandStatus' => $demand->getStatus(),
-					'position' => $i + 1,
-					'version' => $current['version'],
-					'versionStatus' => $current['status'],
-				];
+				$benefits[] = $b + ['key' => self::positionKey((int)$i), 'position' => $i + 1];
 			}
+			$result[$demandId] = ['version' => (int)$current['version'], 'status' => (string)$current['status'], 'benefits' => $benefits];
 		}
-		return $rows;
+		return $result;
 	}
 
 	public function canEdit(string $userId, Demand $demand): bool {
@@ -258,7 +258,8 @@ class BusinessCaseService {
 			$costs[] = ['label' => $label, 'kind' => $kind, 'amount' => round($amount, 2)];
 		}
 		$benefits = [];
-		foreach (is_array($content['benefits'] ?? null) ? $content['benefits'] : [] as $b) {
+		$keys = [];
+		foreach (is_array($content['benefits'] ?? null) ? $content['benefits'] : [] as $i => $b) {
 			$type = (string)($b['type'] ?? '');
 			$title = trim((string)($b['title'] ?? ''));
 			$metric = trim((string)($b['metric'] ?? ''));
@@ -275,7 +276,17 @@ class BusinessCaseService {
 				throw new ValidationException('Every benefit item needs a metric with a baseline');
 			}
 			$amount = in_array($type, self::MONETARY, true) ? round(max(0, (float)($b['amount'] ?? 0)), 2) : null;
+			// Stabile Kennung je Position: Nutzenreviews und Prognosen hängen daran, nicht an der Reihenfolge
+			$key = (string)($b['key'] ?? '');
+			if (!preg_match('/^[a-z0-9]{2,16}$/', $key) || isset($keys[$key])) {
+				$key = self::positionKey((int)$i);
+				while (isset($keys[$key])) {
+					$key = 'b' . bin2hex(random_bytes(5));
+				}
+			}
+			$keys[$key] = true;
 			$benefits[] = [
+				'key' => $key,
 				'type' => $type,
 				'title' => $title,
 				'amount' => $amount,

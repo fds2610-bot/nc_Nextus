@@ -129,6 +129,20 @@ class NotificationService {
 		}
 	}
 
+	/**
+	 * Fällige Nutzenreviews → Benefit Owner und Sponsor (einmal je Messzeitpunkt).
+	 *
+	 * @param list<array{demand: Demand, benefit: array<string, mixed>, due: string, sponsorId: string|null}> $due
+	 */
+	public function benefitReviewsDue(array $due): void {
+		foreach ($due as $d) {
+			foreach (array_unique(array_filter([(string)$d['benefit']['ownerUserId'], (string)($d['sponsorId'] ?? '')])) as $user) {
+				$this->notify($user, 'benefit_review_due', ['title' => (string)$d['benefit']['title'], 'project' => $d['demand']->getTitle(), 'due' => $d['due']],
+					'demand', (string)$d['demand']->getId(), 'benefit_review_due:' . $d['demand']->getId() . ':' . $d['benefit']['key'] . ':' . $d['due']);
+			}
+		}
+	}
+
 	/** @return list<string> Konten mit globaler PMO-Rolle (Gruppen aufgelöst), sonst die Administration */
 	public function pmo(): array {
 		$users = [];

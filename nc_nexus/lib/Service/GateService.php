@@ -72,6 +72,7 @@ class GateService {
 		private AssessmentService $assessments,
 		private ScoringMapper $scoring,
 		private BusinessCaseService $businessCases,
+		private BenefitService $benefits,
 		private CapacityService $capacity,
 		private PoolMapper $pools,
 		private ResourceNeedMapper $needs,
@@ -516,6 +517,9 @@ class GateService {
 			case 'open_conditions':
 				$open = $this->conditions->openBlocking($demand);
 				return ['key' => $key, 'ok' => $open === 0, 'detail' => $open === 0 ? '' : (string)$open];
+			case 'benefit_reviews':
+				$missing = $this->benefits->unreviewed($demand);
+				return ['key' => $key, 'ok' => $missing === [], 'detail' => implode(', ', $missing)];
 			case 'planning_link':
 				return ['key' => $key, 'ok' => $this->planningLinks->find($demand->getId(), 'gantt') !== null];
 		}

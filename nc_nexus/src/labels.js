@@ -364,6 +364,33 @@ export const benefitTypeLabel = (type) => ({
 	qualitative: t('nc_nexus', 'Qualitative'),
 })[type] || type
 
+// Realisierungsstatus einer Nutzenposition (Kapitel 03 §4.1)
+export const realizationStatusLabel = (status) => ({
+	not_started: t('nc_nexus', 'Not started'),
+	on_track: t('nc_nexus', 'On track'),
+	at_risk: t('nc_nexus', 'At risk'),
+	realized: t('nc_nexus', 'Realized'),
+	missed: t('nc_nexus', 'Missed'),
+})[status] || status
+
+export const realizationStatusChip = (status) => ({
+	not_started: 'nx-chip--draft',
+	on_track: 'nx-chip--submitted',
+	at_risk: 'nx-chip--on-hold',
+	realized: 'nx-chip--accepted',
+	missed: 'nx-chip--rejected',
+})[status] || 'nx-chip--draft'
+
+// Bewertung eines Nutzenreviews
+export const reviewAssessmentLabel = (a) => ({
+	achieved: t('nc_nexus', 'Benefit achieved'),
+	partial: t('nc_nexus', 'Partially achieved'),
+	missed: t('nc_nexus', 'Benefit missed'),
+})[a] || a
+
+// Korrekturfaktor als Prozent (0,52 → „52 %“)
+export const formatFactor = (f) => f === null || f === undefined ? '–' : Math.round(f * 100) + ' %'
+
 // Geldbetrag in der Sprache von Nextcloud, ohne Nachkommastellen
 export const formatMoney = (value) => value === null || value === undefined
 	? '–'
@@ -443,6 +470,7 @@ export const checkLabel = (key) => ({
 	objectives: t('nc_nexus', 'Assigned to strategic objectives'),
 	open_conditions: t('nc_nexus', 'No open blocking conditions'),
 	planning_link: t('nc_nexus', 'Connected with the planning tool'),
+	benefit_reviews: t('nc_nexus', 'Every benefit item has a benefit review'),
 })[key] || key
 
 export const decisionTypeLabel = (type) => ({

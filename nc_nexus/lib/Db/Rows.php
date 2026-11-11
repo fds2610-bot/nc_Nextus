@@ -16,13 +16,13 @@ use OCP\IDBConnection;
 class Rows {
 	/** Spalten mit JSON-Inhalt */
 	private const JSON = ['required_seats', 'project_classes', 'demand_types', 'required_checks', 'completeness', 'options',
-		'milestones', 'resource_demand', 'health_snapshot', 'delta_person_days', 'threshold_reasons', 'demand_ids', 'rejected_options'];
+		'milestones', 'resource_demand', 'health_snapshot', 'delta_person_days', 'threshold_reasons', 'demand_ids', 'rejected_options', 'review_dates'];
 	/** Kommazahlen */
-	private const FLOAT = ['amount', 'committed', 'budget_frame', 'person_days', 'forecast_cost', 'delta_budget', 'threshold_green', 'threshold_red'];
+	private const FLOAT = ['amount', 'committed', 'budget_frame', 'person_days', 'forecast_cost', 'delta_budget', 'threshold_green', 'threshold_red', 'forecast_amount', 'actual_amount', 'planned_amount'];
 	/** Ganzzahlen außer id, *_id und *_at */
 	private const INT = ['valid_from', 'valid_to', 'quorum_min', 'active', 'voting', 'version', 'sort', 'budget_tranche', 'duration_min', 'position', 'conflict', 'blocking', 'fiscal_year',
 		'progress_pct', 'probability', 'impact', 'residual_probability', 'residual_impact', 'escalated', 'is_primary',
-		'escalation_level', 'delta_days', 'above_threshold', 'external'];
+		'escalation_level', 'delta_days', 'above_threshold', 'external', 'achievement_pct'];
 	/** Text-IDs von Konten, die wie *_id heißen, aber keine Zahlen sind */
 	private const STRING_IDS = ['chair_id', 'user_id', 'deputy_id', 'member_id', 'owner_id', 'manager_id', 'sponsor_id'];
 

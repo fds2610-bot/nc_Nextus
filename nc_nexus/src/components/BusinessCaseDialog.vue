@@ -122,6 +122,9 @@
 							<input v-model="b.from" type="month" class="nx-input">
 						</label>
 					</div>
+					<p v-if="factorFor(b)" class="nx-hint bc__factor" data-test="benefit-factor-hint">
+						{{ t('nc_nexus', 'Experience: benefit of this type was realized at {f} so far ({n} reviews), that would be about {a} per year.', { f: formatFactor(factorFor(b).factor), n: factorFor(b).count, a: formatMoney((Number(b.amount) || 0) * factorFor(b).factor) }) }}
+					</p>
 					<NcButton v-if="canEdit" variant="tertiary" @click="content.benefits.splice(i, 1)">
 						{{ t('nc_nexus', 'Remove benefit item') }}
 					</NcButton>
@@ -219,8 +222,8 @@ import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import { h } from 'vue'
 import NxDialog from './NxDialog.vue'
 import NxNumberInput from './NxNumberInput.vue'
-import { errorMessage, saveBusinessCase } from '../api.js'
-import { benefitTypeLabel, costKindLabel, formatDate, formatMoney, formatNumber } from '../labels.js'
+import { benefitFactors, errorMessage, saveBusinessCase } from '../api.js'
+import { benefitTypeLabel, costKindLabel, formatDate, formatFactor, formatMoney, formatNumber } from '../labels.js'
 
 // kleiner Entfernen-Knopf für Tabellenzeilen
 const RemoveButton = (props, { emit }) => h(NcButton, {
@@ -244,6 +247,7 @@ export default {
 			benefitTypeLabel,
 			costKindLabel,
 			formatDate,
+			formatFactor,
 			formatMoney,
 			formatNumber,
 			costKinds: ['capex', 'opex_once', 'opex_annual'],
@@ -252,7 +256,7 @@ export default {
 	},
 	data() {
 		const content = JSON.parse(JSON.stringify(this.businessCase.content))
-		return { busy: false, content, initial: JSON.stringify(content) }
+		return { busy: false, content, initial: JSON.stringify(content), factors: null }
 	},
 	computed: {
 		canEdit() {
@@ -285,7 +289,21 @@ export default {
 			return { oneTimeCost: oneTime, annualCost: annual, benefitPerYear: benefit, tco: oneTime + 5 * annual, paybackYears: net > 0 ? Math.round(oneTime / net * 10) / 10 : null, npv }
 		},
 	},
+	async mounted() {
+		// Korrekturfaktoren aus bisherigen Nutzenreviews (Kapitel 03 §4.1 Rückkopplung)
+		if (this.canEdit) {
+			try {
+				this.factors = await benefitFactors()
+			} catch {
+				this.factors = null
+			}
+		}
+	},
 	methods: {
+		factorFor(b) {
+			const f = this.factors?.byType?.[b.type]
+			return f && f.count && b.type !== 'qualitative' && f.factor !== null && f.factor < 0.95 ? f : null
+		},
 		addBenefit() {
 			this.content.benefits.push({ type: 'cost_saving', title: '', amount: 0, metric: '', baseline: '', target: '', ownerUserId: getCurrentUser()?.uid ?? '', method: '', from: '' })
 		},

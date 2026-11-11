@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\Nexus\Controller;
 
+use OCA\Nexus\Service\BenefitService;
 use OCA\Nexus\Service\BusinessCaseService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -20,6 +21,7 @@ class BusinessCaseApiController extends BaseApiController {
 		IL10N $l10n,
 		?string $userId,
 		private BusinessCaseService $cases,
+		private BenefitService $benefits,
 	) {
 		parent::__construct($request, $l10n, $userId);
 	}
@@ -54,14 +56,59 @@ class BusinessCaseApiController extends BaseApiController {
 	}
 
 	/**
-	 * Nutzenregister: alle Nutzenpositionen lesbarer Vorhaben.
+	 * Nutzenregister: Nutzenpositionen lesbarer Vorhaben und eigene Positionen, mit Prognose,
+	 * Reviews, Nutzenbilanz und Korrekturfaktoren.
 	 *
 	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
 	 *
-	 * 200: Nutzenpositionen
+	 * 200: Nutzenregister
 	 */
 	#[NoAdminRequired]
 	public function register(): DataResponse {
-		return $this->handle(fn () => $this->cases->register($this->uid()));
+		return $this->handle(fn () => $this->benefits->register($this->uid()));
+	}
+
+	/**
+	 * Korrekturfaktoren je Nutzenart aus den bisherigen Nutzenreviews.
+	 *
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: Korrekturfaktoren
+	 */
+	#[NoAdminRequired]
+	public function factors(): DataResponse {
+		return $this->handle(fn () => $this->benefits->factors());
+	}
+
+	/**
+	 * Prognose, Realisierungsstatus und Messzeitpunkte einer Nutzenposition pflegen.
+	 *
+	 * @param array<string, mixed> $tracking forecast, forecastAmount, realizationStatus, reviewDates
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: gespeichert
+	 * 400: ungültige Angaben
+	 * 403: keine Berechtigung
+	 * 404: Position nicht gefunden
+	 */
+	#[NoAdminRequired]
+	public function track(int $id, string $key, array $tracking = []): DataResponse {
+		return $this->handle(fn () => $this->benefits->track($this->uid(), $id, $key, $tracking));
+	}
+
+	/**
+	 * Nutzenreview erfassen.
+	 *
+	 * @param array<string, mixed> $review reviewDate, actualValue, actualAmount, achievementPct, assessment, explanation, lessonsLearned, actions
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 201: erfasst
+	 * 400: Pflichtangaben fehlen
+	 * 403: keine Berechtigung
+	 * 404: Position nicht gefunden
+	 */
+	#[NoAdminRequired]
+	public function review(int $id, string $key, array $review = []): DataResponse {
+		return $this->handle(fn () => $this->benefits->review($this->uid(), $id, $key, $review), Http::STATUS_CREATED);
 	}
 }

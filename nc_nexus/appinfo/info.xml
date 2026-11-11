@@ -7,7 +7,7 @@
     <summary lang="de">Projekt-Governance: Strategie, Anträge, Portfolio, Ressourcen und Entscheidungen an einem Ort</summary>
     <description><![CDATA[**Nexus** brings project portfolio governance into Nextcloud: one intake for all project demands, binding decisions, capacity-based prioritisation and transparent steering up to the benefits review.
 
-Development version; stages 1 to 4 of the concept are available:
+Development version; stages 1 to 4 of the concept and the first parts of stage 5 are available:
 
 * **Demand intake**: record demands with type, problem statement and expected benefit, save drafts and submit them.
 * **Organization and roles**: hierarchical organizational units; context-bound roles (portfolio office, board, sponsor, pool manager, auditor …) for accounts or groups, globally or per unit including subunits, optionally for a limited period (deputies).
@@ -16,6 +16,7 @@ Development version; stages 1 to 4 of the concept are available:
 * **Strategic objectives**: objective hierarchy with versions; demands are assigned to objectives, the coverage shows gaps.
 * **Assessment and prioritization**: versioned criteria catalog (benefit, urgency, risk on the scale 0/1/3/5/8 with anchor texts), immutable self-assessment and review, value density; ranking within investment buckets A–D, board correction with reason.
 * **Business case and benefit register**: costs, benefit items with owner and baseline, assumptions; key figures (TCO, payback, net present value); versions frozen at the gates.
+* **Benefit tracking**: the benefit owner keeps a forecast and realization status per benefit item and records benefit reviews at one or more review dates after go-live – actual value, target achievement, deviation analysis, lessons learned and, for a missed benefit, an action. The benefit register shows committed, forecast and realized benefit; correction factors per benefit type from past reviews appear as experience in new business cases. G6 checks that every benefit item has a review.
 * **Gates G2/G3 and capacity cut**: prioritization turns a demand into a project; release commits the needs firmly and is refused if a bottleneck pool lacks capacity. The capacity cut turns the ranking into a start plan (startable, startable from month X, waiting for pool or budget).
 * **Stage gates G2–G6**: configurable gate sets per project class (and demand type) with machine-readable required checks; uniform decision types (approve, approve with conditions, rework, defer, reject, cancel); phase release, pause and cancellation, acceptance and benefit review; budget tranches per gate.
 * **Decision rights and bodies**: bodies (portfolio board, resource board …) with members, seats (e.g. Finance, IT), deputies and quorum; a versioned decision-rights matrix assigns each gate and project class to a body – or leaves it to the board or portfolio office of the area.
@@ -27,7 +28,7 @@ Development version; stages 1 to 4 of the concept are available:
 * **Risks, issues and actions**: probability × impact with residual risk, risks that affect several projects, escalation hint above the threshold, portfolio risk view with matrix; issues with severity and escalation level; actions in the decision follow-up.
 * **Change requests**: mandatory impact analysis on cost, schedule, resources, risk and benefit; configurable thresholds decide whether the project level or the body of the decision rights decides (also in sessions); approval creates a new baseline.
 * **Resource conflicts**: daily detection of overbooking, uncovered demand, bottleneck peaks, WIP limits, zombie projects and priority inversion; automatic escalation from level 1 to the resource and portfolio board; resolution in the fixed order of options with documented reasons.
-* **Notifications and key figures**: Nextcloud notifications on decisions, due and overdue conditions, overdue status reports and conflicts, daily overview for the portfolio office; key figures with definition, data source, owner and thresholds.
+* **Notifications and key figures**: Nextcloud notifications on decisions, due and overdue conditions, overdue status reports, due benefit reviews and conflicts, daily overview for the portfolio office; key figures with definition, data source, owner and thresholds.
 * **Planning integration**: connect released projects with nc_gantt and read progress and dates from the plan.
 * **Portfolio overview**: demands by organizational unit (parent units roll up their subunits) and portfolio phase, with person days, plus open resource needs per quarter; every number opens the filtered list.
 * **Resource pools and capacity**: pools (skill or role groups, incl. business departments) with absence, line-work, overhead and reserve rates; capacity per month calculated from FTE and working days (gross → net → project capacity, optional justified override); resource needs per demand in person days per pool and month; load heat map with drill-down to the demands.
@@ -37,7 +38,7 @@ Development version; stages 1 to 4 of the concept are available:
 * **Audit log**: every creation, change and status transition is recorded with the account that made it.]]></description>
     <description lang="de"><![CDATA[**Nexus** bringt Projekt-Governance in die Nextcloud: ein Eingang für alle Projektanträge, verbindliche Entscheidungen, Priorisierung gegen die verfügbare Kapazität und transparente Steuerung bis zum Nutzenreview.
 
-Entwicklungsversion; Stufe 1 bis 4 des Konzepts sind verfügbar:
+Entwicklungsversion; Stufe 1 bis 4 des Konzepts und erste Teile von Stufe 5 sind verfügbar:
 
 * **Antragseingang**: Anträge mit Typ, Problembeschreibung und erwartetem Nutzen erfassen, als Entwurf speichern und einreichen.
 * **Organisation und Rollen**: hierarchische Org-Einheiten; kontextgebundene Rollen (Portfolio-Office, Board, Sponsor, Pool-Management, Revision …) für Konten oder Gruppen, global oder je Einheit samt Untereinheiten, auf Wunsch befristet (Vertretungen).
@@ -46,6 +47,7 @@ Entwicklungsversion; Stufe 1 bis 4 des Konzepts sind verfügbar:
 * **Strategische Ziele**: Zielhierarchie mit Versionen; Anträge werden Zielen zugeordnet, die Abdeckung zeigt Lücken.
 * **Bewertung und Priorisierung**: versionierter Kriterienkatalog (Nutzen, Dringlichkeit, Risiko auf der Skala 0/1/3/5/8 mit Ankertexten), unveränderliche Selbst- und Fremdbewertung, Wertdichte; Rangliste je Investment-Bucket A–D, Board-Korrektur mit Begründung.
 * **Business Case und Nutzenregister**: Kosten, Nutzenpositionen mit Verantwortlichem und Ausgangswert, Annahmen; Kennzahlen (TCO, Amortisation, Kapitalwert); an den Gates eingefrorene Versionen.
+* **Nutzensteuerung**: Die Nutzenverantwortung führt je Nutzenposition Prognose und Realisierungsstatus und erfasst Nutzenreviews zu einem oder mehreren Messzeitpunkten nach dem Go-Live – Ist-Wert, Zielerreichung, Abweichungsanalyse, Lessons Learned und bei verfehltem Nutzen eine Maßnahme. Das Nutzenregister zeigt zugesagten, prognostizierten und realisierten Nutzen; Korrekturfaktoren je Nutzenart aus bisherigen Reviews erscheinen als Erfahrungswert in neuen Business Cases. G6 prüft, dass jede Nutzenposition ein Review hat.
 * **Gates G2/G3 und Kapazitätsschnitt**: Mit der Priorisierung wird ein Antrag zum Projekt; die Freigabe sagt den Bedarf verbindlich zu und wird abgelehnt, wenn ein Engpass-Pool zu wenig Kapazität hat. Der Kapazitätsschnitt macht aus der Rangliste einen Startplan (startfähig, startfähig ab Monat X, wartet auf Pool oder Budget).
 * **Stage-Gates G2–G6**: konfigurierbare Gate-Sets je Vorhabensklasse (und Antragstyp) mit maschinenlesbaren Pflichtprüfungen; einheitliche Beschlussarten (freigeben, freigeben mit Auflagen, Nacharbeit, zurückstellen, ablehnen, abbrechen); Phasenfreigabe, Pausieren und Abbruch, Abnahme und Nutzenreview; Budgettranchen je Gate.
 * **Entscheidungsrechte und Gremien**: Gremien (Portfolio-Board, Ressourcen-Board …) mit Mitgliedern, Sitzen (z. B. Finanzen, IT), Stellvertretungen und Quorum; eine versionierte Entscheidungsrechte-Matrix weist jedes Gate je Vorhabensklasse einem Gremium zu – oder belässt es beim Board bzw. Portfolio-Office des Bereichs.
@@ -57,7 +59,7 @@ Entwicklungsversion; Stufe 1 bis 4 des Konzepts sind verfügbar:
 * **Risiken, Issues und Maßnahmen**: Wahrscheinlichkeit × Auswirkung mit Restrisiko, Risiken über mehrere Projekte, Eskalationshinweis ab Schwelle, Portfolio-Risikosicht mit Matrix; Issues mit Schweregrad und Eskalationsstufe; Maßnahmen in der Beschlussverfolgung.
 * **Change Requests**: Pflicht-Auswirkungsanalyse auf Kosten, Termin, Ressourcen, Risiko und Nutzen; konfigurierbare Schwellen entscheiden, ob die Projektebene oder das Gremium der Entscheidungsrechte entscheidet (auch in Sitzungen); die Genehmigung erzeugt eine neue Baseline.
 * **Ressourcenkonflikte**: tägliche Erkennung von Überbuchung, ungedecktem Bedarf, Engpassspitzen, WIP-Überschreitung, Zombie-Projekten und Prioritätsinversion; automatische Eskalation von Stufe 1 zum Ressourcen- und Portfolio-Board; Lösung in fester Prüfreihenfolge mit begründeten Verwerfungen.
-* **Benachrichtigungen und Kennzahlen**: Nextcloud-Benachrichtigungen zu Beschlüssen, fälligen und überfälligen Auflagen, überfälligen Statusberichten und Konflikten, Tagesüberblick fürs PMO; Kennzahlen mit Definition, Datenquelle, Owner und Schwellen.
+* **Benachrichtigungen und Kennzahlen**: Nextcloud-Benachrichtigungen zu Beschlüssen, fälligen und überfälligen Auflagen, überfälligen Statusberichten, fälligen Nutzenreviews und Konflikten, Tagesüberblick fürs PMO; Kennzahlen mit Definition, Datenquelle, Owner und Schwellen.
 * **Planungs-Integration**: freigegebene Projekte mit nc_gantt verbinden, Fortschritt und Termine aus dem Plan lesen.
 * **Portfolioübersicht**: Vorhaben nach Org-Einheit (übergeordnete Einheiten fassen ihre Untereinheiten zusammen) und Portfoliophase, mit Personentagen, dazu offener Ressourcenbedarf je Quartal; jede Zahl öffnet die gefilterte Liste.
 * **Ressourcenpools und Kapazität**: Pools (Skill- oder Rollengruppen, auch Fachbereiche) mit Quoten für Abwesenheit, Linienarbeit, Overhead und Reserve; Kapazität je Monat aus FTE und Arbeitstagen berechnet (Brutto → Netto → Projekt-Kapazität, optional begründet übersteuert); Ressourcenbedarf je Antrag in Personentagen je Pool und Monat; Auslastungs-Heatmap mit Aufschlüsselung auf die Anträge.
@@ -65,7 +67,7 @@ Entwicklungsversion; Stufe 1 bis 4 des Konzepts sind verfügbar:
 * **Kommentare**: Kommentarfaden an jedem Antrag für alle, die ihn lesen dürfen; Rückfragen des Portfolio-Office und die Antworten des Antragstellers stehen dort als Gespräch.
 * **Triage**: Das Portfolio-Office des Bereichs entscheidet mit verbindlichen Codes – annehmen (mit Vorhabensklasse), weitere Analyse (Verantwortlicher und Frist), zurückstellen (Wiedervorlage), ablehnen (Begründung Pflicht) oder Dublette – oder stellt dem Antragsteller eine Rückfrage; Arbeitsvorrat für offene Triage und fällige Wiedervorlagen. Den eigenen Antrag triagiert niemand selbst.
 * **Audit-Log**: Jedes Anlegen, jede Änderung und jeder Statuswechsel wird mit dem auslösenden Konto protokolliert.]]></description>
-    <version>0.14.0</version>
+    <version>0.15.0</version>
     <licence>GPL-3.0-or-later</licence>
     <author>fds2610</author>
     <namespace>Nexus</namespace>

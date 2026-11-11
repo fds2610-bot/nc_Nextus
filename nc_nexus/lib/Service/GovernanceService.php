@@ -24,7 +24,7 @@ class GovernanceService {
 	/** Entscheidungstypen der Matrix: Gates und Change Requests oberhalb der Schwelle */
 	public const DECISION_TYPES = ['g2', 'g3', 'g4', 'g5', 'g6', 'change'];
 	/** Maschinenlesbare Pflichtprüfungen, aus denen Gate-Definitionen ihre Eingangsbedingung bilden */
-	public const CHECKS = ['org_unit', 'project_class', 'objectives', 'assessment_review', 'business_case', 'resource_needs', 'capacity', 'open_conditions', 'planning_link'];
+	public const CHECKS = ['org_unit', 'project_class', 'objectives', 'assessment_review', 'business_case', 'resource_needs', 'capacity', 'open_conditions', 'planning_link', 'benefit_reviews'];
 
 	private const BODIES = 'nx_bodies';
 	private const MEMBERS = 'nx_body_members';
@@ -461,7 +461,7 @@ class GovernanceService {
 				['g3', 'G3 Freigabe', 'Können wir es jetzt starten?', ['business_case', 'resource_needs', 'capacity', 'open_conditions'], 1],
 				['g4', 'G4 Phasenfreigabe', 'Rechtfertigen die Erkenntnisse die nächste Investitionsstufe?', ['business_case', 'open_conditions'], 1],
 				['g5', 'G5 Abnahme / Go-Live', 'Ist das Ergebnis übergabefähig?', ['open_conditions'], 0],
-				['g6', 'G6 Nutzenreview', 'Ist der versprochene Nutzen eingetreten?', [], 0],
+				['g6', 'G6 Nutzenreview', 'Ist der versprochene Nutzen eingetreten?', ['benefit_reviews', 'open_conditions'], 0],
 			]],
 			['Verkürzter Pfad', ['XS', 'S'], [
 				['g2', 'G2 Portfolioaufnahme', 'Ist das Vorhaben im Vergleich zu anderen wertvoll genug?', $g2, 0],

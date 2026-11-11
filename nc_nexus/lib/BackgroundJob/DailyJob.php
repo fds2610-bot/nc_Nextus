@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\Nexus\BackgroundJob;
 
+use OCA\Nexus\Service\BenefitService;
 use OCA\Nexus\Service\ConflictService;
 use OCA\Nexus\Service\NotificationService;
 use OCA\Nexus\Service\ProjectService;
@@ -13,7 +14,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Täglicher Lauf (Kapitel 06 §4.2/4.4): Konflikte erkennen, Fristen eskalieren, an fällige
- * Auflagen und Statusberichte erinnern, Tagesüberblick fürs PMO.
+ * Auflagen, Statusberichte und Nutzenreviews erinnern, Tagesüberblick fürs PMO.
  */
 class DailyJob extends TimedJob {
 	public function __construct(
@@ -21,6 +22,7 @@ class DailyJob extends TimedJob {
 		private ConflictService $conflicts,
 		private ProjectService $projects,
 		private NotificationService $notifications,
+		private BenefitService $benefits,
 		private LoggerInterface $logger,
 	) {
 		parent::__construct($time);
@@ -46,6 +48,7 @@ class DailyJob extends TimedJob {
 			}
 			$open = count($this->conflicts->openAll());
 			$this->notifications->daily($overdue, $toTriage, $open);
+			$this->notifications->benefitReviewsDue($this->benefits->due());
 		} catch (\Throwable $e) {
 			$this->logger->error('Nexus: daily job failed', ['exception' => $e]);
 		}
