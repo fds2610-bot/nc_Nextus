@@ -31,6 +31,30 @@ const OVERLAY = `
     requestAnimationFrame(() => { r.style.width = '46px'; r.style.height = '46px'; r.style.left = (x - 23) + 'px'; r.style.top = (y - 23) + 'px'; r.style.opacity = '0' })
     setTimeout(() => r.remove(), 600)
   }
+  window.__nxCard = (html, ms) => {
+    window.__nxCardOff && window.__nxCardOff(true)
+    const d = document.createElement('div'); d.id = 'nx-cardhost'
+    d.style.cssText = 'position:fixed;inset:0;z-index:2147483640;opacity:0;transition:opacity .45s ease;pointer-events:none'
+    d.innerHTML = html; document.documentElement.appendChild(d)
+    requestAnimationFrame(() => { d.style.opacity = '1' })
+    d.querySelectorAll('[data-at]').forEach(e => setTimeout(() => e.classList.add('on'), Math.max(0, parseFloat(e.dataset.at)) * 1000))
+    if (ms) window.__nxCardTimer = setTimeout(() => window.__nxCardOff(), ms)
+  }
+  window.__nxCardOff = (now) => {
+    clearTimeout(window.__nxCardTimer)
+    const d = document.getElementById('nx-cardhost'); if (!d) return
+    d.id = ''; if (now) { d.remove(); return }
+    d.style.opacity = '0'; setTimeout(() => d.remove(), 500)
+  }
+  window.__nxBadge = (text, ms) => {
+    let b = document.getElementById('nx-badge')
+    if (!b) { b = document.createElement('div'); b.id = 'nx-badge'
+      b.style.cssText = 'position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:2147483641;pointer-events:none;max-width:1000px;font:700 26px/1.3 system-ui,sans-serif;color:#003e5c;background:#ffc46b;padding:12px 24px;border-radius:14px;box-shadow:0 6px 22px rgba(0,0,0,.35);transition:opacity .4s;opacity:0'
+      document.documentElement.appendChild(b) }
+    clearTimeout(window.__nxBadgeTimer)
+    b.textContent = text; requestAnimationFrame(() => { b.style.opacity = '1' })
+    window.__nxBadgeTimer = setTimeout(() => { b.style.opacity = '0' }, ms || 4000)
+  }
   window.__nxCaption = (who, text, color) => {
     mk(); const c = document.getElementById('nx-caption')
     if (!text) { c.style.display = 'none'; return }
@@ -91,6 +115,11 @@ class Recorder {
     this.mouse = { x: 800, y: 450 }
     await this.page.evaluate(() => window.__nxMove && window.__nxMove(800, 450)).catch(() => {})
   }
+
+  /** Grafikkarte einblenden, blendet nach ms selbst aus */
+  async showCard(html, ms) { await this.page.evaluate(([h, t]) => window.__nxCard(h, t), [html, ms]) }
+  async hideCard() { await this.page.evaluate(() => window.__nxCardOff && window.__nxCardOff()).catch(() => {}) }
+  async badge(text, ms = 4000) { await this.page.evaluate(([t, d]) => window.__nxBadge(t, d), [text, ms]).catch(() => {}) }
 
   /** Titelkarte (HTML) anzeigen */
   async card(kicker, title, sub) {
@@ -183,6 +212,13 @@ class Recorder {
     if (val === undefined) throw new Error('Option fehlt: ' + part)
     await loc.selectOption(val)
     await sleep(300)
+  }
+
+  /** Navigationsgruppe aufklappen, falls der Eintrag darin gerade nicht sichtbar ist (z. B. „Triage“) */
+  async openNav(group, item) {
+    const it = this.page.locator(`[data-test="${item}"]`)
+    if (!(await it.isVisible().catch(() => false))) await this.click(this.page.locator(`[data-test="${group}"]`))
+    await it.waitFor()
   }
 
   /** Wert direkt setzen (z. B. Monatsfeld), mit sichtbarem Klick */

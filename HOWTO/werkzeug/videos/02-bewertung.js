@@ -41,6 +41,7 @@ module.exports = {
     S('Triage'),
     L('J', 'Wo finde ich eigentlich die Anträge, die auf uns warten?'),
     L('M', 'In der Navigation, unter der Überschrift „Triage“. Der Eintrag „Zu triagieren“ ist unser Arbeitsvorrat, und die Zahl zeigt, wie viele Anträge offen sind.', async () => {
+      await r.openNav('nav-group-triage', 'nav-queue-triage')
       await r.click(r.page.locator('[data-test="nav-queue-triage"]'))
     }, 'Klick auf „Zu triagieren“'),
     L('M', 'Hier ist der Antrag zur digitalen Reisekostenabrechnung. Ich öffne ihn und klicke auf „Triage“. Die Frage lautet: Ist der Bedarf verständlich beschrieben, und lohnt sich der Aufwand für eine Bewertung?', async () => {
