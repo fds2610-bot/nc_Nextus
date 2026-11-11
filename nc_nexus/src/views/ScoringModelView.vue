@@ -21,23 +21,20 @@
 						</div>
 						<label class="bucket__field">
 							<span>{{ t('nc_nexus', 'Target share (%)') }}</span>
-							<input v-model.number="b.targetSharePct"
-								type="number"
-								min="0"
-								max="100"
-								step="1"
+							<NxNumberInput v-model="b.targetSharePct"
+								:min="0"
+								:max="100"
 								class="nx-input"
-								:disabled="!model.canManage">
+								:disabled="!model.canManage" />
 						</label>
 						<label class="bucket__field">
 							<span>{{ t('nc_nexus', 'Budget frame') }}</span>
-							<input v-model.number="b.targetBudget"
-								type="number"
-								min="0"
-								step="1000"
+							<NxNumberInput v-model="b.targetBudget"
+								:min="0"
+								:max-decimals="0"
 								class="nx-input"
 								:placeholder="'–'"
-								:disabled="!model.canManage">
+								:disabled="!model.canManage" />
 						</label>
 						<NcButton v-if="model.canManage"
 							variant="secondary"
@@ -79,12 +76,11 @@
 								<span v-else class="criterion__name">{{ c.name }}</span>
 								<label v-if="dimension === 'benefit'" class="criterion__weight">
 									<span>{{ t('nc_nexus', 'Weight (%)') }}</span>
-									<input v-if="editing"
-										v-model.number="c.weight"
-										type="number"
-										min="0"
-										max="100"
-										class="nx-input">
+									<NxNumberInput v-if="editing"
+										v-model="c.weight"
+										:min="0"
+										:max="100"
+										class="nx-input" />
 									<strong v-else>{{ formatNumber(c.weight) }}</strong>
 								</label>
 							</div>
@@ -143,11 +139,12 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import { errorMessage, saveCriteria, updateBucket } from '../api.js'
+import NxNumberInput from '../components/NxNumberInput.vue'
 import { dimensionLabel, formatDate, formatNumber } from '../labels.js'
 
 export default {
 	name: 'ScoringModelView',
-	components: { NcButton },
+	components: { NcButton, NxNumberInput },
 	props: {
 		model: { type: Object, default: null },
 	},

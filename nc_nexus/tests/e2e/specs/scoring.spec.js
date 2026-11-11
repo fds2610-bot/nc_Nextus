@@ -97,8 +97,8 @@ test.describe('Bewertung und Priorisierung', () => {
 			await page.locator('[data-test="nav-model"]').click()
 			await page.locator('[data-test="edit-criteria"]').click()
 			// Gewichte verschieben: N1 +5, N2 −5 → Summe bleibt 100
-			const n1 = page.locator('[data-test="model-criterion-N1"] input[type="number"]')
-			const n2 = page.locator('[data-test="model-criterion-N2"] input[type="number"]')
+			const n1 = page.locator('[data-test="model-criterion-N1"] .criterion__weight input')
+			const n2 = page.locator('[data-test="model-criterion-N2"] .criterion__weight input')
 			const w1 = Number(await n1.inputValue())
 			const w2 = Number(await n2.inputValue())
 			await n1.fill(String(w1 + 5))
