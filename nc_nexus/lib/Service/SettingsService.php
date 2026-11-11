@@ -27,6 +27,8 @@ class SettingsService {
 		'conflictLevel1Days' => 7.0,  // Stufe 1 bilateral, dann Ressourcen-Board
 		'conflictLevel2Days' => 30.0, // Stufe 2 Ressourcen-Board, dann Portfolio-Board
 		'conditionReminderDays' => 7.0, // Erinnerung vor Fälligkeit einer Auflage
+		'recalcWindowMonths' => 24.0, // Nachkalkulation: rollierendes Zeitfenster abgeschlossener Projekte
+		'recalcMinProjects' => 3.0,   // Nachkalkulation: Mindestzahl Projekte, ab der ein Korrekturfaktor gilt
 		// Vorhabensklassen (01 §6.1): Untergrenzen je Klasse in Personentagen und Euro; 0 = Kriterium
 		// nicht genutzt. Maßgeblich ist das höhere Kriterium.
 		'classDaysS' => 5.0,

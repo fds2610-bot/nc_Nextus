@@ -222,7 +222,10 @@
 						</ul>
 					</div>
 
-					<NeedsEditor v-model="needs" :pools="pools" :readonly="readonly" />
+					<NeedsEditor v-model="needs"
+						:pools="pools"
+						:readonly="readonly"
+						:project-class="demand?.projectClass ?? null" />
 
 					<div class="nx-section">
 						<h3>{{ t('nc_nexus', 'Description') }}</h3>

@@ -142,6 +142,7 @@ class ProjectService {
 			'finance' => $this->finance($demand),
 			'effort' => $this->effort($demand),
 			'actuals' => $this->actuals($demand),
+			'postCalculation' => $this->postCalculation($demand),
 			'reportDue' => $this->reportDue($demand),
 			'escalation' => $this->escalationLevel($demand),
 			'can' => ['manage' => $this->canManage($userId, $demand), 'import' => $this->permissions->canManageOrg($userId)],
@@ -601,6 +602,53 @@ class ProjectService {
 			}
 		}
 		return ['planned' => round($planned, 1), 'plannedToDate' => round($toDate, 1), 'actual' => $actual === null ? null : round($actual, 1)];
+	}
+
+	/**
+	 * Nachkalkulation eines Projekts (04 §6): Ist-Personentage je Pool gegen die ursprüngliche
+	 * Schätzung (Baseline 1, G3) und gegen die aktuelle Baseline (nach genehmigten Change Requests).
+	 * Faktor = Ist ÷ ursprüngliche Schätzung; > 1 heißt unterschätzt.
+	 *
+	 * @return array{pools: list<array{poolId: int, estimate: float, current: float, actual: float, factor: float|null}>, estimate: float, current: float, actual: float, factor: float|null, hasBaseline: bool, hasActuals: bool}
+	 */
+	public function postCalculation(Demand $demand): array {
+		$baselines = $this->baselines($demand);
+		$first = $baselines === [] ? null : $baselines[count($baselines) - 1];
+		$latest = $baselines[0] ?? null;
+		$sum = static function (?array $baseline): array {
+			$out = [];
+			foreach ((array)($baseline['resourceDemand'] ?? []) as $poolId => $periods) {
+				$out[(int)$poolId] = array_sum(array_map('floatval', (array)$periods));
+			}
+			return $out;
+		};
+		$estimate = $sum($first);
+		$current = $sum($latest);
+		$actual = [];
+		foreach ($this->actuals($demand) as $a) {
+			if ($a['kind'] === 'effort' && $a['poolId'] !== null) {
+				$actual[(int)$a['poolId']] = ($actual[(int)$a['poolId']] ?? 0.0) + (float)$a['amount'];
+			}
+		}
+		$ids = array_unique(array_merge(array_keys($estimate), array_keys($current), array_keys($actual)));
+		sort($ids);
+		$pools = [];
+		foreach ($ids as $id) {
+			$e = round($estimate[$id] ?? 0.0, 1);
+			$a = round($actual[$id] ?? 0.0, 1);
+			$pools[] = ['poolId' => $id, 'estimate' => $e, 'current' => round($current[$id] ?? 0.0, 1), 'actual' => $a, 'factor' => $e > 0 ? round($a / $e, 2) : null];
+		}
+		$e = round(array_sum($estimate), 1);
+		$a = round(array_sum($actual), 1);
+		return [
+			'pools' => $pools,
+			'estimate' => $e,
+			'current' => round(array_sum($current), 1),
+			'actual' => $a,
+			'factor' => $e > 0 && $actual !== [] ? round($a / $e, 2) : null,
+			'hasBaseline' => $first !== null,
+			'hasActuals' => $actual !== [],
+		];
 	}
 
 	/** @return list<array<string, mixed>> */

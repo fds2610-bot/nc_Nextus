@@ -82,6 +82,20 @@
 				</template>
 				{{ t('nc_nexus', 'Add need') }}
 			</NcButton>
+			<ul v-if="!readonly && corrections.length" class="needs__corrections" data-test="needs-corrections">
+				<li v-for="c in corrections" :key="c.poolId" :data-test="'needs-correction-' + c.poolId">
+					<span class="nx-hint">
+						{{ c.scope === 'class'
+							? t('nc_nexus', 'Experience {pool}: completed projects of class {c} needed {f} of the estimate ({n} projects). {sum} PD would be about {corrected} PD.', { pool: poolName(c.poolId), c: projectClass, f: formatFactor(c.factor), n: c.count, sum: formatNumber(c.sum), corrected: formatNumber(c.corrected) })
+							: t('nc_nexus', 'Experience {pool}: completed projects needed {f} of the estimate ({n} projects). {sum} PD would be about {corrected} PD.', { pool: poolName(c.poolId), f: formatFactor(c.factor), n: c.count, sum: formatNumber(c.sum), corrected: formatNumber(c.corrected) }) }}
+					</span>
+					<NcButton variant="tertiary"
+						:data-test="'apply-correction-' + c.poolId"
+						@click="applyCorrection(c)">
+						{{ t('nc_nexus', 'Apply factor') }}
+					</NcButton>
+				</li>
+			</ul>
 		</template>
 	</div>
 </template>
@@ -92,7 +106,8 @@ import { t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import NxNumberInput from './NxNumberInput.vue'
-import { formatMonth, formatNumber, thisMonth } from '../labels.js'
+import { estimateFactors } from '../api.js'
+import { formatFactor, formatMonth, formatNumber, thisMonth } from '../labels.js'
 
 export default {
 	name: 'NeedsEditor',
@@ -102,17 +117,72 @@ export default {
 		modelValue: { type: Array, required: true },
 		pools: { type: Array, default: () => [] },
 		readonly: { type: Boolean, default: false },
+		/** Vorhabensklasse für den passenden Korrekturfaktor der Nachkalkulation */
+		projectClass: { type: String, default: null },
 	},
 	emits: ['update:modelValue'],
 	setup() {
-		return { mdiClose, mdiPlus, t, formatMonth, formatNumber }
+		return { mdiClose, mdiPlus, t, formatFactor, formatMonth, formatNumber }
+	},
+	data() {
+		return { factors: null, applied: [] }
 	},
 	computed: {
 		total() {
 			return this.modelValue.reduce((sum, r) => sum + (Number(r.personDays) || 0), 0)
 		},
+		/** Erfahrungswerte je Pool im Bedarf: Klasse, sonst alle Klassen; nur gültige und spürbare Faktoren */
+		corrections() {
+			const byPool = this.factors?.byPool
+			if (!byPool || Array.isArray(byPool)) {
+				return []
+			}
+			const sums = {}
+			for (const r of this.modelValue) {
+				sums[r.poolId] = (sums[r.poolId] ?? 0) + (Number(r.personDays) || 0)
+			}
+			const result = []
+			for (const [poolId, sum] of Object.entries(sums)) {
+				const entry = byPool[poolId]
+				if (!entry || sum <= 0 || this.applied.includes(Number(poolId))) {
+					continue
+				}
+				const cls = this.projectClass && !Array.isArray(entry.classes) ? entry.classes[this.projectClass] : null
+				const cell = cls?.valid ? cls : (entry.all?.valid ? entry.all : null)
+				if (!cell || Math.abs(cell.factor - 1) < 0.05) {
+					continue
+				}
+				result.push({ poolId: Number(poolId), scope: cell === cls ? 'class' : 'all', factor: cell.factor, count: cell.count, sum, corrected: Math.round(sum * cell.factor * 2) / 2 })
+			}
+			return result
+		},
+	},
+	mounted() {
+		if (!this.readonly) {
+			this.loadFactors()
+		}
 	},
 	methods: {
+		async loadFactors() {
+			try {
+				this.factors = await estimateFactors()
+			} catch (e) {
+				// Erfahrungswerte sind ein Hinweis; ohne sie bleibt der Editor voll nutzbar
+				this.factors = null
+			}
+		},
+		/**
+		 * Zeilen des Pools mit dem Faktor hochrechnen (auf halbe Personentage gerundet)
+		 *
+		 * @param {object} c Erfahrungswert { poolId, factor }
+		 */
+		applyCorrection(c) {
+			const rows = this.modelValue.map(r => r.poolId === c.poolId && Number(r.personDays) > 0
+				? { ...r, personDays: Math.round(Number(r.personDays) * c.factor * 2) / 2 }
+				: r)
+			this.applied.push(c.poolId)
+			this.$emit('update:modelValue', rows)
+		},
 		poolName(id) {
 			return this.pools.find(p => p.id === id)?.name ?? '?'
 		},
@@ -164,6 +234,18 @@ export default {
 	tfoot th {
 		padding-top: 8px;
 		border-top: 1px solid var(--color-border);
+	}
+}
+
+.needs__corrections {
+	margin: 8px 0 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		display: flex;
+		align-items: center;
+		gap: 8px;
 	}
 }
 

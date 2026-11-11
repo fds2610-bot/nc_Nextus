@@ -334,6 +334,8 @@ export default {
 				conflictLevel1Days: t('nc_nexus', 'Conflict: days until resource board'),
 				conflictLevel2Days: t('nc_nexus', 'Conflict: days until portfolio board'),
 				conditionReminderDays: t('nc_nexus', 'Reminder before a condition is due (days)'),
+				recalcWindowMonths: t('nc_nexus', 'Post-calculation: window of completed projects (months)'),
+				recalcMinProjects: t('nc_nexus', 'Post-calculation: projects needed for a correction factor'),
 				classDaysS: t('nc_nexus', 'Class S from (person days)'),
 				classDaysM: t('nc_nexus', 'Class M from (person days)'),
 				classDaysL: t('nc_nexus', 'Class L from (person days)'),

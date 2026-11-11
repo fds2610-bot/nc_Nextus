@@ -36,6 +36,7 @@ class KpiService {
 		'health_contradiction' => ['Status-Health-Widerspruch', 'Anteil laufender Projekte, deren Meldung dem berechneten Indikator widerspricht', 'Statusberichte, Health-Indikator', 'down', 0, 10, '%'],
 		'strategic_coverage' => ['Strategische Abdeckung', 'Anteil der Blattziele mit mindestens einem laufenden Vorhaben', 'Strategische Ziele, Zuordnungen', 'up', 100, 70, '%'],
 		'uncovered_demand' => ['Ungedeckter Bedarf', 'Personentage zurückgestellter Vorhaben – Argumentationsbasis für Kapazitätsausbau', 'Ressourcenbedarf', 'info', null, null, 'PT'],
+		'estimate_accuracy' => ['Schätzgenauigkeit', 'Abweichung Ist-Aufwand zu ursprünglicher Schätzung (Baseline 1) über abgeschlossene Projekte im Zeitfenster der Nachkalkulation, Betrag in %', 'Nachkalkulation', 'down', 15, 30, '%'],
 		'cancel_rate' => ['Abbruchquote nach G3', 'Anteil freigegebener Vorhaben, die abgebrochen wurden (überwacht, nicht null)', 'Projektstatus', 'info', null, null, '%'],
 	];
 
@@ -49,6 +50,7 @@ class KpiService {
 		private ScoringMapper $scoring,
 		private CapacityService $capacity,
 		private ProjectService $projects,
+		private EstimationService $estimation,
 		private QualityService $quality,
 		private PermissionService $permissions,
 		private AuditService $audit,
@@ -265,6 +267,10 @@ class KpiService {
 		}
 		$leaves = array_filter($all, static fn ($o) => !isset($parents[$o->getId()]) && ($o->getValidTo() === null || $o->getValidTo() >= $today));
 		$v['strategic_coverage'] = $leaves === [] ? null : round(count(array_filter($leaves, static fn ($o) => isset($covered[$o->getId()]))) / count($leaves) * 100, 1);
+
+		// Schätzgenauigkeit (Nachkalkulation)
+		$factor = $this->estimation->overallFactor();
+		$v['estimate_accuracy'] = $factor === null ? null : round(abs($factor - 1) * 100, 1);
 
 		// Ungedeckter Bedarf, Abbruchquote
 		$uncovered = 0.0;

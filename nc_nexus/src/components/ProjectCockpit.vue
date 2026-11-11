@@ -325,6 +325,49 @@
 			</section>
 		</div>
 
+		<!-- Nachkalkulation -->
+		<section v-if="c.postCalculation && c.postCalculation.hasBaseline && c.postCalculation.pools.length"
+			class="nx-view__section"
+			data-test="cockpit-postcalc">
+			<div class="nx-view__section-head">
+				<h3>{{ t('nc_nexus', 'Post-calculation') }}</h3>
+			</div>
+			<p class="nx-hint">
+				{{ t('nc_nexus', 'Actual person days per pool against the original estimate (baseline 1) and the current baseline. Completed projects feed the correction factors for new estimates.') }}
+			</p>
+			<table class="cockpit__table cockpit__postcalc">
+				<thead>
+					<tr>
+						<th>{{ t('nc_nexus', 'Pool') }}</th>
+						<th>{{ t('nc_nexus', 'Estimate (baseline 1)') }}</th>
+						<th>{{ t('nc_nexus', 'Current baseline') }}</th>
+						<th>{{ t('nc_nexus', 'Actual') }}</th>
+						<th>{{ t('nc_nexus', 'Factor') }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="r in c.postCalculation.pools" :key="r.poolId" :data-test="'cockpit-postcalc-' + r.poolId">
+						<td>{{ poolName(r.poolId) }}</td>
+						<td>{{ formatNumber(r.estimate) }}</td>
+						<td>{{ formatNumber(r.current) }}</td>
+						<td>{{ formatNumber(r.actual) }}</td>
+						<td>{{ r.factor === null ? t('nc_nexus', 'unplanned') : formatFactor(r.factor) }}</td>
+					</tr>
+				</tbody>
+				<tfoot>
+					<tr>
+						<th>{{ t('nc_nexus', 'Total') }}</th>
+						<th>{{ formatNumber(c.postCalculation.estimate) }}</th>
+						<th>{{ formatNumber(c.postCalculation.current) }}</th>
+						<th>{{ formatNumber(c.postCalculation.actual) }}</th>
+						<th data-test="cockpit-postcalc-factor">
+							{{ formatFactor(c.postCalculation.factor) }}
+						</th>
+					</tr>
+				</tfoot>
+			</table>
+		</section>
+
 		<FormDialog v-if="form"
 			:key="form.key"
 			:title="form.title"
@@ -373,7 +416,7 @@ import {
 	updateIssue, updateMilestone, updateProject, updateRisk,
 } from '../api.js'
 import {
-	changeStatusLabel, changeTypeLabel, dimensionRagLabel, escalationLabel, formatIsoDay, formatMoney, formatNumber, healthRuleLabel,
+	changeStatusLabel, changeTypeLabel, dimensionRagLabel, escalationLabel, formatFactor, formatIsoDay, formatMoney, formatNumber, healthRuleLabel,
 	healthSourceLabel, ragChip, ragLabel, riskCategoryLabel, riskStatusLabel, severityLabel, statusChip, statusLabel, thresholdReasonLabel, today,
 } from '../labels.js'
 
@@ -399,6 +442,7 @@ export default {
 			changeTypeLabel,
 			dimensionRagLabel,
 			escalationLabel,
+			formatFactor,
 			formatIsoDay,
 			formatMoney,
 			formatNumber,
@@ -435,6 +479,9 @@ export default {
 		this.load()
 	},
 	methods: {
+		poolName(id) {
+			return this.pools.find(p => p.id === id)?.name ?? '?'
+		},
 		async load() {
 			try {
 				this.c = await getProject(this.projectId)
@@ -818,6 +865,28 @@ export default {
 
 		small {
 			color: var(--color-text-maxcontrast);
+		}
+	}
+
+	&__postcalc {
+		max-width: 720px;
+
+		th, td {
+			padding: 4px 8px 4px 0;
+			text-align: end;
+		}
+
+		th:first-child, td:first-child {
+			text-align: start;
+		}
+
+		thead th {
+			font-weight: normal;
+			color: var(--color-text-maxcontrast);
+		}
+
+		tfoot th {
+			border-top: 1px solid var(--color-border);
 		}
 	}
 

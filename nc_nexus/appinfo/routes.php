@@ -103,6 +103,8 @@ return [
 		['name' => 'steering_api#conflicts', 'url' => '/api/v1/conflicts', 'verb' => 'GET'],
 		['name' => 'steering_api#detect', 'url' => '/api/v1/conflicts/detect', 'verb' => 'POST'],
 		['name' => 'steering_api#resolve', 'url' => '/api/v1/conflicts/{id}/resolve', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+		['name' => 'steering_api#postCalculation', 'url' => '/api/v1/post-calculation', 'verb' => 'GET'],
+		['name' => 'steering_api#estimateFactors', 'url' => '/api/v1/post-calculation/factors', 'verb' => 'GET'],
 		['name' => 'steering_api#kpis', 'url' => '/api/v1/kpis', 'verb' => 'GET'],
 		['name' => 'steering_api#addKpi', 'url' => '/api/v1/kpis', 'verb' => 'POST'],
 		['name' => 'steering_api#updateKpi', 'url' => '/api/v1/kpis/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],

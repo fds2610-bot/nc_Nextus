@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\Nexus\Controller;
 
 use OCA\Nexus\Service\ConflictService;
+use OCA\Nexus\Service\EstimationService;
 use OCA\Nexus\Service\KpiService;
 use OCA\Nexus\Service\NotificationService;
 use OCA\Nexus\Service\SettingsService;
@@ -26,6 +27,7 @@ class SteeringApiController extends BaseApiController {
 		private KpiService $kpis,
 		private SettingsService $settings,
 		private NotificationService $notifications,
+		private EstimationService $estimation,
 	) {
 		parent::__construct($request, $l10n, $userId);
 	}
@@ -77,6 +79,31 @@ class SteeringApiController extends BaseApiController {
 	#[NoAdminRequired]
 	public function resolve(int $id): DataResponse {
 		return $this->handle(fn () => $this->conflicts->resolve($this->uid(), $id, $this->payload()));
+	}
+
+	/**
+	 * Nachkalkulation abgeschlossener Projekte mit Korrekturfaktoren je Pool und Klasse.
+	 *
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: Nachkalkulation
+	 * 403: keine Portfolio-Rolle
+	 */
+	#[NoAdminRequired]
+	public function postCalculation(): DataResponse {
+		return $this->handle(fn () => $this->estimation->overview($this->uid()));
+	}
+
+	/**
+	 * Schätzkorrekturfaktoren ohne Projektbezug (Hinweis beim Erfassen von Bedarfen).
+	 *
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: Faktoren
+	 */
+	#[NoAdminRequired]
+	public function estimateFactors(): DataResponse {
+		return $this->handle(fn () => $this->estimation->factors());
 	}
 
 	/**

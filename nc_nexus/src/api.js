@@ -163,6 +163,8 @@ export const decideChange = async (id, changeId, decision) => data(await axios.p
 export const listConflicts = async () => data(await axios.get(v1('/conflicts')))
 export const detectConflicts = async () => data(await axios.post(v1('/conflicts/detect')))
 export const resolveConflict = async (id, resolution) => data(await axios.post(v1(`/conflicts/${id}/resolve`), resolution))
+export const getPostCalculation = async () => data(await axios.get(v1('/post-calculation')))
+export const estimateFactors = async () => data(await axios.get(v1('/post-calculation/factors')))
 export const listKpis = async () => data(await axios.get(v1('/kpis')))
 export const addKpi = async (kpi) => data(await axios.post(v1('/kpis'), kpi))
 export const updateKpi = async (id, kpi) => data(await axios.put(v1(`/kpis/${id}`), kpi))
