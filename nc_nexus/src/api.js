@@ -93,3 +93,8 @@ export const benefitRegister = async () => data(await axios.get(v1('/benefits'))
 export const gateStatus = async (id) => data(await axios.get(v1(`/demands/${id}/gate`)))
 export const decideGate = async (id, decision) => data(await axios.post(v1(`/demands/${id}/gate`), decision))
 export const capacityCut = async () => data(await axios.get(v1('/capacity/cut')))
+
+export const getPlanning = async (id) => data(await axios.get(v1(`/demands/${id}/planning`)))
+export const connectPlanning = async (id, projectId = null) => data(await axios.post(v1(`/demands/${id}/planning`), { projectId }))
+export const disconnectPlanning = async (id) => data(await axios.delete(v1(`/demands/${id}/planning`)))
+export const planningProjects = async () => data(await axios.get(v1('/planning/projects')))

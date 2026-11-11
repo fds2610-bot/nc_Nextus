@@ -258,6 +258,11 @@
 						</table>
 					</div>
 
+					<PlanningPanel v-if="demand && demand.status === 'released'"
+						:demand-id="demand.id"
+						:status="demand.status"
+						@changed="onPlanning" />
+
 					<div v-if="demand && businessCase && (businessCase.canEdit || businessCase.versions.length)"
 						class="nx-section"
 						data-test="demand-business-case">
@@ -483,6 +488,7 @@ import AnalysisDialog from './AnalysisDialog.vue'
 import AssessmentDialog from './AssessmentDialog.vue'
 import BusinessCaseDialog from './BusinessCaseDialog.vue'
 import GateDialog from './GateDialog.vue'
+import PlanningPanel from './PlanningPanel.vue'
 import CommentThread from './CommentThread.vue'
 import NeedsEditor from './NeedsEditor.vue'
 import SimilarDemands from './SimilarDemands.vue'
@@ -493,7 +499,7 @@ const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, 
 
 export default {
 	name: 'DemandEditor',
-	components: { AnalysisDialog, AssessmentDialog, BusinessCaseDialog, GateDialog, CommentThread, NcButton, NeedsEditor, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
+	components: { AnalysisDialog, AssessmentDialog, BusinessCaseDialog, GateDialog, PlanningPanel, CommentThread, NcButton, NeedsEditor, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
 	props: {
 		demandId: { type: Number, default: null },
 		orgUnits: { type: Array, default: () => [] },
@@ -664,6 +670,9 @@ export default {
 			this.$nextTick(() => this.$refs.closeButton?.$el?.focus())
 			this.gate = await gateStatus(this.id)
 			this.businessCase = await getBusinessCase(this.id)
+			this.history = await demandHistory(this.id)
+		},
+		async onPlanning() {
 			this.history = await demandHistory(this.id)
 		},
 		async onBusinessCase(bc) {
