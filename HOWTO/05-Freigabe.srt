@@ -1,0 +1,64 @@
+1
+00:00:00,467 --> 00:00:16,467
+Marlene: Willkommen zu Teil fünf, Jonas. Das Vorhaben ist jetzt ein Projekt und im Portfolio. Aber ein Projekt darf erst starten, wenn auch die Leute da sind. Das prüft das Gate drei, die Freigabe. Mit der Freigabe sagen wir die Kapazität verbindlich zu.
+
+2
+00:00:17,003 --> 00:00:19,723
+Jonas: Was heißt „verbindlich“?
+
+3
+00:00:20,257 --> 00:00:35,617
+Marlene: Bis jetzt war der Bedarf eine Schätzung. Mit der Freigabe wird er für die Engpass-Pools zur harten Zusage. Nexus achtet darauf, dass die Summe der Zusagen nie größer ist als die Projektkapazität des Pools. Probieren wir es.
+
+4
+00:00:36,153 --> 00:00:44,073
+Marlene: Ich öffne das Projekt und die Entscheidung. Die Prüfliste hat diesmal einen zusätzlichen Punkt: die Kapazität.
+
+5
+00:00:44,597 --> 00:00:52,597
+Jonas: Die Kapazität ist rot, und der Knopf „Freigeben“ ist grau. Kann ich ihn irgendwie trotzdem anklicken?
+
+6
+00:00:53,126 --> 00:01:25,766
+Marlene: Nein, und das ist Absicht. Solange die Kapazität nicht reicht, lässt Nexus die Freigabe nicht zu. Hinter dem roten Punkt steht der Grund: Im Pool SAP-Basis brauchen wir im Dezember zwanzig Personentage, aber es sind nur knapp fünfzehn frei. Selbst über die Schnittstelle würde der Server die Freigabe ablehnen. Wir haben zwei Möglichkeiten: weniger Bedarf anmelden oder den Start verschieben. Dazu schauen wir zuerst den Kapazitätsschnitt an.
+
+7
+00:01:26,321 --> 00:01:37,761
+Marlene: Der Kapazitätsschnitt rechnet für alle Vorhaben durch, wer mit der vorhandenen Kapazität wann starten kann. Die Reihenfolge der Rangliste entscheidet, wer zuerst bedient wird.
+
+8
+00:01:38,294 --> 00:01:47,414
+Jonas: In der Spalte „Startplan“ steht bei unserem Projekt ein Hinweis auf den Pool SAP. Es kann so nicht wie gewünscht starten.
+
+9
+00:01:47,965 --> 00:02:02,285
+Marlene: Richtig. Der Startplan zeigt uns, woran es hängt: am Pool SAP-Basis im Dezember. Wir verschieben den Bedarf deshalb auf den Januar. Dort ist der Pool frei.
+
+10
+00:02:02,843 --> 00:02:07,643
+Marlene: Im Antrag ändere ich beide Bedarfszeilen auf den Januar und speichere.
+
+11
+00:02:10,329 --> 00:02:18,169
+Marlene: Damit Nexus die Prüfliste neu berechnet, öffne ich den Antrag noch einmal und rufe die Entscheidung erneut auf.
+
+12
+00:02:18,727 --> 00:02:21,687
+Jonas: Jetzt ist die Kapazität grün.
+
+13
+00:02:22,214 --> 00:02:23,654
+Marlene: Dann geben wir frei.
+
+14
+00:02:24,358 --> 00:02:35,638
+Marlene: Unten im Antrag steht jetzt die zugesagte Kapazität je Pool und Monat. Das sind die harten Zusagen. Die Pool-Verantwortlichen können sich darauf verlassen.
+
+15
+00:02:36,190 --> 00:02:48,670
+Jonas: Also: Die Freigabe prüft die Kapazität. Wenn sie fehlt, lehnt Nexus ab, ich sehe im Kapazitätsschnitt, wann es passt, verschiebe den Bedarf und gebe dann frei.
+
+16
+00:02:49,228 --> 00:02:55,948
+Marlene: Genau. Im letzten Teil übergeben wir das freigegebene Projekt an das Planungstool.
+

@@ -1,0 +1,112 @@
+1
+00:00:00,402 --> 00:00:18,962
+Marlene: Hallo Jonas, schön, dass du da bist. Heute beginnt deine Schulung zum Portfolio-Prozess in Nexus. Wir gehen den ganzen Weg: Antrag, Bewertung, Entscheidung, Portfolio, Freigabe und am Ende das Projekt im Planungstool. Das hier ist Teil eins, der Antrag.
+
+2
+00:00:19,515 --> 00:00:27,995
+Jonas: Hallo Marlene, danke dir. Ich bin gespannt. Eine Frage vorweg: Wo fängt ein Vorhaben bei uns überhaupt an?
+
+3
+00:00:28,550 --> 00:00:44,150
+Marlene: Immer mit einem Antrag. Jeder Bedarf, ob Idee, Gesetzesfrist oder Ersatzbeschaffung, kommt als Antrag ins System. Es gibt keinen anderen Eingang. Ich zeige dir das aus Sicht der Antragstellerin und wechsle dafür in das Konto von Anna aus dem Vertrieb.
+
+4
+00:00:44,705 --> 00:00:49,345
+Marlene: Oben links steht der Knopf „Neuer Antrag“. Den drücken wir.
+
+5
+00:00:49,869 --> 00:00:53,149
+Jonas: Das Formular ist ja gar nicht so lang.
+
+6
+00:00:53,699 --> 00:01:04,099
+Marlene: Das ist Absicht. Ein Antrag soll in unter fünf Minuten erfasst sein, denn Hürden am Eingang führen nur zu Schattenprojekten. Wir beginnen mit dem Titel.
+
+7
+00:01:04,649 --> 00:01:12,809
+Jonas: Moment, da ist ein Kasten aufgetaucht: „Es gibt bereits ähnliche Anträge“. Ist mein Antrag schon mal gestellt worden?
+
+8
+00:01:13,360 --> 00:01:32,480
+Marlene: Gut gesehen. Während man tippt, sucht Nexus in den offenen Anträgen nach ähnlichen Titeln und Beschreibungen. Anna hat vor zwei Wochen einen Antrag zum Scannen von Reisebelegen eingereicht. Anträge anderer Konten, die man nicht lesen darf, tauchen hier nicht auf.
+
+9
+00:01:33,022 --> 00:01:36,142
+Jonas: Und jetzt? Ist das ein Doppelantrag?
+
+10
+00:01:36,667 --> 00:02:03,867
+Marlene: Nicht unbedingt. Der alte Antrag betrifft nur das Scannen der Belege. Der neue umfasst den ganzen Prozess, von der Genehmigung bis zur Buchung. Anna entscheidet selbst: Ist es dasselbe, ergänzt sie den bestehenden Antrag. Ist es etwas Eigenes, reicht sie neu ein und verweist im Text auf den anderen. Wir machen das Zweite. Das PMO prüft später in der Triage noch einmal nach.
+
+11
+00:02:04,414 --> 00:02:17,134
+Marlene: Jetzt der Typ. Wir nehmen „Effizienz“, denn es geht um schnellere Abläufe. Der Typ bestimmt später, welche Zusatzangaben nötig sind und in welchen Bucket das Vorhaben gehört.
+
+12
+00:02:17,691 --> 00:02:28,331
+Marlene: Dazu die Org-Einheit, hier der Vertrieb. Sie legt fest, wer außer Anna den Antrag sieht: Sponsor, PMO und das Board des Bereichs.
+
+13
+00:02:28,869 --> 00:02:33,109
+Jonas: Kann ich nach dem Titel gleich auf „Einreichen“ klicken?
+
+14
+00:02:33,660 --> 00:02:47,100
+Marlene: Probier es. Der Knopf ist grau. Ohne Problembeschreibung lässt Nexus das Einreichen nicht zu. Das ist das wichtigste Feld im ganzen Antrag: Was passiert, wenn wir nichts tun? Zwei, drei Sätze genügen.
+
+15
+00:02:47,649 --> 00:03:02,129
+Marlene: Beim erwarteten Nutzen reicht eine qualitative Aussage. Zahlen kommen später im Business Case. Eine Frist tragen wir nur ein, wenn es einen echten Termin gibt, etwa eine gesetzliche Vorgabe. Hier lassen wir sie leer.
+
+16
+00:03:02,679 --> 00:03:06,039
+Jonas: Soll Anna das jetzt direkt einreichen?
+
+17
+00:03:06,586 --> 00:03:16,906
+Marlene: Erst speichern wir als Entwurf. Ein Entwurf ist privat. Ihn sieht nur Anna, nicht einmal das PMO. Erst das Einreichen macht ihn verbindlich.
+
+18
+00:03:17,458 --> 00:03:23,778
+Jonas: Mir fällt auf: Der Knopf unten links heißt jetzt „Schließen“ statt „Abbrechen“.
+
+19
+00:03:24,332 --> 00:03:33,932
+Marlene: Richtig. „Abbrechen“ steht nur da, wo ungespeicherte Eingaben verloren gehen würden. Jetzt ist alles gesichert. Dann reichen wir ein.
+
+20
+00:03:34,459 --> 00:03:43,419
+Marlene: Der Antrag hat jetzt seine Nummer, die Felder sind gesperrt, und im Verlauf steht, wer wann was gemacht hat. Ab jetzt ist das PMO am Zug.
+
+21
+00:03:43,966 --> 00:03:50,046
+Jonas: Und wenn das PMO etwas nicht versteht? Die Anträge sind ja manchmal ziemlich knapp.
+
+22
+00:03:50,593 --> 00:04:01,233
+Marlene: Dann stellt es eine Rückfrage. Dafür habe ich einen Antrag vorbereitet, die Tablets im Außendienst. Ich schließe diesen Dialog und öffne den anderen.
+
+23
+00:04:01,772 --> 00:04:07,612
+Jonas: Oben steht ein Hinweis mit der Frage vom PMO, und darunter ist ein Antwortfeld.
+
+24
+00:04:08,179 --> 00:04:19,139
+Marlene: Genau. Anna beantwortet die Frage und reicht erneut ein. Frage und Antwort stehen danach als Gespräch im Kommentarverlauf, nichts geht in Mails verloren.
+
+25
+00:04:19,692 --> 00:04:25,132
+Jonas: Und das PMO sieht den Antrag dann automatisch wieder im Arbeitsvorrat?
+
+26
+00:04:25,682 --> 00:04:33,682
+Marlene: Ja. Er steht wieder auf „Eingereicht“ und taucht in der Triage-Liste auf. Darum geht es im nächsten Teil.
+
+27
+00:04:34,230 --> 00:04:47,030
+Jonas: Dann fasse ich zusammen: Der Antrag ist kurz, die Problembeschreibung ist Pflicht, der Entwurf bleibt privat, den Dublettenhinweis nehme ich ernst, und Rückfragen beantworte ich direkt im Antrag.
+
+28
+00:04:47,580 --> 00:04:56,140
+Marlene: Genau so. Im nächsten Teil schauen wir uns an, wie das PMO den Antrag prüft und bewertet. Bis gleich.
+

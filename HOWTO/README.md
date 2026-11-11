@@ -19,6 +19,7 @@ Zu jedem Video gehören ein Skript (`.md`) und Untertitel (`.srt`).
 - **Bild:** echte Bildschirmaufnahme der Nexus-Oberfläche (Playwright/Chromium, 1600×900) auf einer eigenen
   DEV-Instanz mit den Demo-Daten aus `scripts/seed-demo.sh`; der Ablauf ist skriptgesteuert und wiederholbar.
 - **Stimmen:** Qwen3-TTS (`Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice`), lokal auf der CPU; Marlene = „serena“, Jonas = „ryan“.
+- **Aussprache:** „PMO“ wird für die Sprachausgabe als „P M O“ geschrieben (siehe `werkzeug/lib/director.js`).
 - **Werkzeuge:** [`werkzeug/`](werkzeug/) (Drehbücher je Video in `werkzeug/videos/`, Aufnahme-Bibliothek in `werkzeug/lib/`).
   Die Skripte erwarten ein Arbeitsverzeichnis `~/video-work` (Python-venv mit `qwen-tts`, `soundfile`) und
   eine laufende Instanz auf Port 8097; Details in den Kommentaren von `record_all.sh` und `rec/fresh.sh`.

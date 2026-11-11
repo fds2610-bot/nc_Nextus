@@ -1,0 +1,52 @@
+1
+00:00:00,376 --> 00:00:17,736
+Marlene: Willkommen zum letzten Teil, Jonas. Das Projekt ist freigegeben. Nexus steuert das Portfolio, aber die eigentliche Projektplanung, mit Vorgängen, Terminen und Abhängigkeiten, passiert im Planungstool Gantt. Heute verbinden wir beides.
+
+2
+00:00:18,268 --> 00:00:23,308
+Marlene: Ich öffne das freigegebene Projekt und scrolle zum Abschnitt „Planung“.
+
+3
+00:00:23,857 --> 00:00:30,257
+Jonas: Hier steht nur ein Hinweis, und es gibt keinen Knopf. Da steht: Gantt muss installiert sein. Was nun?
+
+4
+00:00:30,804 --> 00:00:44,164
+Marlene: Das ist ein Umgebungsproblem. Die Gantt-App ist hier nicht aktiv. Das PMO kann Apps nicht selbst einschalten, das macht die Administration. Ich bitte sie darum. Danach laden wir die Seite neu.
+
+5
+00:00:44,692 --> 00:00:51,972
+Jonas: Jetzt gibt es den Knopf „Gantt-Projekt anlegen“. Und daneben eine Auswahl für ein bestehendes Projekt.
+
+6
+00:00:52,524 --> 00:01:09,084
+Marlene: Genau, zwei Wege. Gibt es für das Vorhaben noch keinen Plan, legen wir ein neues Gantt-Projekt an. Gibt es schon einen Plan, zum Beispiel aus einer Vorstudie, verknüpfen wir diesen. Dann gibt es keine Doppelpflege. Hier legen wir neu an.
+
+7
+00:01:09,613 --> 00:01:15,933
+Jonas: Der Fortschritt steht auf null Prozent und null von null Aufgaben. Ist da etwas schiefgegangen?
+
+8
+00:01:16,485 --> 00:01:29,605
+Marlene: Nein, das ist richtig. Der Plan ist noch leer, denn die Vorgänge legt der Projektleiter erst im Gantt an. Nexus liest nur Fortschritt, Aufgaben und Termine daraus zurück. Schauen wir uns den Plan an.
+
+9
+00:01:30,141 --> 00:01:41,741
+Marlene: Hier ist das neue Projekt, mit Projektschlüssel und Titel. Ab jetzt plant der Projektleiter hier weiter. Sobald es Aufgaben und Termine gibt, erscheinen sie in Nexus.
+
+10
+00:01:42,265 --> 00:01:46,665
+Jonas: Und die Verbindung kann ich lösen, wenn ich das falsche Projekt erwischt habe?
+
+11
+00:01:47,214 --> 00:02:00,174
+Marlene: Ja, im Antrag gibt es den Knopf „Verknüpfung lösen“. Er löst nur die Verknüpfung, das Projekt in Gantt bleibt bestehen. Dann kannst du ein anderes verknüpfen. Zurück nach Nexus.
+
+12
+00:02:00,718 --> 00:02:09,998
+Jonas: Dann ist der Weg einmal komplett: Antrag, Bewertung, Entscheidung, Portfolio, Freigabe und Projekt im Planungstool.
+
+13
+00:02:10,538 --> 00:02:22,298
+Marlene: Genau, Jonas. Du hast jetzt jeden Schritt einmal gesehen, auch die typischen Stolpersteine. Beim nächsten Antrag machst du es selbst, und ich schaue dir über die Schulter. Viel Erfolg!
+

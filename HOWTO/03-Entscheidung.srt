@@ -1,0 +1,92 @@
+1
+00:00:00,521 --> 00:00:16,921
+Marlene: Willkommen zu Teil drei, Jonas. Der Antrag ist bewertet und hat einen Business Case. Jetzt wird entschieden, ob er ins Portfolio aufgenommen wird. Dazu gibt es zwei Schritte: zuerst den Kandidaten, dann das Gate zwei.
+
+2
+00:00:17,461 --> 00:00:22,661
+Jonas: Was ist der Unterschied zwischen den beiden?
+
+3
+00:00:23,192 --> 00:00:40,392
+Marlene: Beim Kandidaten bestätigt das PMO, dass alle Unterlagen vollständig sind. Erst dann tritt das Vorhaben in der Rangliste gegen andere an. Beim Gate zwei entscheidet das Portfolio-Board, ob es aufgenommen wird. Dabei wird aus dem Antrag ein Projekt mit eigener Nummer.
+
+4
+00:00:40,933 --> 00:00:47,573
+Marlene: Ich öffne den Antrag und klicke auf den Entscheidungsknopf. Nexus zeigt mir zuerst die Prüfliste.
+
+5
+00:00:48,100 --> 00:00:54,660
+Jonas: Da ist ein Punkt rot: „Ressourcenbedarf“. Und der Knopf zum Entscheiden ist grau.
+
+6
+00:00:55,186 --> 00:01:19,266
+Marlene: Genau dafür ist die Prüfliste da. Es fehlt eine grobe Schätzung, wie viele Personentage aus welchen Pools gebraucht werden. Ohne sie kann man die Kapazität nicht planen. Ich schließe den Dialog und trage den Bedarf direkt im Antrag ein: fünfundzwanzig Personentage SAP-Basis im nächsten Monat, dazu zwölf Tage Softwareentwicklung.
+
+7
+00:01:19,810 --> 00:01:28,770
+Marlene: Jetzt speichern wir die Änderung. Damit Nexus die Prüfliste neu berechnet, öffne ich den Antrag noch einmal und rufe die Entscheidung erneut auf.
+
+8
+00:01:29,318 --> 00:01:32,438
+Jonas: Jetzt sind alle Punkte grün.
+
+9
+00:01:32,985 --> 00:01:35,785
+Marlene: Dann bestätigen wir den Kandidaten.
+
+10
+00:01:36,311 --> 00:01:50,471
+Marlene: Jetzt das Gate zwei. Zur Wahl stehen: priorisieren, zurückstellen oder ablehnen. Beim Priorisieren wird der Business Case als Version eingefroren, und aus dem Antrag wird ein Projekt.
+
+11
+00:01:51,025 --> 00:01:55,105
+Jonas: Darf ich das als Junior eigentlich allein entscheiden?
+
+12
+00:01:55,640 --> 00:02:08,920
+Marlene: Entscheiden dürfen das Board oder das PMO des Bereichs, aber nie die Antragstellerin selbst. Diese Funktionstrennung prüft Nexus automatisch. Wir priorisieren.
+
+13
+00:02:09,468 --> 00:02:14,828
+Marlene: Hier steht der neue Projektschlüssel. Ab jetzt führen wir das Vorhaben unter dieser Nummer.
+
+14
+00:02:15,389 --> 00:02:25,149
+Marlene: Jeder Beschluss wird im Entscheidungsregister festgehalten, mit Nummer, Mandat und Begründung. Das Register kann man nicht nachträglich ändern.
+
+15
+00:02:25,706 --> 00:02:32,106
+Jonas: Ich sehe drei neue Einträge zu unserem Antrag: Triage, Kandidat und Gate zwei.
+
+16
+00:02:32,648 --> 00:02:46,968
+Jonas: Ich habe eine Frage zu einem anderen Fall. Das Dokumentenmanagement für den Vertrieb wurde zurückgestellt, mit Wiedervorlage in vier Monaten. Jetzt hat die Bereichsleitung aber doch Budget freigegeben. Müssen wir wirklich warten?
+
+17
+00:02:47,530 --> 00:03:03,210
+Marlene: Nein. Das PMO kann jeden eingereichten Antrag auch außerplanmäßig neu entscheiden. Dann ist aber eine Begründung Pflicht, und der neue Beschluss ersetzt den alten im Register. Schauen wir es uns an.
+
+18
+00:03:03,781 --> 00:03:12,821
+Marlene: Der normale Triage-Knopf ist grau, denn der reguläre Schritt ist erledigt. Aber „Erneut entscheiden“ steht uns offen.
+
+19
+00:03:13,356 --> 00:03:21,356
+Marlene: Wir wählen „angenommen“ und tragen die Begründung ein: Das Budget wurde von der Bereichsleitung vorzeitig freigegeben.
+
+20
+00:03:21,893 --> 00:03:26,293
+Jonas: Und im Register steht das dann als außerplanmäßiger Beschluss?
+
+21
+00:03:26,850 --> 00:03:33,170
+Marlene: Ja, mit Kennzeichnung. So bleibt nachvollziehbar, wer wann abweichend entschieden hat.
+
+22
+00:03:33,705 --> 00:03:45,545
+Jonas: Ich fasse zusammen: Erst die Prüfliste vollständig machen, dann Kandidat, dann Gate zwei. Beschlüsse stehen im Register, und abweichende Entscheidungen brauchen eine Begründung.
+
+23
+00:03:46,104 --> 00:03:52,664
+Marlene: Genau. Im nächsten Teil schauen wir auf das ganze Portfolio.
+

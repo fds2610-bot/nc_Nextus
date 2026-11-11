@@ -1,0 +1,60 @@
+1
+00:00:00,416 --> 00:00:18,896
+Marlene: Hallo Jonas, in Teil vier schauen wir auf das ganze Portfolio. Ein Vorhaben ist nie allein. Es konkurriert mit anderen um dieselben Leute und dasselbe Geld. Dafür hat Nexus drei Ansichten: die Portfolioübersicht, die Priorisierung und die Kapazität.
+
+2
+00:00:19,455 --> 00:00:28,335
+Marlene: Zuerst die Portfolioübersicht. Sie zeigt alle Anträge und Projekte, die wir sehen dürfen, nach Org-Einheit und Phase.
+
+3
+00:00:28,893 --> 00:00:33,613
+Jonas: Die Zahlen unter der Phase „Antrag“, sind das die Personentage?
+
+4
+00:00:34,168 --> 00:00:50,088
+Marlene: Genau. Die große Zahl ist die Anzahl der Vorhaben, die kleine darunter der geschätzte Bedarf in Personentagen. Übergeordnete Einheiten wie die IT rollen ihre Untereinheiten mit auf. Ein Klick auf eine Zahl öffnet die Liste dahinter.
+
+5
+00:00:50,647 --> 00:01:06,247
+Marlene: Nun die Priorisierung. Hier konkurrieren die Kandidaten innerhalb ihres Buckets, also ihrer Kategorie, um Kapazität. Die Reihenfolge ergibt sich aus der Wertdichte: Nutzen im Verhältnis zum Aufwand.
+
+6
+00:01:06,807 --> 00:01:18,247
+Jonas: Die digitale Reisekostenabrechnung steht nur auf Rang zwei, hinter dem Self-Service-Portal. Dabei will der Vorstand sie als Erstes haben. Kann ich die Reihenfolge einfach ändern?
+
+7
+00:01:18,798 --> 00:01:36,238
+Marlene: Die Wertdichte selbst nicht, die ist errechnet. Aber das Portfolio-Board darf die Reihenfolge korrigieren, und zwar mit Begründung. Die Korrektur bleibt in der Liste sichtbar, damit jeder sieht, dass hier von der Rechnung abgewichen wurde. Wir setzen Rang eins.
+
+8
+00:01:36,782 --> 00:01:41,822
+Marlene: Jetzt steht das Vorhaben oben, mit der Markierung für die Korrektur und der Begründung.
+
+9
+00:01:42,353 --> 00:01:59,153
+Marlene: Die Rangliste sagt, was wichtig ist. Ob wir es auch leisten können, zeigt die Kapazität. Jede Zeile ist ein Ressourcenpool, jede Spalte ein Monat. Die Auslastung ist der Bedarf der offenen Anträge geteilt durch die Projektkapazität des Pools.
+
+10
+00:01:59,687 --> 00:02:07,527
+Jonas: Bei der Softwareentwicklung ist im Dezember eine Zelle rot, über hundert Prozent. Was bedeutet das, und woher kommt das?
+
+11
+00:02:08,076 --> 00:02:16,556
+Marlene: Dass mehr Bedarf angemeldet ist, als der Pool in dem Monat leisten kann. Klick auf die Zelle, dann siehst du die Anträge dahinter.
+
+12
+00:02:17,102 --> 00:02:21,342
+Jonas: Mehrere Anträge ziehen gleichzeitig an denselben Leuten.
+
+13
+00:02:21,875 --> 00:02:33,955
+Marlene: So ist es. Solche Engpässe lösen wir nicht mit Bauchgefühl. Zuerst gibt es den Kapazitätsschnitt, und dann entscheidet das Gate drei. Das ist Thema von Teil fünf.
+
+14
+00:02:34,514 --> 00:02:44,194
+Jonas: Übersicht für das Gesamtbild, Rangliste für die Reihenfolge, Kapazität für die Machbarkeit. Und Korrekturen gehen nur mit Begründung.
+
+15
+00:02:44,746 --> 00:02:47,466
+Marlene: Genau. Bis zum nächsten Teil.
+

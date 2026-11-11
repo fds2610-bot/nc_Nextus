@@ -14,7 +14,7 @@ const TTS_DIR = path.join(WORK, 'tts')
 
 // Aussprachehilfen nur für die Sprachausgabe (Untertitel zeigen den Originaltext)
 const PRON = [
-  [/\bPMO\b/g, 'Pe-Em-Oh'], [/\bG2\b/g, 'Gate zwei'], [/\bG3\b/g, 'Gate drei'], [/\bPT\b/g, 'Personentage'],
+  [/\bPMO\b/g, 'P M O'], [/\bG2\b/g, 'Gate zwei'], [/\bG3\b/g, 'Gate drei'], [/\bPT\b/g, 'Personentage'],
   [/\bFTE\b/g, 'Vollzeitkräfte'], [/\bBES-/g, 'Beschluss '], [/\bIT\b/g, 'I-T'], [/\bNIS-2\b/g, 'Nis zwei'],
   [/\bDEM-\b/g, 'Antrag '],
 ]

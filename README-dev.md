@@ -77,7 +77,7 @@ binden Apps read-only aus den Nachbarprojekten ein (fehlt ein Projekt, wird es √
 
 ```bash
 ./dev.sh destroy && ./dev.sh up      # frische Instanz
-scripts/seed-demo.sh                 # Konten anna, ben, paula (PMO), boris (Board), sven (Pool)
+scripts/seed-demo.sh                 # Konten anna, ben, paula (PMO), boris (Board), sven (Pool), fiona (Finanzen); Portfolio-Board mit Sitzung
 ```
 
 Legt Organisation, Rollen, Ziele, Pools mit Kapazit√§t und zehn Vorhaben in allen Stufen an

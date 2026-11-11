@@ -1,0 +1,84 @@
+1
+00:00:00,399 --> 00:00:13,919
+Marlene: Willkommen zurück, Jonas. Annas Antrag liegt jetzt bei uns. In Teil zwei geht es um die Bewertung. Sie hat drei Schritte: die Triage, die Bewertung mit dem Kriterienkatalog und den Business Case.
+
+2
+00:00:14,452 --> 00:00:18,772
+Jonas: Wo finde ich eigentlich die Anträge, die auf uns warten?
+
+3
+00:00:19,329 --> 00:00:31,489
+Marlene: In der Navigation, unter der Überschrift „Triage“. Der Eintrag „Zu triagieren“ ist unser Arbeitsvorrat, und die Zahl zeigt, wie viele Anträge offen sind.
+
+4
+00:00:32,054 --> 00:00:45,814
+Marlene: Hier ist der Antrag zur digitalen Reisekostenabrechnung. Ich öffne ihn und klicke auf „Triage“. Die Frage lautet: Ist der Bedarf verständlich beschrieben, und lohnt sich der Aufwand für eine Bewertung?
+
+5
+00:00:46,374 --> 00:00:49,414
+Jonas: Welche Entscheidungen kann ich hier treffen?
+
+6
+00:00:49,967 --> 00:01:08,847
+Marlene: Es gibt fünf Entscheidungscodes: angenommen, weitere Analyse, zurückgestellt, abgelehnt und Dublette. Eine Ablehnung braucht immer eine Begründung, eine Zurückstellung ein Wiedervorlagedatum. Wir nehmen den Antrag an und wählen die Projektklasse M, also mittel.
+
+7
+00:01:09,387 --> 00:01:32,987
+Marlene: Jetzt bewerten wir. Der Antrag ist aus dem Arbeitsvorrat verschwunden, also öffne ich ihn über „Alle Anträge“ neu. Als PMO machen wir eine unabhängige Fremdbewertung. Der Kriterienkatalog hat Nutzen-, Dringlichkeits- und Risikokriterien. Jedes bekommt einen Wert auf der Skala null, eins, drei, fünf oder acht.
+
+8
+00:01:33,538 --> 00:01:42,818
+Marlene: Ich fülle die Nutzenkriterien aus: Der Strategiebeitrag ist hoch, der finanzielle Nutzen mittel, der Nutzen für die Mitarbeitenden ebenfalls.
+
+9
+00:01:44,340 --> 00:01:53,540
+Jonas: Ich bin schon fertig und möchte speichern. Aber der Knopf „Bewertung speichern“ ist grau. Was habe ich falsch gemacht?
+
+10
+00:01:54,077 --> 00:02:14,077
+Marlene: Du hast noch nicht alles bewertet. Es müssen alle Kriterien einen Wert haben, auch die zur Dringlichkeit und zum Risiko. Nexus soll keine halben Bewertungen speichern, denn sie lassen sich später nicht ändern. Eine neue Einschätzung wäre eine neue Bewertung. Scroll einmal nach unten.
+
+11
+00:02:14,632 --> 00:02:31,112
+Marlene: Dazu kommt der Aufwand. Die Aufwandsklasse schlägt Nexus aus den erfassten Ressourcenbedarfen vor. Ich nehme Klasse drei. Unten siehst du sofort die Wertdichte, also den Nutzen im Verhältnis zum Aufwand. Sie bestimmt später die Reihenfolge in der Rangliste.
+
+12
+00:02:31,658 --> 00:02:34,458
+Marlene: Jetzt lässt sich die Bewertung speichern.
+
+13
+00:02:35,007 --> 00:02:43,327
+Marlene: Als Letztes der Business Case. Er ist kein Foliensatz, sondern eine strukturierte Aufstellung von Kosten und Nutzen. Wir öffnen ihn.
+
+14
+00:02:43,883 --> 00:02:49,563
+Marlene: Erst die Kosten: Einführung und Lizenzen, fünfundvierzigtausend Euro.
+
+15
+00:02:51,433 --> 00:03:01,033
+Marlene: Dann der Nutzen: weniger Nacharbeit, dreißigtausend Euro im Jahr. Als Messgröße tragen wir die Nacharbeitsstunden pro Monat ein.
+
+16
+00:03:03,776 --> 00:03:11,056
+Jonas: Ich speichere. Oh, es kommt eine rote Fehlermeldung. Was fehlt denn jetzt?
+
+17
+00:03:11,606 --> 00:03:29,926
+Marlene: Der Ausgangswert. Jede Nutzenposition braucht eine Messgröße und einen Ausgangswert. Ohne ihn kann man später nicht prüfen, ob der Nutzen wirklich eingetreten ist. Vierzig Stunden pro Monat laufen heute an. Das tragen wir ein.
+
+18
+00:03:30,473 --> 00:03:38,953
+Jonas: Und die Amortisation rechnet Nexus selbst aus. Fünfundvierzigtausend durch dreißigtausend, anderthalb Jahre.
+
+19
+00:03:39,505 --> 00:03:41,825
+Marlene: Richtig. Jetzt speichern wir.
+
+20
+00:03:42,352 --> 00:03:53,152
+Jonas: Also: Erst die Triage, dann die Bewertung mit allen Kriterien, dann der Business Case mit Ausgangswerten. Dann ist der Antrag bereit für die Entscheidung.
+
+21
+00:03:53,686 --> 00:03:59,366
+Marlene: Genau. Und die Entscheidung ist das Thema von Teil drei.
+
