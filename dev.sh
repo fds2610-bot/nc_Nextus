@@ -174,9 +174,13 @@ setup_apps() {
 	# Testkonten für die E2E-Tests (nc_nexus/tests/e2e), ohne Adminrechte
 	for user in e2e e2e-other; do
 		if ! occ user:info "$user" >/dev/null 2>&1; then
-			dc exec -T --user www-data -e OC_PASS="$E2E_PASSWORD" nextcloud \
-				php occ user:add --password-from-env --display-name "E2E ${user}" "$user" >/dev/null
-			echo "Testkonto $user angelegt"
+			# der Post-Install-Hook legt die Konten bei einer Neuinstallation parallel an
+			if dc exec -T --user www-data -e OC_PASS="$E2E_PASSWORD" nextcloud \
+				php occ user:add --password-from-env --display-name "E2E ${user}" "$user" >/dev/null 2>&1; then
+				echo "Testkonto $user angelegt"
+			elif ! occ user:info "$user" >/dev/null 2>&1; then
+				die "Testkonto $user ließ sich nicht anlegen"
+			fi
 		fi
 	done
 }

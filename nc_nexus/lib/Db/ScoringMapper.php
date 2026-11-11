@@ -17,8 +17,49 @@ class ScoringMapper {
 	) {
 	}
 
+	/**
+	 * Startmodell anlegen, falls Buckets oder Kriterienkatalog fehlen (Neuinstallation: Nextcloud
+	 * führt dort nur das Schema der Migrationen aus).
+	 */
+	public function ensureDefaults(): void {
+		if ($this->count('nx_buckets') === 0) {
+			foreach ([
+				['A', 'Pflicht', 'Gesetz, Regulatorik, Vertrag, Audit-Findings, akute Sicherheitslücken', 20, 0],
+				['B', 'Betrieb & Lifecycle', 'End-of-Life-Ablösungen, technische Schulden, Stabilität, Skalierung', 25, 1],
+				['C', 'Wachstum & Effizienz', 'Umsatzsteigerung, Kostensenkung, Prozessautomatisierung', 45, 1],
+				['D', 'Innovation & Exploration', 'Neue Geschäftsmodelle, Technologie-Erprobung, unsichere Wetten', 10, 1],
+			] as [$code, $name, $description, $share, $scored]) {
+				$qb = $this->db->getQueryBuilder();
+				$qb->insert('nx_buckets')->values([
+					'code' => $qb->createNamedParameter($code),
+					'name' => $qb->createNamedParameter($name),
+					'description' => $qb->createNamedParameter($description),
+					'target_share_pct' => $qb->createNamedParameter($share),
+					'scored' => $qb->createNamedParameter($scored, IQueryBuilder::PARAM_INT),
+				])->executeStatement();
+			}
+		}
+		if ($this->count('nx_criterion_sets') === 0) {
+			$criteria = array_map(static fn (array $c) => [
+				'code' => $c[0], 'name' => $c[1], 'dimension' => $c[2], 'weight' => (float)$c[3],
+				'anchors' => array_combine(['0', '1', '3', '5', '8'], $c[4]),
+			], \OCA\Nexus\Migration\Version001000Date20261112120000::defaultCriteria());
+			$this->insertSet(1, 'Kriterienkatalog', 'Startmodell aus dem Konzept (Kapitel 03)', 'system', time(), $criteria);
+		}
+	}
+
+	private function count(string $table): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('*', 'n'))->from($table);
+		$result = $qb->executeQuery();
+		$n = (int)$result->fetchOne();
+		$result->closeCursor();
+		return $n;
+	}
+
 	/** @return list<array<string, mixed>> */
 	public function buckets(): array {
+		$this->ensureDefaults();
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from('nx_buckets')->orderBy('code', 'ASC');
 		return array_map(static fn (array $r) => [
@@ -43,6 +84,7 @@ class ScoringMapper {
 
 	/** @return list<array<string, mixed>> alle Katalogversionen, neueste zuerst */
 	public function sets(): array {
+		$this->ensureDefaults();
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from('nx_criterion_sets')->orderBy('version', 'DESC');
 		return array_map(static fn (array $r) => [

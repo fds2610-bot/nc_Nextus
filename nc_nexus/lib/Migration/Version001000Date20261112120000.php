@@ -6,7 +6,6 @@ namespace OCA\Nexus\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\Types;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
@@ -101,61 +100,12 @@ class Version001000Date20261112120000 extends SimpleMigrationStep {
 		return $schema;
 	}
 
+	/**
+	 * Startmodell (Buckets, Kriterienkatalog v1). Bei Neuinstallationen führt Nextcloud Migrationen
+	 * nur als Schema aus – deshalb legt ScoringMapper::ensureDefaults() das Modell ebenfalls an.
+	 */
 	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-		$count = $this->db->getQueryBuilder();
-		$count->select($count->func()->count('*', 'n'))->from('nx_buckets');
-		$r = $count->executeQuery();
-		$hasBuckets = (int)$r->fetchOne() > 0;
-		$r->closeCursor();
-		if (!$hasBuckets) {
-			foreach ([
-				['A', 'Pflicht', 'Gesetz, Regulatorik, Vertrag, Audit-Findings, akute Sicherheitslücken', 20, 0],
-				['B', 'Betrieb & Lifecycle', 'End-of-Life-Ablösungen, technische Schulden, Stabilität, Skalierung', 25, 1],
-				['C', 'Wachstum & Effizienz', 'Umsatzsteigerung, Kostensenkung, Prozessautomatisierung', 45, 1],
-				['D', 'Innovation & Exploration', 'Neue Geschäftsmodelle, Technologie-Erprobung, unsichere Wetten', 10, 1],
-			] as [$code, $name, $description, $share, $scored]) {
-				$qb = $this->db->getQueryBuilder();
-				$qb->insert('nx_buckets')->values([
-					'code' => $qb->createNamedParameter($code),
-					'name' => $qb->createNamedParameter($name),
-					'description' => $qb->createNamedParameter($description),
-					'target_share_pct' => $qb->createNamedParameter($share),
-					'scored' => $qb->createNamedParameter($scored, IQueryBuilder::PARAM_INT),
-				])->executeStatement();
-			}
-		}
-
-		$count = $this->db->getQueryBuilder();
-		$count->select($count->func()->count('*', 'n'))->from('nx_criterion_sets');
-		$r = $count->executeQuery();
-		$hasSets = (int)$r->fetchOne() > 0;
-		$r->closeCursor();
-		if ($hasSets) {
-			return;
-		}
-		$qb = $this->db->getQueryBuilder();
-		$qb->insert('nx_criterion_sets')->values([
-			'version' => $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-			'name' => $qb->createNamedParameter('Kriterienkatalog'),
-			'status' => $qb->createNamedParameter('active'),
-			'note' => $qb->createNamedParameter('Startmodell aus dem Konzept (Kapitel 03)'),
-			'created_by' => $qb->createNamedParameter('system'),
-			'created_at' => $qb->createNamedParameter(time(), IQueryBuilder::PARAM_INT),
-		])->executeStatement();
-		$setId = $qb->getLastInsertId();
-		$sort = 0;
-		foreach (self::defaultCriteria() as [$code, $name, $dimension, $weight, $anchors]) {
-			$qb = $this->db->getQueryBuilder();
-			$qb->insert('nx_criteria')->values([
-				'set_id' => $qb->createNamedParameter($setId, IQueryBuilder::PARAM_INT),
-				'code' => $qb->createNamedParameter($code),
-				'name' => $qb->createNamedParameter($name),
-				'dimension' => $qb->createNamedParameter($dimension),
-				'weight' => $qb->createNamedParameter($weight),
-				'sort' => $qb->createNamedParameter(++$sort, IQueryBuilder::PARAM_INT),
-				'anchors' => $qb->createNamedParameter(json_encode(array_combine(['0', '1', '3', '5', '8'], $anchors), JSON_UNESCAPED_UNICODE)),
-			])->executeStatement();
-		}
+		(new \OCA\Nexus\Db\ScoringMapper($this->db))->ensureDefaults();
 	}
 
 	/**

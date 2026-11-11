@@ -24,6 +24,8 @@ for entry in "anna:Anna Antrag" "ben:Ben Berger" "paula:Paula PMO" "boris:Boris 
 			php occ user:add --password-from-env --display-name "$name" "$user" >/dev/null
 		echo "Konto $user angelegt"
 	fi
+	# Demo-Konten auf Deutsch
+	docker exec --user www-data "${project}-nextcloud-1" php occ user:setting "$user" core lang de >/dev/null
 done
 
 python3 -I scripts/seed-demo.py --url "http://localhost:$port"
