@@ -318,21 +318,40 @@
 					</li>
 				</ul>
 			</section>
+
+			<!-- Portfolio-Matrix: Reifegrad × Aufwand, Fläche = Kosten -->
+			<section class="dash__tile dash__tile--wide" data-test="tile-maturity">
+				<header class="dash__head">
+					<NcIconSvgWrapper :path="mdiChartBubble" :size="20" />
+					<h3>{{ t('nc_nexus', 'Portfolio matrix') }}</h3>
+				</header>
+				<p class="dash__note">
+					{{ t('nc_nexus', 'Every active demand and project as a circle: to the right the more mature (by status), upwards the larger (effort in person days), circle area by cost. Dashed lines: release at G3 and the class boundary M.') }}
+				</p>
+				<p v-if="!data.maturity.points.length" class="nx-hint">
+					{{ t('nc_nexus', 'No active demands with an effort estimate yet.') }}
+				</p>
+				<MaturityChart v-else
+					:data="data.maturity"
+					@open="id => $emit('open', id)"
+					@project="id => $emit('project', id)" />
+			</section>
 		</div>
 	</div>
 </template>
 
 <script>
-import { mdiAlertOutline, mdiCashCheck, mdiCashMultiple, mdiGavel, mdiSpeedometer, mdiViewGridOutline } from '@mdi/js'
+import { mdiAlertOutline, mdiChartBubble, mdiCashCheck, mdiCashMultiple, mdiGavel, mdiSpeedometer, mdiViewGridOutline } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { n, t } from '@nextcloud/l10n'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
+import MaturityChart from '../components/MaturityChart.vue'
 import { errorMessage, managementDashboard } from '../api.js'
 import { formatDate, formatDay, formatIsoDay, formatMoney, formatNumber, ragChip, ragLabel, realizationStatusChip, realizationStatusLabel } from '../labels.js'
 
 export default {
 	name: 'DashboardView',
-	components: { NcIconSvgWrapper },
+	components: { MaturityChart, NcIconSvgWrapper },
 	props: {
 		refreshKey: { type: Number, default: 0 },
 	},
@@ -340,6 +359,7 @@ export default {
 	setup() {
 		return {
 			mdiAlertOutline,
+			mdiChartBubble,
 			mdiCashCheck,
 			mdiCashMultiple,
 			mdiGavel,
@@ -433,6 +453,10 @@ export default {
 		// Ampel als kräftiger Balken innen an der Oberkante (ein farbiger Rand verschwindet in der Rundung)
 		box-shadow: inset 0 5px 0 var(--dash-level, var(--color-border));
 		padding-top: 18px;
+
+		&--wide {
+			grid-column: 1 / -1;
+		}
 
 		&--green {
 			--dash-level: var(--color-success-text);

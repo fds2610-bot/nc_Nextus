@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\Nexus\Service;
 
 use OCA\Nexus\Db\Demand;
+use OCA\Nexus\Db\ResourceNeedMapper;
 use OCA\Nexus\Db\Rows;
 use OCA\Nexus\Exception\ForbiddenException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -20,6 +21,18 @@ class DashboardService {
 	/** Budgetabweichung in Prozent, ab der ein Projekt in der Finanzkachel auffällt */
 	public const DEVIATION_PCT = 10.0;
 	private const TOP = 5;
+	/** Reifegrad-Stufen der Portfolio-Matrix (x-Achse) in Reihenfolge, je mit den zugehörigen Status */
+	public const STAGES = [
+		'intake' => ['submitted', 'query'],
+		'analysis' => ['further_analysis', 'in_qualification'],
+		'candidate' => ['candidate'],
+		'prioritized' => ['prioritized'],
+		'released' => ['released'],
+		'execution' => ['in_execution', 'paused'],
+		'completion' => ['completed'],
+	];
+	/** ab dieser Stufe ist das Vorhaben ein Projekt (freigegeben, G3) */
+	public const PROJECT_STAGE = 'released';
 	private const DAY = 86400;
 
 	public function __construct(
@@ -33,6 +46,9 @@ class DashboardService {
 		private ObjectiveService $objectives,
 		private SessionService $sessions,
 		private Rows $rows,
+		private ResourceNeedMapper $needs,
+		private BusinessCaseService $businessCases,
+		private SettingsService $settings,
 		private ITimeFactory $time,
 	) {
 	}
@@ -60,6 +76,103 @@ class DashboardService {
 			'risks' => self::risks($this->risks->portfolio($userId)),
 			'decisions' => $this->decisions($userId, $demands, $now),
 			'benefits' => self::benefits($this->benefits->register($userId)),
+			'maturity' => $this->maturityMatrix($demands, $projects),
+		];
+	}
+
+	/**
+	 * Portfolio-Matrix: jedes Vorhaben als Kreis – Reifegrad (Status) × Aufwand (PT), Fläche = Kosten.
+	 *
+	 * @param list<Demand> $demands lesbare Anträge ohne Entwürfe
+	 * @param list<array<string, mixed>> $projects ProjectService::list
+	 * @return array<string, mixed>
+	 */
+	private function maturityMatrix(array $demands, array $projects): array {
+		$created = [];
+		foreach ($demands as $d) {
+			$created[$d->getId()] = $d->getCreatedAt();
+		}
+		$days = [];
+		foreach ($this->needs->findRange('0000-00', '9999-12') as $need) {
+			$id = $need->getDemandId();
+			// Bedarf aus einer früheren Installation mit derselben ID nicht mitzählen
+			if (isset($created[$id]) && $need->getUpdatedAt() >= $created[$id]) {
+				$days[$id] = ($days[$id] ?? 0.0) + $need->getPersonDays();
+			}
+		}
+		$cost = [];
+		foreach ($projects as $p) {
+			if ($p['budgetFrame'] !== null) {
+				$cost[$p['id']] = (float)$p['budgetFrame'];
+			}
+		}
+		foreach ($demands as $d) {
+			if (!isset($cost[$d->getId()]) && self::stageOf($d->getStatus()) !== null) {
+				$c = $this->businessCases->kpisFor($d)['oneTimeCost'] ?? null;
+				if ($c !== null) {
+					$cost[$d->getId()] = (float)$c;
+				}
+			}
+		}
+		return self::maturity($demands, $days, $cost, [
+			'S' => (float)$this->settings->get('classDaysS'),
+			'M' => (float)$this->settings->get('classDaysM'),
+			'L' => (float)$this->settings->get('classDaysL'),
+		]);
+	}
+
+	public static function stageOf(string $status): ?string {
+		foreach (self::STAGES as $stage => $statuses) {
+			if (in_array($status, $statuses, true)) {
+				return $stage;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * @param list<Demand> $demands
+	 * @param array<int, float> $days Personentage je Antrag
+	 * @param array<int, float> $cost Kosten je Antrag
+	 * @param array<string, float> $classDays Untergrenzen der Klassen in PT
+	 * @return array<string, mixed>
+	 */
+	public static function maturity(array $demands, array $days, array $cost, array $classDays): array {
+		$points = [];
+		$withoutDays = [];
+		foreach ($demands as $d) {
+			$stage = self::stageOf($d->getStatus());
+			if ($stage === null) {
+				continue;
+			}
+			$id = (int)$d->getId();
+			$pd = round($days[$id] ?? 0.0, 1);
+			$isProject = array_search($stage, array_keys(self::STAGES), true) >= array_search(self::PROJECT_STAGE, array_keys(self::STAGES), true);
+			$row = [
+				'id' => $id,
+				'key' => $isProject ? ($d->getProjectKey() ?? $d->getDemandKey()) : $d->getDemandKey(),
+				'title' => $d->getTitle(),
+				'status' => $d->getStatus(),
+				'stage' => $stage,
+				'project' => $isProject,
+				'projectClass' => $d->getProjectClass(),
+				'personDays' => $pd,
+				'cost' => isset($cost[$id]) ? round($cost[$id], 2) : null,
+			];
+			if ($pd <= 0) {
+				$withoutDays[] = $row;
+			} else {
+				$points[] = $row;
+			}
+		}
+		// große Kreise zuerst zeichnen, damit kleine obenauf liegen und anklickbar bleiben
+		usort($points, static fn (array $a, array $b) => ($b['cost'] ?? 0) <=> ($a['cost'] ?? 0) ?: $a['id'] <=> $b['id']);
+		return [
+			'stages' => array_keys(self::STAGES),
+			'projectStage' => self::PROJECT_STAGE,
+			'classDays' => $classDays,
+			'points' => $points,
+			'withoutDays' => array_map(static fn (array $r) => array_intersect_key($r, array_flip(['id', 'key', 'title', 'status', 'project'])), $withoutDays),
 		];
 	}
 

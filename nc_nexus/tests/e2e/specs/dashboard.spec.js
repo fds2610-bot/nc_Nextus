@@ -33,6 +33,31 @@ test.describe('Management-Dashboard (REP-001)', () => {
 				await expect(view.locator('[data-test="risks-open"]')).toHaveText(String(data.risks.open))
 				await expect(view.locator('[data-test="capacity-waiting"]')).toHaveText(String(data.capacity.cut.waiting))
 
+				// Portfolio-Matrix: ein Kreis je Vorhaben mit Aufwand, Tooltip, Tabellenansicht
+				const matrix = view.locator('[data-test="tile-maturity"]')
+				if (data.maturity.points.length) {
+					await expect(matrix.locator('.mat__dot')).toHaveCount(data.maturity.points.length)
+					const point = data.maturity.points[0]
+					await matrix.locator(`[data-test="maturity-${point.key}"] .mat__mark`).hover()
+					await expect(matrix.locator('[data-test="maturity-tip"]')).toContainText(point.key)
+					await matrix.locator('[data-test="maturity-toggle"]').click()
+					await expect(matrix.locator('[data-test="maturity-table"] tbody tr')).toHaveCount(data.maturity.points.length)
+					await matrix.locator('[data-test="maturity-toggle"]').click()
+					// Klick: Projekt öffnet das Cockpit, Antrag den Dialog
+					await matrix.locator(`[data-test="maturity-${point.key}"] .mat__mark`).click()
+					if (point.project) {
+						await expect(page.locator('[data-test="nav-projects"]')).toBeVisible()
+					} else {
+						await expect(page.locator('[data-test="demand-editor"]')).toBeVisible()
+						await page.keyboard.press('Escape')
+					}
+					await page.locator('[data-test="nav-dashboard"]').click()
+				}
+				// alle Vorhaben im Reifegrad: ohne Aufwand gesondert gezählt, nie doppelt
+				const ids = [...data.maturity.points, ...data.maturity.withoutDays].map(x => x.id)
+				expect(new Set(ids).size).toBe(ids.length)
+				expect(ids).toContain(d.id)
+
 				// Drill-down: Kachel → Detailsicht, die Navigationsgruppe klappt dabei auf
 				await view.locator('[data-test="drill-capacity"]').click()
 				await expect(page.locator('[data-test="capacity-view"]')).toBeVisible()

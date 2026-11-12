@@ -111,4 +111,26 @@ class DashboardServiceTest extends TestCase {
 		$this->assertSame([2, 1], [$b['positions'], $b['reviewsDue']]);
 		$this->assertSame('D-1', $b['due'][0]['key']);
 	}
+
+	public function testMaturityMatrixPlacesActiveDemandsByStage(): void {
+		$demands = [];
+		foreach ([[1, 'submitted'], [2, 'in_qualification'], [3, 'in_execution'], [4, 'paused'], [5, 'rejected'], [6, 'deferred'], [7, 'candidate']] as [$id, $status]) {
+			$d = $this->demand($id, $status);
+			$d->setDemandKey('D-' . $id);
+			$d->setTitle('Vorhaben ' . $id);
+			if ($id >= 3 && $id <= 4) {
+				$d->setProjectKey('P-' . $id);
+			}
+			$demands[] = $d;
+		}
+		$m = DashboardService::maturity($demands, [1 => 10.0, 2 => 50.0, 3 => 300.0, 4 => 20.0, 5 => 99.0], [2 => 1000.0, 3 => 90000.0], ['S' => 5.0, 'M' => 30.0, 'L' => 200.0]);
+		$this->assertSame(['intake', 'analysis', 'candidate', 'prioritized', 'released', 'execution', 'completion'], $m['stages']);
+		// abgelehnt und zurückgestellt fehlen; ohne Aufwand (7) gesondert
+		$this->assertSame([3, 2, 1, 4], array_column($m['points'], 'id'));
+		$this->assertSame([7], array_column($m['withoutDays'], 'id'));
+		$byId = array_column($m['points'], null, 'id');
+		$this->assertSame(['execution', true, 'P-3', 90000.0], [$byId[3]['stage'], $byId[3]['project'], $byId[3]['key'], $byId[3]['cost']]);
+		$this->assertSame(['execution', 'paused'], [$byId[4]['stage'], $byId[4]['status']]);
+		$this->assertSame(['analysis', false, 'D-2', null], [$byId[2]['stage'], $byId[2]['project'], $byId[2]['key'], $byId[1]['cost']]);
+	}
 }
