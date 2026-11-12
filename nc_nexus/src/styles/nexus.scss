@@ -424,3 +424,27 @@ textarea.nx-input.nx-input {
 		font-weight: 600;
 	}
 }
+
+/* Bucket-Farben für Diagramme (Blau, Gelb, Magenta, Grün; validiert für alle Paare, hell und dunkel).
+ * Reihenfolge = Reihenfolge der Buckets im Bewertungsmodell, weitere Buckets grau. */
+.nx-buckets {
+	--nx-b1: #2a78d6;
+	--nx-b2: #eda100;
+	--nx-b3: #e87ba4;
+	--nx-b4: #008300;
+}
+
+/* Dunkle Stufen derselben Farben: explizites dunkles Theme oder Systemvorgabe */
+body[data-themes*="dark"] .nx-buckets {
+	--nx-b1: #3987e5;
+	--nx-b2: #c98500;
+	--nx-b3: #d55181;
+}
+
+@media (prefers-color-scheme: dark) {
+	body[data-themes*="default"] .nx-buckets {
+		--nx-b1: #3987e5;
+		--nx-b2: #c98500;
+		--nx-b3: #d55181;
+	}
+}

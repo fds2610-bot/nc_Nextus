@@ -1,5 +1,5 @@
 <template>
-	<div ref="root" class="mat" data-test="maturity-chart">
+	<div ref="root" class="mat nx-buckets" data-test="maturity-chart">
 		<div v-if="!table" class="mat__plot">
 			<svg :width="width"
 				:height="height"
@@ -395,7 +395,7 @@ export default {
 		},
 		bucketStyle(code) {
 			const slot = this.bucketSlot(code)
-			return { '--c': slot ? `var(--mat-b${slot})` : 'var(--color-text-maxcontrast)' }
+			return { '--c': slot ? `var(--nx-b${slot})` : 'var(--color-text-maxcontrast)' }
 		},
 		bucketName(code) {
 			const b = this.data.buckets.find(x => x.code === code)
@@ -411,11 +411,6 @@ export default {
 <style scoped lang="scss">
 .mat {
 	position: relative;
-	// Bucket-Farben (validiert für alle Paare, hell und dunkel)
-	--mat-b1: #2a78d6;
-	--mat-b2: #eda100;
-	--mat-b3: #e87ba4;
-	--mat-b4: #008300;
 
 	&__plot {
 		position: relative;
@@ -621,23 +616,6 @@ export default {
 	&__num {
 		text-align: end !important;
 		font-variant-numeric: tabular-nums;
-	}
-}
-
-// Dunkle Stufen derselben Farben: explizites dunkles Theme oder Systemvorgabe
-:global(body[data-themes*="dark"] .mat) {
-	--mat-b1: #3987e5;
-	--mat-b2: #c98500;
-	--mat-b3: #d55181;
-	--mat-b4: #008300;
-}
-
-@media (prefers-color-scheme: dark) {
-	:global(body[data-themes*="default"] .mat) {
-		--mat-b1: #3987e5;
-		--mat-b2: #c98500;
-		--mat-b3: #d55181;
-		--mat-b4: #008300;
 	}
 }
 </style>

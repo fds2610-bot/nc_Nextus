@@ -136,4 +136,35 @@ class DashboardServiceTest extends TestCase {
 		$this->assertSame(['C', 'D'], [$byId[1]['bucket'], $byId[3]['bucket']]);
 		$this->assertSame(['analysis', false, 'D-2', null], [$byId[2]['stage'], $byId[2]['project'], $byId[2]['key'], $byId[1]['cost']]);
 	}
+
+	public function testTimelineUsesPlannedDatesOrDemandMonths(): void {
+		$demands = [];
+		foreach ([[1, 'candidate'], [2, 'in_execution'], [3, 'prioritized'], [4, 'submitted'], [5, 'rejected']] as [$id, $status]) {
+			$d = $this->demand($id, $status);
+			$d->setDemandKey('D-' . $id);
+			$d->setTitle('Vorhaben ' . $id);
+			if ($id === 2) {
+				$d->setProjectKey('P-2');
+			}
+			$demands[] = $d;
+		}
+		$spans = [2 => ['start' => '2026-03-01', 'end' => '2026-12-31'], 3 => ['start' => '2027-01-15', 'end' => null]];
+		$months = [1 => ['2026-11', '2026-09'], 3 => ['2027-04', '2027-02'], 5 => ['2026-01']];
+		$reports = [2 => [
+			['date' => '2026-06-30', 'period' => '2026-06', 'rag' => 'yellow'],
+			['date' => '2026-05-31', 'period' => '2026-05', 'rag' => 'green'],
+		]];
+		$t = DashboardService::timeline($demands, $spans, $months, $reports, '2026-11-12');
+		$this->assertSame('2026-11-12', $t['today']);
+		// nach Beginn sortiert; ohne Termine und Bedarf (4) nur gezählt, abgelehnt (5) fehlt
+		$this->assertSame([2, 1, 3], array_column($t['bars'], 'id'));
+		$this->assertSame(1, $t['withoutDates']);
+		$byId = array_column($t['bars'], null, 'id');
+		$this->assertSame(['P-2', true, 'plan', '2026-03-01', '2026-12-31'], [$byId[2]['key'], $byId[2]['released'], $byId[2]['source'], $byId[2]['start'], $byId[2]['end']]);
+		$this->assertSame(['2026-05-31', '2026-06-30'], array_column($byId[2]['reports'], 'date'));
+		// Bedarfsmonate: erster Monatsanfang bis letztes Monatsende
+		$this->assertSame([false, 'demand', '2026-09-01', '2026-11-30'], [$byId[1]['released'], $byId[1]['source'], $byId[1]['start'], $byId[1]['end']]);
+		// gesetzter Beginn bleibt, fehlendes Ende aus dem Bedarf
+		$this->assertSame(['2027-01-15', '2027-04-30', false], [$byId[3]['start'], $byId[3]['end'], $byId[3]['released']]);
+	}
 }

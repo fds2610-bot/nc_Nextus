@@ -33,8 +33,18 @@ test.describe('Management-Dashboard (REP-001)', () => {
 				await expect(view.locator('[data-test="risks-open"]')).toHaveText(String(data.risks.open))
 				await expect(view.locator('[data-test="capacity-waiting"]')).toHaveText(String(data.capacity.cut.waiting))
 
+				// Reiter: Lage zuerst; Matrix und Zeitstrahl erst nach dem Wechsel sichtbar
+				await expect(view.locator('[data-test="dash-tab-overview"]')).toHaveAttribute('aria-selected', 'true')
+				await expect(view.locator('[data-test="tile-maturity"]')).toHaveCount(0)
+				await expect(view.locator('[data-test="tile-timeline"]')).toHaveCount(0)
+				await view.locator('[data-test="dash-tab-overview"]').focus()
+				await page.keyboard.press('ArrowRight')
+				await expect(view.locator('[data-test="dash-tab-matrix"]')).toBeFocused()
+				await expect(view.locator('[data-test="tile-portfolio"]')).toHaveCount(0)
+
 				// Portfolio-Matrix: ein Kreis je Vorhaben mit Aufwand, Tooltip, Tabellenansicht
 				const matrix = view.locator('[data-test="tile-maturity"]')
+				await expect(matrix).toBeVisible()
 				if (data.maturity.points.length) {
 					await expect(matrix.locator('.mat__dot')).toHaveCount(data.maturity.points.length)
 					const point = data.maturity.points[0]
@@ -63,7 +73,30 @@ test.describe('Management-Dashboard (REP-001)', () => {
 				expect(new Set(ids).size).toBe(ids.length)
 				expect(ids).toContain(d.id)
 
+				// Zeitstrahl: ein Balken je Vorhaben mit Terminen; geplant gestrichelt, freigegeben durchgehend
+				await view.locator('[data-test="dash-tab-timeline"]').click()
+				const timeline = view.locator('[data-test="tile-timeline"]')
+				await expect(timeline).toBeVisible()
+				const bars = data.timeline.bars
+				if (bars.length) {
+					await expect(timeline.locator('.tl__row')).toHaveCount(bars.length)
+					for (const b of bars) {
+						const bar = timeline.locator(`[data-test="timeline-${b.key}"] .tl__bar`)
+						const dash = await bar.evaluate(el => getComputedStyle(el).strokeDasharray)
+						expect(dash === 'none' || dash === '', `${b.key} ${b.status}`).toBe(b.released)
+						await expect(timeline.locator(`[data-test="timeline-${b.key}"] [data-test="timeline-report"]`)).toHaveCount(b.reports.length)
+						expect(b.start <= b.end).toBe(true)
+					}
+					const withReports = bars.find(b => b.reports.length) ?? bars[0]
+					await timeline.locator(`[data-test="timeline-${withReports.key}"] .tl__bar`).hover()
+					await expect(timeline.locator('[data-test="timeline-tip"]')).toContainText(withReports.key)
+					await timeline.locator('[data-test="timeline-toggle"]').click()
+					await expect(timeline.locator('[data-test="timeline-table"] tbody tr')).toHaveCount(bars.length)
+					await timeline.locator('[data-test="timeline-toggle"]').click()
+				}
+
 				// Drill-down: Kachel → Detailsicht, die Navigationsgruppe klappt dabei auf
+				await view.locator('[data-test="dash-tab-overview"]').click()
 				await view.locator('[data-test="drill-capacity"]').click()
 				await expect(page.locator('[data-test="capacity-view"]')).toBeVisible()
 				await expect(page.locator('[data-test="nav-capacity"]')).toBeVisible()

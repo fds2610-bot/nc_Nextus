@@ -50,6 +50,10 @@
             "%n Beschluss",
             "%n Beschlüsse"
         ],
+        "_%n demand without dates or resource demand is not shown_::_%n demands without dates or resource demand are not shown_": [
+            "%n Antrag ohne Termine und Ressourcenbedarf wird nicht gezeigt",
+            "%n Anträge ohne Termine und Ressourcenbedarf werden nicht gezeigt"
+        ],
         "_%n demand without effort estimate is not shown_::_%n demands without effort estimate are not shown_": [
             "%n Antrag ohne Aufwandsschätzung wird nicht gezeigt",
             "%n Anträge ohne Aufwandsschätzung werden nicht gezeigt"
@@ -137,6 +141,10 @@
         "_%n session_::_%n sessions_": [
             "%n Sitzung",
             "%n Sitzungen"
+        ],
+        "_%n status report_::_%n status reports_": [
+            "%n Statusbericht",
+            "%n Statusberichte"
         ],
         "_%n unit_::_%n units_": [
             "%n Einheit",
@@ -660,6 +668,7 @@
         "Effort needs a pool": "Aufwand braucht einen Pool",
         "Emergency reserve": "Notfallreserve",
         "Empty: body and date": "Leer: Gremium und Datum",
+        "End": "Ende",
         "End right": "Recht beenden",
         "Enter the change in FTE (not 0)": "Bitte die Änderung in FTE angeben (nicht 0)",
         "Escalate to the portfolio (portfolio risk view)": "Ins Portfolio eskalieren (Portfolio-Risikosicht)",
@@ -743,6 +752,7 @@
         "From 90 % achieved, from 50 % partially achieved, below missed.": "Ab 90 % erreicht, ab 50 % teilweise erreicht, darunter verfehlt.",
         "From month (lead time)": "Ab Monat (Vorlaufzeit)",
         "From the target achievement": "Aus der Zielerreichung",
+        "From when to when each demand and project runs: planned dates of the project, otherwise the months with planned resource demand. Dashed outline: planned, not yet released; solid outline: released. Each vertical stroke marks a status report.": "Von wann bis wann die Anträge und Projekte laufen: geplante Termine des Projekts, sonst die Monate mit geplantem Ressourcenbedarf. Gestrichelter Rand: geplant, noch nicht freigegeben; durchgehender Rand: freigegeben. Jeder senkrechte Strich markiert einen Statusbericht.",
         "from {date}": "ab {date}",
         "from {value}": "ab {value}",
         "frozen at {gate}": "eingefroren bei {gate}",
@@ -963,6 +973,7 @@
         "No decision without data: which required information is missing where, which deadlines are overdue – with the data owner who has to act.": "Keine Entscheidung ohne Daten: welche Pflichtangaben wo fehlen, welche Fristen überschritten sind – mit dem Daten-Owner, der handeln muss.",
         "No decisions yet": "Noch keine Beschlüsse",
         "No demand in this month.": "In diesem Monat kein Bedarf.",
+        "No demands with dates or planned resource demand yet.": "Noch keine Anträge mit Terminen oder geplantem Ressourcenbedarf.",
         "No demands yet": "Noch keine Anträge",
         "no deviations": "keine Abweichungen",
         "No escalated or cross-project risks.": "Keine eskalierten oder projektübergreifenden Risiken.",
@@ -1119,6 +1130,7 @@
         "per year, by the benefit owners": "pro Jahr, laut Nutzenverantwortung",
         "per year, released projects": "pro Jahr, freigegebene Projekte",
         "Period": "Periode",
+        "Period derived from the planned resource demand": "Zeitraum aus dem geplanten Ressourcenbedarf",
         "Person days": "Personentage",
         "Person days of the demands in the phase “Demand”, by the month they are needed in.": "Personentage der Anträge in der Phase „Antrag“, nach dem Monat, in dem sie benötigt werden.",
         "Person days {pool}": "Personentage {pool}",
@@ -1130,6 +1142,7 @@
         "Planned end": "Geplantes Ende",
         "Planned start": "Geplanter Start",
         "planned {p}, to date {d}, actual {a}": "geplant {p}, bis heute {d}, Ist {a}",
+        "planned, not yet released": "geplant, noch nicht freigegeben",
         "Planning (Gantt)": "Planung (Gantt)",
         "Planning project not found": "Projekt im Planungstool nicht gefunden",
         "plausibility-checked (±25 %)": "plausibilisiert (±25 %)",
@@ -1253,6 +1266,8 @@
         "Release": "Freigeben",
         "Release commits the resource needs firmly. If a bottleneck pool lacks capacity, the release is refused.": "Die Freigabe sagt den Ressourcenbedarf verbindlich zu. Fehlt in einem Engpass-Pool Kapazität, wird die Freigabe abgelehnt.",
         "Released": "Freigegeben",
+        "released": "freigegeben",
+        "released (G3)": "freigegeben (G3)",
         "Released (tranches)": "Freigegeben (Tranchen)",
         "Released projects not connected with the planning tool": "Freigegebene Projekte ohne Verknüpfung zum Planungstool",
         "releases a budget tranche": "gibt eine Budgettranche frei",
@@ -1411,6 +1426,7 @@
         "Show unchanged projects": "Unveränderte Vorhaben zeigen",
         "similar": "ähnlich",
         "Similar demands already exist": "Es gibt bereits ähnliche Anträge",
+        "Situation": "Lage",
         "Size category XS, S, M or L based on effort and risk. It determines the gate set and which body decides.": "Größenkategorie XS, S, M oder L nach Aufwand und Risiko. Sie bestimmt das Gate-Set und welches Gremium entscheidet.",
         "Small undertaking": "Kleinvorhaben",
         "Small, not yet released": "Klein, noch nicht freigegeben",
@@ -1421,6 +1437,7 @@
         "Sponsor / benefit owner": "Sponsor / Nutzenverantwortliche",
         "Stage-gate model": "Stage-Gate-Modell",
         "Stagger in time": "Zeitlich staffeln",
+        "Start": "Beginn",
         "Start earlier": "Starten früher",
         "Start later": "Starten später",
         "Start plan": "Startplan",
@@ -1435,6 +1452,7 @@
         "Status changed": "Status geändert",
         "Status of running projects": "Status laufender Projekte",
         "Status report": "Statusbericht",
+        "status report": "Statusbericht",
         "Status report cadence M/L (days)": "Berichtstakt M/L (Tage)",
         "Status report cadence XS/S (days)": "Berichtstakt XS/S (Tage)",
         "Status report every {n} days": "Statusbericht alle {n} Tage",
@@ -1442,6 +1460,7 @@
         "Status report overdue": "Statusbericht überfällig",
         "Status report submitted": "Statusbericht abgegeben",
         "Status reports": "Statusberichte",
+        "Status reports:": "Statusberichte:",
         "Steering": "Steuerung",
         "Steering committee": "Lenkungsausschuss",
         "Steering committee member": "Mitglied Lenkungsausschuss",
@@ -1566,10 +1585,13 @@
         "Thresholds must be positive numbers": "Schwellen müssen positive Zahlen sein",
         "Thresholds saved": "Schwellenwerte gespeichert",
         "Ticket system": "Ticketsystem",
+        "Timeline": "Zeitstrahl",
+        "Timeline: duration of each demand and project; dashed outline = planned, solid outline = released; vertical strokes = status reports": "Zeitstrahl: Laufzeit je Antrag und Projekt; gestrichelter Rand = geplant, durchgehender Rand = freigegeben; senkrechte Striche = Statusberichte",
         "Title": "Titel",
         "Title is required": "Der Titel ist Pflicht",
         "Title is too long": "Der Titel ist zu lang",
         "To triage": "Zu triagieren",
+        "Today": "Heute",
         "Topic": "Thema",
         "Topic, e.g. capacity report": "Thema, z. B. Kapazitätsbericht",
         "Total": "Summe",

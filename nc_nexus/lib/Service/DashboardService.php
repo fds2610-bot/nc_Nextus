@@ -79,7 +79,99 @@ class DashboardService {
 			'decisions' => $this->decisions($userId, $demands, $now),
 			'benefits' => self::benefits($this->benefits->register($userId)),
 			'maturity' => $this->maturityMatrix($demands, $projects),
+			'timeline' => $this->timelineData($demands, $now),
 		];
+	}
+
+	/**
+	 * Zeitstrahl: Laufzeit je Vorhaben aus den Projektstammdaten, ersatzweise aus dem geplanten
+	 * Ressourcenbedarf (erster bis letzter Monat); dazu die Zeitpunkte der Statusberichte.
+	 *
+	 * @param list<Demand> $demands lesbare Anträge ohne Entwürfe
+	 * @return array<string, mixed>
+	 */
+	private function timelineData(array $demands, int $now): array {
+		$spans = [];
+		$months = [];
+		$reports = [];
+		foreach ($demands as $d) {
+			if (self::stageOf($d->getStatus()) === null) {
+				continue;
+			}
+			$id = (int)$d->getId();
+			$row = $this->projects->projectRow($d);
+			$spans[$id] = ['start' => $row['plannedStart'] ?? null, 'end' => $row['plannedEnd'] ?? null];
+			foreach ($this->needs->findForDemand($id) as $need) {
+				// Bedarf aus einer früheren Installation mit derselben ID nicht mitzählen
+				if ($need->getUpdatedAt() >= $d->getCreatedAt() && $need->getPersonDays() > 0) {
+					$months[$id][] = $need->getPeriod();
+				}
+			}
+			$reports[$id] = array_map(static fn (array $r) => [
+				'date' => date('Y-m-d', (int)$r['createdAt']),
+				'period' => $r['period'],
+				'rag' => self::worst(['scope' => $r['ragScope'], 'time' => $r['ragTime'], 'cost' => $r['ragCost'], 'risk' => $r['ragRisk']]),
+			], $this->projects->reports($d));
+		}
+		$buckets = array_map(static fn (array $b) => ['code' => $b['code'], 'name' => $b['name']], $this->scoring->buckets());
+		return ['buckets' => $buckets] + self::timeline($demands, $spans, $months, $reports, date('Y-m-d', $now));
+	}
+
+	/**
+	 * Balken je Vorhaben mit Anfang und Ende; freigegeben ab G3. Vorhaben ohne Termine und ohne
+	 * geplanten Bedarf werden nur gezählt.
+	 *
+	 * @param list<Demand> $demands
+	 * @param array<int, array{start: ?string, end: ?string}> $spans Termine aus den Projektstammdaten
+	 * @param array<int, list<string>> $months Monate (JJJJ-MM) mit geplantem Bedarf
+	 * @param array<int, list<array{date: string, period: string, rag: string}>> $reports Statusberichte
+	 * @return array<string, mixed>
+	 */
+	public static function timeline(array $demands, array $spans, array $months, array $reports, string $today): array {
+		$stages = array_keys(self::STAGES);
+		$released = array_search(self::PROJECT_STAGE, $stages, true);
+		$bars = [];
+		$without = 0;
+		foreach ($demands as $d) {
+			$stage = self::stageOf($d->getStatus());
+			if ($stage === null) {
+				continue;
+			}
+			$id = (int)$d->getId();
+			$start = $spans[$id]['start'] ?? null;
+			$end = $spans[$id]['end'] ?? null;
+			$source = 'plan';
+			if ($start === null || $end === null) {
+				$m = $months[$id] ?? [];
+				sort($m);
+				if ($m !== []) {
+					$start ??= $m[0] . '-01';
+					$end ??= date('Y-m-t', (int)strtotime(end($m) . '-01'));
+					$source = 'demand';
+				}
+			}
+			if ($start === null || $end === null || $end < $start) {
+				$without++;
+				continue;
+			}
+			$isReleased = array_search($stage, $stages, true) >= $released;
+			$list = $reports[$id] ?? [];
+			usort($list, static fn (array $a, array $b) => strcmp($a['date'], $b['date']));
+			$bars[] = [
+				'id' => $id,
+				'key' => $isReleased ? ($d->getProjectKey() ?? $d->getDemandKey()) : $d->getDemandKey(),
+				'title' => $d->getTitle(),
+				'status' => $d->getStatus(),
+				'released' => $isReleased,
+				'bucket' => RankingService::bucketOf($d),
+				'start' => $start,
+				'end' => $end,
+				'source' => $source,
+				'reports' => $list,
+			];
+		}
+		usort($bars, static fn (array $a, array $b) => strcmp($a['start'], $b['start']) ?: strcmp($a['end'], $b['end']) ?: $a['id'] <=> $b['id']);
+		return ['today' => $today, 'bars' => $bars, 'withoutDates' => $without];
 	}
 
 	/**
