@@ -1,4 +1,4 @@
-import { getCanonicalLocale, t } from '@nextcloud/l10n'
+import { getCanonicalLocale, n, t } from '@nextcloud/l10n'
 
 export const typeLabel = (type) => ({
 	mandatory: t('nc_nexus', 'Mandatory / regulatory'),
@@ -633,3 +633,84 @@ export const passedStage = (status) => ({
 })[status] ?? null
 
 export const stageLabel = (stage) => stage === 'submitted' ? t('nc_nexus', 'Submitted') : gateLabel(stage)
+
+// Ergebnis des Kapazitätsschnitts je Vorhaben (Kapitel 04 §5)
+export const planChip = (r) => r
+	? ({ startable: 'accepted', shifted: 'on-hold', waiting: 'rejected', budget: 'rejected', unassessed: 'draft' }[r.state] || 'draft')
+	: 'draft'
+
+export const planText = (r) => {
+	if (!r) {
+		return '–'
+	}
+	switch (r.state) {
+	case 'startable': return r.start && r.start > thisMonth()
+		? t('nc_nexus', 'startable from {month}', { month: formatMonth(r.start) })
+		: t('nc_nexus', 'startable')
+	case 'shifted': return t('nc_nexus', 'startable from {month}', { month: formatMonth(r.start) })
+	case 'waiting': return r.pool ? t('nc_nexus', 'waiting for pool {pool}', { pool: r.pool }) : t('nc_nexus', 'waiting')
+	case 'budget': return t('nc_nexus', 'waiting for budget')
+	default: return t('nc_nexus', 'not assessed yet')
+	}
+}
+
+// Szenarioanalyse (POR-003)
+export const SCENARIO_CHANGE_TYPES = ['add_project', 'remove_project', 'pause', 'shift_start', 'change_rank', 'change_capacity', 'change_budget', 'change_quota']
+
+export const scenarioChangeLabel = (type) => ({
+	add_project: t('nc_nexus', 'Add a project'),
+	remove_project: t('nc_nexus', 'Take a project out'),
+	pause: t('nc_nexus', 'Pause a running project'),
+	shift_start: t('nc_nexus', 'Shift a start'),
+	change_rank: t('nc_nexus', 'Change a rank'),
+	change_capacity: t('nc_nexus', 'Change pool capacity'),
+	change_budget: t('nc_nexus', 'Change a bucket budget'),
+	change_quota: t('nc_nexus', 'Change a bucket target share'),
+})[type] || type
+
+const signed = (v) => (v > 0 ? '+' : '') + formatNumber(v)
+
+// Änderung als Satz („Pool SEC: +2 FTE ab Jan. 27“)
+export const scenarioChangeText = (c) => {
+	const p = c.parameters || {}
+	const label = p.label || c.targetRef
+	switch (c.changeType) {
+	case 'add_project': return p.density
+		? t('nc_nexus', '{label} added to bucket {bucket} (assumed value density {d})', { label, bucket: p.bucket, d: formatNumber(p.density) })
+		: t('nc_nexus', '{label} added to bucket {bucket}', { label, bucket: p.bucket })
+	case 'remove_project': return t('nc_nexus', '{label} taken out of the cut', { label })
+	case 'pause': return t('nc_nexus', '{label} paused from {month}, commitments released', { label, month: formatMonth(p.from) })
+	case 'shift_start': return n('nc_nexus', '{label} starts %n month later', '{label} starts %n months later', p.months, { label })
+	case 'change_rank': return t('nc_nexus', '{label} moved to rank {rank}', { label, rank: p.rank })
+	case 'change_capacity': return t('nc_nexus', 'Pool {label}: {fte} FTE from {month}', { label, fte: signed(p.fte), month: formatMonth(p.from) })
+	case 'change_budget': return p.budget === null || p.budget === undefined
+		? t('nc_nexus', 'Bucket {label}: no budget frame', { label })
+		: t('nc_nexus', 'Bucket {label}: budget frame {amount}', { label, amount: formatMoney(p.budget) })
+	case 'change_quota': return t('nc_nexus', 'Bucket {label}: target share {p} %', { label, p: formatNumber(p.sharePct) })
+	default: return c.changeType
+	}
+}
+
+export const scenarioStatusLabel = (status) => ({
+	draft: t('nc_nexus', 'Draft'),
+	presented: t('nc_nexus', 'Presented'),
+	adopted: t('nc_nexus', 'Adopted'),
+	discarded: t('nc_nexus', 'Discarded'),
+})[status] || status
+
+export const scenarioStatusChip = (status) => ({ draft: 'draft', presented: 'submitted', adopted: 'accepted', discarded: 'rejected' })[status] || 'draft'
+
+export const scenarioEffectLabel = (effect) => ({
+	rises: t('nc_nexus', 'rises above the line'),
+	falls: t('nc_nexus', 'falls below the line'),
+	earlier: t('nc_nexus', 'starts earlier'),
+	later: t('nc_nexus', 'starts later'),
+	added: t('nc_nexus', 'new'),
+	removed: t('nc_nexus', 'taken out'),
+	changed: t('nc_nexus', 'changed'),
+	unchanged: t('nc_nexus', 'unchanged'),
+})[effect] || effect
+
+export const scenarioEffectChip = (effect) => ({
+	rises: 'accepted', earlier: 'accepted', added: 'submitted', falls: 'rejected', later: 'on-hold', removed: 'rejected', changed: 'on-hold', unchanged: 'draft',
+})[effect] || 'draft'

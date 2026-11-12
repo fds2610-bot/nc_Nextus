@@ -54,34 +54,55 @@ class RankingService {
 			if (!in_array($demand->getStatus(), self::RANKED, true)) {
 				continue;
 			}
-			$current = AssessmentService::current($this->assessments->valid($demand, $all));
-			$total = 0.0;
-			foreach ($days[$demand->getId()] ?? [] as $need) {
-				if ($need->getUpdatedAt() >= $demand->getCreatedAt()) {
-					$total += $need->getPersonDays();
-				}
-			}
-			$bucket = $demand->getBucket() ?? AssessmentService::BUCKET_OF_TYPE[$demand->getDemandType()] ?? 'C';
-			$byBucket[$bucket][] = [
-				'id' => $demand->getId(),
-				'key' => $demand->getDemandKey(),
-				'title' => $demand->getTitle(),
-				'status' => $demand->getStatus(),
-				'orgUnitId' => $demand->getOrgUnitId(),
-				'deadline' => $demand->getDeadline(),
-				'personDays' => round($total, 1),
-				'assessment' => $current === null ? null : array_intersect_key($current, array_flip(
-					['kind', 'benefit', 'urgency', 'risk', 'effort', 'density', 'estimateQuality', 'selfDensity', 'reviewDensity', 'createdAt'])),
-				'rankOverride' => $demand->getRankOverride(),
-				'overrideReason' => $demand->getOverrideReason(),
-				'canOverride' => $this->canOverride($userId, $demand),
-			];
+			$byBucket[self::bucketOf($demand)][] = $this->item($userId, $demand, $all, $days[$demand->getId()] ?? []);
 		}
 		$result = [];
 		foreach ($this->scoring->buckets() as $bucket) {
 			$result[] = $bucket + ['items' => self::rank($byBucket[$bucket['code']] ?? [], $bucket['scored'])];
 		}
 		return $result;
+	}
+
+	/**
+	 * Ranglisten-Eintrag eines beliebigen lesbaren Antrags (für Szenarien mit Neuaufnahme).
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function itemFor(string $userId, Demand $demand): array {
+		return $this->item($userId, $demand, $this->scoring->assessments($demand->getId()), $this->needs->findForDemand($demand->getId()));
+	}
+
+	public static function bucketOf(Demand $demand): string {
+		return $demand->getBucket() ?? AssessmentService::BUCKET_OF_TYPE[$demand->getDemandType()] ?? 'C';
+	}
+
+	/**
+	 * @param list<array<string, mixed>> $all Bewertungen
+	 * @param list<\OCA\Nexus\Db\ResourceNeed> $needs Bedarf des Antrags
+	 * @return array<string, mixed>
+	 */
+	private function item(string $userId, Demand $demand, array $all, array $needs): array {
+		$current = AssessmentService::current($this->assessments->valid($demand, $all));
+		$total = 0.0;
+		foreach ($needs as $need) {
+			if ($need->getUpdatedAt() >= $demand->getCreatedAt()) {
+				$total += $need->getPersonDays();
+			}
+		}
+		return [
+			'id' => $demand->getId(),
+			'key' => $demand->getDemandKey(),
+			'title' => $demand->getTitle(),
+			'status' => $demand->getStatus(),
+			'orgUnitId' => $demand->getOrgUnitId(),
+			'deadline' => $demand->getDeadline(),
+			'personDays' => round($total, 1),
+			'assessment' => $current === null ? null : array_intersect_key($current, array_flip(
+				['kind', 'benefit', 'urgency', 'risk', 'effort', 'density', 'estimateQuality', 'selfDensity', 'reviewDensity', 'createdAt'])),
+			'rankOverride' => $demand->getRankOverride(),
+			'overrideReason' => $demand->getOverrideReason(),
+			'canOverride' => $this->canOverride($userId, $demand),
+		];
 	}
 
 	/**

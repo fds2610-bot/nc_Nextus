@@ -16,7 +16,7 @@ use OCP\IDBConnection;
 class Rows {
 	/** Spalten mit JSON-Inhalt */
 	private const JSON = ['required_seats', 'project_classes', 'demand_types', 'required_checks', 'completeness', 'options',
-		'milestones', 'resource_demand', 'health_snapshot', 'delta_person_days', 'threshold_reasons', 'demand_ids', 'rejected_options', 'review_dates'];
+		'milestones', 'resource_demand', 'health_snapshot', 'delta_person_days', 'threshold_reasons', 'demand_ids', 'rejected_options', 'review_dates', 'snapshot', 'parameters'];
 	/** Kommazahlen */
 	private const FLOAT = ['amount', 'committed', 'budget_frame', 'person_days', 'forecast_cost', 'delta_budget', 'threshold_green', 'threshold_red', 'forecast_amount', 'actual_amount', 'planned_amount'];
 	/** Ganzzahlen außer id, *_id und *_at */

@@ -142,7 +142,7 @@ import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NxDialog from '../components/NxDialog.vue'
 import NxNumberInput from '../components/NxNumberInput.vue'
 import { capacityCut, errorMessage, getRanking, overrideRank } from '../api.js'
-import { formatIsoDay, formatMonth, formatNumber, statusLabel } from '../labels.js'
+import { formatIsoDay, formatNumber, planChip, planText, statusLabel } from '../labels.js'
 
 export default {
 	name: 'RankingView',
@@ -152,7 +152,7 @@ export default {
 	},
 	emits: ['open'],
 	setup() {
-		return { mdiSwapVertical, n, t, formatIsoDay, formatNumber, statusLabel }
+		return { mdiSwapVertical, n, t, formatIsoDay, formatNumber, planChip, planText, statusLabel }
 	},
 	data() {
 		return { buckets: [], loading: true, dialog: null, busy: false, cut: null, cutting: false }
@@ -189,18 +189,6 @@ export default {
 				showError(errorMessage(e))
 			} finally {
 				this.cutting = false
-			}
-		},
-		planChip(r) {
-			return { startable: 'accepted', shifted: 'on-hold', waiting: 'rejected', budget: 'rejected', unassessed: 'draft' }[r.state] || 'draft'
-		},
-		planText(r) {
-			switch (r.state) {
-			case 'startable': return t('nc_nexus', 'startable')
-			case 'shifted': return t('nc_nexus', 'startable from {month}', { month: formatMonth(r.start) })
-			case 'waiting': return r.pool ? t('nc_nexus', 'waiting for pool {pool}', { pool: r.pool }) : t('nc_nexus', 'waiting')
-			case 'budget': return t('nc_nexus', 'waiting for budget')
-			default: return t('nc_nexus', 'not assessed yet')
 			}
 		},
 		f2(value) {

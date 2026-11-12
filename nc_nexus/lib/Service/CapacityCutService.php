@@ -7,7 +7,6 @@ namespace OCA\Nexus\Service;
 use OCA\Nexus\Db\AllocationMapper;
 use OCA\Nexus\Db\Pool;
 use OCA\Nexus\Db\PoolMapper;
-use OCA\Nexus\Db\ResourceNeed;
 use OCA\Nexus\Db\ResourceNeedMapper;
 use OCA\Nexus\Exception\ForbiddenException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -25,7 +24,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
  * Geprüft werden nur Engpass-Pools – sie bestimmen die Governance-Härte (Kapitel 04 §1).
  */
 class CapacityCutService {
-	private const HORIZON = 12;
+	public const HORIZON = 12;
 	private const MAX_SHIFT = 6;
 
 	public function __construct(
@@ -39,35 +38,76 @@ class CapacityCutService {
 	) {
 	}
 
+	/** @var array<int, float> einmalige Kosten je Antrag (Cache je Anfrage) */
+	private array $costs = [];
+
 	/**
 	 * Startplan je Vorhaben (Schlüssel: Antrags-ID).
 	 *
-	 * @return array{horizon: list<string>, results: array<int, array<string, mixed>>}
+	 * @return array{horizon: list<string>, results: array<int, array<string, mixed>>, remaining: array<int, array<string, float>>}
 	 * @throws ForbiddenException
 	 */
 	public function cut(string $userId): array {
+		return $this->compute($userId, $this->input($userId));
+	}
+
+	/**
+	 * Ausgangsdaten des Schnitts – Szenarien verändern eine Kopie davon (Kapitel 04 §5.1).
+	 *
+	 * @return array{from: string, periods: list<string>, buckets: list<array<string, mixed>>, pools: array<int, Pool>,
+	 *               capacity: array<int, array<string, float>>, hard: array<int, array<string, float>>,
+	 *               needs: array<int, list<array{poolId: int, period: string, personDays: float}>>}
+	 * @throws ForbiddenException
+	 */
+	public function input(string $userId): array {
 		$buckets = $this->ranking->ranking($userId);
 		$from = date('Y-m', $this->time->getTime());
 		$periods = CapacityService::periods($from, self::HORIZON);
-		$bottlenecks = array_filter($this->pools->findAll(), static fn (Pool $p) => $p->getIsBottleneck() === 1);
-
-		// verfügbare Projekt-Kapazität je Engpass-Pool und Monat, abzüglich harter Zusagen
-		$hard = $this->allocations->hardByPoolAndPeriod();
-		$free = [];
-		foreach ($bottlenecks as $pool) {
+		$pools = [];
+		$capacity = [];
+		foreach ($this->pools->findAll() as $pool) {
+			if ($pool->getIsBottleneck() !== 1) {
+				continue;
+			}
+			$pools[$pool->getId()] = $pool;
 			foreach ($this->capacity->capacityRows($pool, $from, self::HORIZON) as $row) {
-				$free[$pool->getId()][$row['period']] = max(0.0, $row['project'] - ($hard[$pool->getId()][$row['period']] ?? 0.0));
+				$capacity[$pool->getId()][$row['period']] = (float)$row['project'];
 			}
 		}
-		$codes = [];
-		foreach ($bottlenecks as $pool) {
-			$codes[$pool->getId()] = $pool->getCode();
-		}
-
-		$needsOf = [];
+		$needs = [];
 		foreach ($this->needs->findRange('0000-00', '9999-12') as $need) {
-			$needsOf[$need->getDemandId()][] = $need;
+			$needs[$need->getDemandId()][] = ['poolId' => $need->getPoolId(), 'period' => $need->getPeriod(), 'personDays' => $need->getPersonDays()];
 		}
+		return [
+			'from' => $from,
+			'periods' => $periods,
+			'buckets' => $buckets,
+			'pools' => $pools,
+			'capacity' => $capacity,
+			'hard' => $this->allocations->hardByPoolAndPeriod(),
+			'needs' => $needs,
+		];
+	}
+
+	/**
+	 * Schnitt auf gegebenen Ausgangsdaten.
+	 *
+	 * @param array<string, mixed> $in siehe input()
+	 * @return array{horizon: list<string>, results: array<int, array<string, mixed>>, remaining: array<int, array<string, float>>}
+	 */
+	public function compute(string $userId, array $in): array {
+		$periods = $in['periods'];
+		$codes = [];
+		$free = [];
+		foreach ($in['pools'] as $poolId => $pool) {
+			$codes[$poolId] = $pool->getCode();
+			foreach ($periods as $period) {
+				// verfügbare Projekt-Kapazität abzüglich harter Zusagen
+				$free[$poolId][$period] = max(0.0, ($in['capacity'][$poolId][$period] ?? 0.0) - ($in['hard'][$poolId][$period] ?? 0.0));
+			}
+		}
+		$buckets = $in['buckets'];
+		$needsOf = $in['needs'];
 
 		$results = [];
 		// 1. Pflicht-Bucket zuerst aus der Gesamtkapazität
@@ -81,6 +121,12 @@ class CapacityCutService {
 		// 3. Rest nach Zielquoten auf die übrigen Buckets verteilen
 		$scored = array_values(array_filter($buckets, static fn (array $b) => $b['scored']));
 		$shareSum = array_sum(array_map(static fn (array $b) => $b['targetSharePct'], $scored)) ?: 1.0;
+		$remaining = [];
+		foreach ($free as $poolId => $months) {
+			foreach ($months as $period => $days) {
+				$remaining[$poolId][$period] = 0.0;
+			}
+		}
 		foreach ($scored as $bucket) {
 			$share = $bucket['targetSharePct'] / $shareSum;
 			$own = [];
@@ -107,22 +153,32 @@ class CapacityCutService {
 				}
 				$results[$item['id']] = $result;
 			}
+			foreach ($own as $poolId => $months) {
+				foreach ($months as $period => $days) {
+					$remaining[$poolId][$period] += $days;
+				}
+			}
 		}
-		return ['horizon' => $periods, 'results' => $results];
+		foreach ($remaining as $poolId => $months) {
+			foreach ($months as $period => $days) {
+				$remaining[$poolId][$period] = round($days, 1);
+			}
+		}
+		return ['horizon' => $periods, 'results' => $results, 'remaining' => $remaining];
 	}
 
 	/**
 	 * Vorhaben einplanen: ohne oder mit Verschiebung; reserviert die Kapazität bei Erfolg.
 	 *
 	 * @param array<string, mixed> $item
-	 * @param list<ResourceNeed> $needs
+	 * @param list<array{poolId: int, period: string, personDays: float}> $needs
 	 * @param array<int, array<string, float>> $free verfügbare Tage je Pool und Monat (wird reduziert)
 	 * @param list<string> $periods
 	 * @param array<int, string> $codes
 	 * @return array<string, mixed>
 	 */
 	private function place(array $item, array $needs, array &$free, array $periods, array $codes): array {
-		$relevant = array_values(array_filter($needs, static fn (ResourceNeed $n) => isset($codes[$n->getPoolId()])));
+		$relevant = array_values(array_filter($needs, static fn (array $n) => isset($codes[$n['poolId']])));
 		if ($relevant === []) {
 			return ['state' => 'startable', 'shift' => 0, 'note' => 'no_bottleneck'];
 		}
@@ -131,22 +187,22 @@ class CapacityCutService {
 			$fits = true;
 			$wanted = [];
 			foreach ($relevant as $need) {
-				$period = self::shift($need->getPeriod(), $shift);
+				$period = self::shift($need['period'], $shift);
 				// vor dem Horizont liegender Bedarf zählt im ersten Monat
 				if ($period < $periods[0]) {
 					$period = $periods[0];
 				}
 				if (!in_array($period, $periods, true)) {
 					$fits = false;
-					$blocking ??= ['pool' => $codes[$need->getPoolId()], 'period' => $period];
+					$blocking ??= ['pool' => $codes[$need['poolId']], 'period' => $period];
 					break;
 				}
-				$key = $need->getPoolId() . '|' . $period;
-				$wanted[$key] = ($wanted[$key] ?? 0) + $need->getPersonDays();
-				if ($wanted[$key] > ($free[$need->getPoolId()][$period] ?? 0.0) + 0.001) {
+				$key = $need['poolId'] . '|' . $period;
+				$wanted[$key] = ($wanted[$key] ?? 0) + $need['personDays'];
+				if ($wanted[$key] > ($free[$need['poolId']][$period] ?? 0.0) + 0.001) {
 					$fits = false;
 					if ($shift === 0) {
-						$blocking = ['pool' => $codes[$need->getPoolId()], 'period' => $period];
+						$blocking = ['pool' => $codes[$need['poolId']], 'period' => $period];
 					}
 					break;
 				}
@@ -163,12 +219,15 @@ class CapacityCutService {
 		return ['state' => 'waiting', 'pool' => $blocking['pool'] ?? null, 'period' => $blocking['period'] ?? null];
 	}
 
-	private function oneTimeCost(string $userId, int $demandId): float {
-		try {
-			return (float)($this->businessCases->get($userId, $demandId)['kpis']['oneTimeCost'] ?? 0.0);
-		} catch (\Throwable) {
-			return 0.0;
+	public function oneTimeCost(string $userId, int $demandId): float {
+		if (!isset($this->costs[$demandId])) {
+			try {
+				$this->costs[$demandId] = (float)($this->businessCases->get($userId, $demandId)['kpis']['oneTimeCost'] ?? 0.0);
+			} catch (\Throwable) {
+				$this->costs[$demandId] = 0.0;
+			}
 		}
+		return $this->costs[$demandId];
 	}
 
 	public static function shift(string $period, int $months): string {

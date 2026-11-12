@@ -98,6 +98,17 @@ export const gateStatus = async (id) => data(await axios.get(v1(`/demands/${id}/
 export const decideGate = async (id, decision) => data(await axios.post(v1(`/demands/${id}/gate`), decision))
 export const capacityCut = async () => data(await axios.get(v1('/capacity/cut')))
 
+// Szenarioanalyse (POR-003)
+export const listScenarios = async () => data(await axios.get(v1('/scenarios')))
+export const getScenario = async (id) => data(await axios.get(v1(`/scenarios/${id}`)))
+export const createScenario = async (scenario) => data(await axios.post(v1('/scenarios'), scenario))
+export const updateScenario = async (id, scenario) => data(await axios.put(v1(`/scenarios/${id}`), scenario))
+export const deleteScenario = async (id) => data(await axios.delete(v1(`/scenarios/${id}`)))
+export const addScenarioChange = async (id, change) => data(await axios.post(v1(`/scenarios/${id}/changes`), change))
+export const removeScenarioChange = async (id, changeId) => data(await axios.delete(v1(`/scenarios/${id}/changes/${changeId}`)))
+export const scenarioAction = async (id, action, payload = {}) => data(await axios.post(v1(`/scenarios/${id}/${action}`), payload))
+export const setScenarioTask = async (id, index, done) => data(await axios.put(v1(`/scenarios/${id}/tasks/${index}`), { done }))
+
 export const getPlanning = async (id) => data(await axios.get(v1(`/demands/${id}/planning`)))
 export const connectPlanning = async (id, projectId = null) => data(await axios.post(v1(`/demands/${id}/planning`), { projectId }))
 export const disconnectPlanning = async (id) => data(await axios.delete(v1(`/demands/${id}/planning`)))

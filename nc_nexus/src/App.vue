@@ -104,6 +104,15 @@
 						<NcIconSvgWrapper :path="mdiChartBox" />
 					</template>
 				</NcAppNavigationItem>
+				<NcAppNavigationItem v-if="poolInfo.canSee"
+					:name="t('nc_nexus', 'Scenarios')"
+					:active="view === 'scenarios'"
+					data-test="nav-scenarios"
+					@click="view = 'scenarios'">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiCompareHorizontal" />
+					</template>
+				</NcAppNavigationItem>
 
 				<NcAppNavigationItem v-model:open="groups.steering"
 					:name="t('nc_nexus', 'Steering')"
@@ -342,6 +351,10 @@
 				@open="openProjects" />
 			<KpiView v-else-if="view === 'kpis'"
 				:refresh-key="refresh" />
+			<ScenariosView v-else-if="view === 'scenarios'"
+				:refresh-key="refresh"
+				@open="openEditor"
+				@changed="onChanged" />
 			<PostCalculationView v-else-if="view === 'postcalc'"
 				:refresh-key="refresh"
 				@open="openProjects" />
@@ -389,7 +402,7 @@
 </template>
 
 <script>
-import { mdiAccountQuestion, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiAlertOutline, mdiArchiveOutline, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiBullseyeArrow, mdiCancel, mdiFlagCheckered, mdiPlayCircleOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
+import { mdiAccountQuestion, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiAlertOutline, mdiArchiveOutline, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiBullseyeArrow, mdiCancel, mdiFlagCheckered, mdiPlayCircleOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCompareHorizontal, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -418,6 +431,7 @@ import ConditionsView from './views/ConditionsView.vue'
 import ConflictsView from './views/ConflictsView.vue'
 import KpiView from './views/KpiView.vue'
 import PostCalculationView from './views/PostCalculationView.vue'
+import ScenariosView from './views/ScenariosView.vue'
 import ProjectsView from './views/ProjectsView.vue'
 import RisksView from './views/RisksView.vue'
 import GovernanceView from './views/GovernanceView.vue'
@@ -447,6 +461,7 @@ export default {
 		ConflictsView,
 		KpiView,
 		PostCalculationView,
+		ScenariosView,
 		ProjectsView,
 		RisksView,
 		GovernanceView,
@@ -461,7 +476,7 @@ export default {
 		ScoringModelView,
 	},
 	setup() {
-		return { mdiAlertOutline, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiAlertOutline, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiCompareHorizontal, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
