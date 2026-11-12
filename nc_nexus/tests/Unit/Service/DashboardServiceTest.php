@@ -120,6 +120,7 @@ class DashboardServiceTest extends TestCase {
 			$d->setTitle('Vorhaben ' . $id);
 			if ($id >= 3 && $id <= 4) {
 				$d->setProjectKey('P-' . $id);
+				$d->setBucket('D');
 			}
 			$demands[] = $d;
 		}
@@ -131,6 +132,8 @@ class DashboardServiceTest extends TestCase {
 		$byId = array_column($m['points'], null, 'id');
 		$this->assertSame(['execution', true, 'P-3', 90000.0], [$byId[3]['stage'], $byId[3]['project'], $byId[3]['key'], $byId[3]['cost']]);
 		$this->assertSame(['execution', 'paused'], [$byId[4]['stage'], $byId[4]['status']]);
+		// ohne gesetzten Bucket: Standard-Bucket des Antragstyps
+		$this->assertSame(['C', 'D'], [$byId[1]['bucket'], $byId[3]['bucket']]);
 		$this->assertSame(['analysis', false, 'D-2', null], [$byId[2]['stage'], $byId[2]['project'], $byId[2]['key'], $byId[1]['cost']]);
 	}
 }

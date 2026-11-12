@@ -6,6 +6,7 @@ namespace OCA\Nexus\Service;
 
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\ResourceNeedMapper;
+use OCA\Nexus\Db\ScoringMapper;
 use OCA\Nexus\Db\Rows;
 use OCA\Nexus\Exception\ForbiddenException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -49,6 +50,7 @@ class DashboardService {
 		private ResourceNeedMapper $needs,
 		private BusinessCaseService $businessCases,
 		private SettingsService $settings,
+		private ScoringMapper $scoring,
 		private ITimeFactory $time,
 	) {
 	}
@@ -114,7 +116,8 @@ class DashboardService {
 				}
 			}
 		}
-		return self::maturity($demands, $days, $cost, [
+		$buckets = array_map(static fn (array $b) => ['code' => $b['code'], 'name' => $b['name']], $this->scoring->buckets());
+		return ['buckets' => $buckets] + self::maturity($demands, $days, $cost, [
 			'S' => (float)$this->settings->get('classDaysS'),
 			'M' => (float)$this->settings->get('classDaysM'),
 			'L' => (float)$this->settings->get('classDaysL'),
@@ -156,6 +159,7 @@ class DashboardService {
 				'stage' => $stage,
 				'project' => $isProject,
 				'projectClass' => $d->getProjectClass(),
+				'bucket' => RankingService::bucketOf($d),
 				'personDays' => $pd,
 				'cost' => isset($cost[$id]) ? round($cost[$id], 2) : null,
 			];

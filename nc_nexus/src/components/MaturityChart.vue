@@ -93,11 +93,19 @@
 						:cy="p.cy"
 						:r="p.r"
 						class="mat__mark"
+						:style="bucketStyle(p.bucket)"
 						:class="{
 							'mat__mark--nocost': p.cost === null,
 							'mat__mark--paused': p.status === 'paused',
 							'mat__mark--hover': hover && hover.id === p.id,
 						}" />
+					<!-- Buchstabe als zweite Kodierung neben der Farbe -->
+					<text v-if="p.r >= 9"
+						:x="p.cx"
+						:y="p.cy + 4"
+						text-anchor="middle"
+						class="mat__letter"
+						:class="{ 'mat__letter--dark': bucketSlot(p.bucket) === 2 && p.cost !== null && p.status !== 'paused', 'mat__letter--plain': p.cost === null || p.status === 'paused' }">{{ p.bucket }}</text>
 					<text v-if="p.label"
 						:x="p.lx"
 						:y="p.ly"
@@ -111,6 +119,9 @@
 				data-test="maturity-tip">
 				<strong>{{ hover.key }}</strong> {{ hover.title }}
 				<div class="mat__tiprow">
+					{{ bucketName(hover.bucket) }}
+				</div>
+				<div class="mat__tiprow">
 					{{ statusLabel(hover.status) }}{{ hover.projectClass ? ' · ' + t('nc_nexus', 'class {c}', { c: hover.projectClass }) : '' }}
 				</div>
 				<div class="mat__tiprow">
@@ -123,6 +134,7 @@
 			<thead>
 				<tr>
 					<th>{{ t('nc_nexus', 'Maturity') }}</th>
+					<th>{{ t('nc_nexus', 'Bucket') }}</th>
 					<th>{{ t('nc_nexus', 'Demand / project') }}</th>
 					<th>{{ t('nc_nexus', 'Status') }}</th>
 					<th class="mat__num">
@@ -136,6 +148,7 @@
 			<tbody>
 				<tr v-for="p in tableRows" :key="p.id">
 					<td>{{ stageLabel(p.stage) }}</td>
+					<td>{{ bucketName(p.bucket) }}</td>
 					<td>
 						<button type="button" class="mat__link" @click="open(p)">
 							{{ p.key }} · {{ p.title }}
@@ -154,12 +167,25 @@
 
 		<div class="mat__foot">
 			<span class="mat__legend" :aria-label="t('nc_nexus', 'Legend')">
+				<span v-for="b in data.buckets"
+					:key="b.code"
+					class="mat__legitem"
+					:data-test="'maturity-bucket-' + b.code">
+					<svg width="18" height="18"><circle cx="9"
+						cy="9"
+						r="8"
+						class="mat__mark"
+						:style="bucketStyle(b.code)" /></svg>
+					{{ b.code }} · {{ b.name }}
+				</span>
+			</span>
+			<span class="mat__legend">
 				<span class="mat__legtitle">{{ t('nc_nexus', 'Circle area = cost') }}</span>
 				<span v-for="c in sizeLegend" :key="c.value" class="mat__legitem">
 					<svg :width="c.r * 2 + 4" :height="c.r * 2 + 4"><circle :cx="c.r + 2"
 						:cy="c.r + 2"
 						:r="c.r"
-						class="mat__mark" /></svg>
+						class="mat__mark mat__mark--neutral" /></svg>
 					{{ formatMoney(c.value) }}
 				</span>
 				<span class="mat__legitem">
@@ -173,7 +199,7 @@
 					<svg width="18" height="18"><circle cx="9"
 						cy="9"
 						r="7"
-						class="mat__mark mat__mark--paused" /></svg>
+						class="mat__mark mat__mark--paused mat__mark--neutral" /></svg>
 					{{ t('nc_nexus', 'paused') }}
 				</span>
 			</span>
@@ -199,6 +225,8 @@ const HEIGHT = 380
 const R_MAX = 30
 const R_MIN = 4
 const LABELS = 3
+// geprüfte Farben (Blau, Gelb, Magenta, Grün); weitere Buckets grau
+const BUCKET_COLORS = 4
 
 export default {
 	name: 'MaturityChart',
@@ -360,6 +388,19 @@ export default {
 		describe(p) {
 			return `${p.key} ${p.title}: ${statusLabel(p.status)}, ${t('nc_nexus', '{pd} PD', { pd: formatNumber(p.personDays) })}, ${p.cost === null ? t('nc_nexus', 'no cost estimate') : formatMoney(p.cost)}`
 		},
+		// Farbe folgt dem Bucket (feste Reihenfolge des Bewertungsmodells), nie dem Rang im Diagramm
+		bucketSlot(code) {
+			const i = this.data.buckets.findIndex(b => b.code === code)
+			return i >= 0 && i < BUCKET_COLORS ? i + 1 : 0
+		},
+		bucketStyle(code) {
+			const slot = this.bucketSlot(code)
+			return { '--c': slot ? `var(--mat-b${slot})` : 'var(--color-text-maxcontrast)' }
+		},
+		bucketName(code) {
+			const b = this.data.buckets.find(x => x.code === code)
+			return b ? `${b.code} · ${b.name}` : code
+		},
 		open(p) {
 			this.$emit(p.project ? 'project' : 'open', p.id)
 		},
@@ -370,6 +411,11 @@ export default {
 <style scoped lang="scss">
 .mat {
 	position: relative;
+	// Bucket-Farben (validiert für alle Paare, hell und dunkel)
+	--mat-b1: #2a78d6;
+	--mat-b2: #eda100;
+	--mat-b3: #e87ba4;
+	--mat-b4: #008300;
 
 	&__plot {
 		position: relative;
@@ -433,8 +479,8 @@ export default {
 	}
 
 	&__mark {
-		fill: var(--color-primary-element);
-		fill-opacity: 0.55;
+		fill: var(--c, var(--color-primary-element));
+		fill-opacity: 0.9;
 		// Ring in Flächenfarbe trennt überlappende Kreise
 		stroke: var(--color-main-background);
 		stroke-width: 2;
@@ -442,14 +488,19 @@ export default {
 		&--nocost {
 			fill: var(--color-main-background);
 			fill-opacity: 1;
-			stroke: var(--color-text-maxcontrast);
-			stroke-width: 1.5;
+			stroke: var(--c, var(--color-text-maxcontrast));
+			stroke-width: 2;
 		}
 
 		&--paused {
-			fill-opacity: 0.2;
-			stroke: var(--color-primary-element);
+			fill-opacity: 0.25;
+			stroke: var(--c, var(--color-primary-element));
 			stroke-dasharray: 3 2;
+		}
+
+		&--neutral {
+			--c: var(--color-text-maxcontrast);
+			fill-opacity: 0.35;
 		}
 
 		&--hover {
@@ -461,6 +512,21 @@ export default {
 	&__dot:focus-visible &__mark {
 		stroke: var(--color-main-text);
 		stroke-width: 3;
+	}
+
+	&__letter {
+		font-size: 11px;
+		font-weight: 700;
+		fill: #fff;
+		pointer-events: none;
+
+		&--dark {
+			fill: #0b0b0b;
+		}
+
+		&--plain {
+			fill: var(--color-main-text);
+		}
 	}
 
 	&__label {
@@ -555,6 +621,23 @@ export default {
 	&__num {
 		text-align: end !important;
 		font-variant-numeric: tabular-nums;
+	}
+}
+
+// Dunkle Stufen derselben Farben: explizites dunkles Theme oder Systemvorgabe
+:global(body[data-themes*="dark"] .mat) {
+	--mat-b1: #3987e5;
+	--mat-b2: #c98500;
+	--mat-b3: #d55181;
+	--mat-b4: #008300;
+}
+
+@media (prefers-color-scheme: dark) {
+	:global(body[data-themes*="default"] .mat) {
+		--mat-b1: #3987e5;
+		--mat-b2: #c98500;
+		--mat-b3: #d55181;
+		--mat-b4: #008300;
 	}
 }
 </style>

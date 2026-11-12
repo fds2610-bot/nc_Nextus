@@ -40,6 +40,11 @@ test.describe('Management-Dashboard (REP-001)', () => {
 					const point = data.maturity.points[0]
 					await matrix.locator(`[data-test="maturity-${point.key}"] .mat__mark`).hover()
 					await expect(matrix.locator('[data-test="maturity-tip"]')).toContainText(point.key)
+					// Farbe nach Bucket: Legende nennt jeden Bucket, Tooltip den des Vorhabens
+					for (const b of data.maturity.buckets) {
+						await expect(matrix.locator(`[data-test="maturity-bucket-${b.code}"]`)).toContainText(b.name)
+					}
+					await expect(matrix.locator('[data-test="maturity-tip"]')).toContainText(data.maturity.buckets.find(b => b.code === point.bucket).name)
 					await matrix.locator('[data-test="maturity-toggle"]').click()
 					await expect(matrix.locator('[data-test="maturity-table"] tbody tr')).toHaveCount(data.maturity.points.length)
 					await matrix.locator('[data-test="maturity-toggle"]').click()
