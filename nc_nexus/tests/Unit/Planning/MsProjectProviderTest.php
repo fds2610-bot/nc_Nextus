@@ -28,6 +28,19 @@ class MsProjectProviderTest extends TestCase {
 		], $summary['milestones']);
 	}
 
+	public function testExportRoundTrip(): void {
+		$xml = MsProjectProvider::write('PRJ-2026-0001 Leitstand', '2026-11-02', '2026-11-13', 'Projektrahmen', [
+			['name' => 'Konzept abgenommen', 'date' => '2026-11-06', 'external' => true],
+		]);
+		$this->assertStringContainsString('<Duration>PT80H0M0S</Duration>', $xml); // 10 Arbeitstage
+		$plan = MsProjectProvider::parse($xml, 'x.xml');
+		$this->assertSame('PRJ-2026-0001 Leitstand', $plan['title']);
+		$this->assertSame([
+			['title' => 'Projektrahmen', 'start_date' => '2026-11-02', 'end_date' => '2026-11-13', 'status' => 'not_started', 'progress' => 0.0, 'milestone' => false],
+			['title' => 'Konzept abgenommen', 'start_date' => '2026-11-06', 'end_date' => '2026-11-06', 'status' => 'not_started', 'progress' => 0.0, 'milestone' => true],
+		], $plan['tasks']);
+	}
+
 	public function testTitleFallsBackToFileName(): void {
 		$plan = MsProjectProvider::parse('<Project xmlns="http://schemas.microsoft.com/project"><Tasks/></Project>', '/x/Rollout Werk 2.xml');
 		$this->assertSame('Rollout Werk 2', $plan['title']);

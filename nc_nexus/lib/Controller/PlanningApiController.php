@@ -88,6 +88,34 @@ class PlanningApiController extends BaseApiController {
 	}
 
 	/**
+	 * Startplan als MS-Project-XML (MSPDI) mit Projektrahmen und Meilensteinen.
+	 *
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: Dateiname und Inhalt
+	 * 400: Export ausgeschaltet oder Vorhaben nicht freigegeben
+	 * 404: Antrag nicht gefunden
+	 */
+	#[NoAdminRequired]
+	public function export(int $id): DataResponse {
+		return $this->handle(fn () => $this->planning->export($this->uid(), $id, $this->l10n->t('Project frame (governance)')));
+	}
+
+	/**
+	 * Verbindung zur eingetragenen Gantt-Instanz prüfen (nur PMO).
+	 *
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: Anzahl sichtbarer Projekte
+	 * 400: nicht erreichbar oder Anmeldung abgelehnt
+	 * 403: keine Berechtigung
+	 */
+	#[NoAdminRequired]
+	public function testGantt(): DataResponse {
+		return $this->handle(fn () => $this->planning->testGantt($this->uid()));
+	}
+
+	/**
 	 * Verknüpfung lösen.
 	 *
 	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>

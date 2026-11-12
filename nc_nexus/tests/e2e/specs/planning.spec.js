@@ -90,15 +90,16 @@ test.describe('Planungs-Integration: MS Project und OpenProject', () => {
 			expect((await own.put('/ocs/v2.php/apps/nc_nexus/api/v1/planning/config', { data: { openprojectUrl: 'https://op.example.invalid' } })).status()).toBe(403)
 			expect((await admin.put('/ocs/v2.php/apps/nc_nexus/api/v1/planning/config', { data: { openprojectUrl: 'kein-url' } })).status()).toBe(400)
 
-			// Adresse über die Governance-Ansicht speichern (dev.sh e2e stellt die Konfiguration wieder her)
+			// Adresse im Bereich Planungstools speichern (dev.sh e2e stellt die Konfiguration wieder her)
 			const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 			try {
 				await openDemands(page)
-				await page.locator('[data-test="nav-governance"]').click()
-				const section = page.locator('[data-test="planning-tools"]')
-				await section.locator('[data-test="openproject-url"]').fill('https://op.example.invalid/')
-				await section.locator('[data-test="save-planning-tools"]').click()
-				await expect(section.locator('[data-test="save-planning-tools"]')).toBeDisabled()
+				await page.locator('[data-test="nav-planning-tools"]').click()
+				const view = page.locator('[data-test="planning-tools-view"]')
+				await view.locator('[data-test="tool-openproject"] [data-test="openproject-url"]').fill('https://op.example.invalid/')
+				await view.locator('[data-test="save-planning-tools"]').click()
+				await expect(view.locator('[data-test="save-planning-tools"]')).toBeDisabled()
+				await expect(view.locator('[data-test="openproject-status"]')).toHaveClass(/nx-chip--accepted/)
 			} finally {
 				await context.close()
 			}
@@ -123,6 +124,96 @@ test.describe('Planungs-Integration: MS Project und OpenProject', () => {
 			expect((await call(own, 'get', `/demands/${demand.id}/planning`)).link).toBeNull()
 		} finally {
 			await call(own, 'put', '/planning/credentials/openproject', { secret: null }, 200).catch(() => {})
+			await own.dispose()
+			await admin.dispose()
+		}
+	})
+})
+
+test.describe('Bereich Planungstools', () => {
+	test('Gantt auf anderer Nextcloud mit technischem Konto, Verbindung prüfen', async ({ browser }) => {
+		test.setTimeout(120000)
+		const admin = await adminApi()
+		const own = await apiAs(E2E_USER)
+		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
+		try {
+			// ohne App-Passwort wird nichts gespeichert
+			expect((await admin.put('/ocs/v2.php/apps/nc_nexus/api/v1/planning/config', { data: { ganttUrl: 'http://gantt.example.invalid', ganttUser: 'pmo' } })).status()).toBe(400)
+			expect((await call(admin, 'get', '/planning/config')).ganttUrl).toBe('')
+			expect((await own.post('/ocs/v2.php/apps/nc_nexus/api/v1/planning/config/test-gantt')).status()).toBe(403)
+
+			await openDemands(page)
+			await page.locator('[data-test="nav-planning-tools"]').click()
+			const gantt = page.locator('[data-test="tool-gantt"]')
+			await expect(gantt.locator('[data-test="gantt-local"]')).toBeVisible()
+			await gantt.locator('[data-test="gantt-url"]').fill('http://gantt.example.invalid')
+			await gantt.locator('[data-test="gantt-user"]').fill('pmo')
+			await gantt.locator('[data-test="gantt-password"]').fill('e2e-app-passwort')
+			await page.locator('[data-test="save-planning-tools"]').click()
+			await expect(gantt.locator('[data-test="gantt-remote"]')).toBeVisible()
+			await expect(gantt.locator('[data-test="gantt-password"]')).toHaveAttribute('placeholder', /gespeichert|stored/)
+			const config = await call(admin, 'get', '/planning/config')
+			expect(config.ganttHasPassword).toBe(true)
+			expect(JSON.stringify(config)).not.toContain('e2e-app-passwort')
+			// Host existiert nicht: Fehler wird angezeigt
+			await gantt.locator('[data-test="gantt-test"]').click()
+			await expect(gantt.locator('[data-test="gantt-test-result"]')).toContainText('unreachable')
+		} finally {
+			// Adresse leeren löscht auch Konto und App-Passwort (Credential-Store)
+			await call(admin, 'put', '/planning/config', { ganttUrl: '' }, 200).catch(() => {})
+			expect((await call(admin, 'get', '/planning/config')).ganttHasPassword).toBe(false)
+			await context.close()
+			await own.dispose()
+			await admin.dispose()
+		}
+	})
+
+	test('MS Project: Import abschaltbar, Startplan exportieren', async ({ browser }) => {
+		test.setTimeout(150000)
+		const admin = await adminApi()
+		const own = await apiAs(E2E_USER)
+		const t = 'X' + Math.random().toString(36).slice(2, 6).toUpperCase()
+		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
+		try {
+			const demand = await releasedDemand(admin, own, t)
+			await call(admin, 'post', `/projects/${demand.id}/milestones`, { name: 'Abnahme Leitstand', dueDate: '2027-02-15', external: true }, 201)
+
+			await openDemands(page)
+			await page.locator('[data-test="nav-planning-tools"]').click()
+			const ms = page.locator('[data-test="tool-mspdi"]')
+			const importSwitch = ms.getByRole('switch', { name: /Import von Plänen|Import of plans/ })
+			await ms.getByText(/^(Import von Plänen|Import of plans)$/).click()
+			await expect(importSwitch).not.toBeChecked()
+			await page.locator('[data-test="save-planning-tools"]').click()
+			await expect(page.locator('[data-test="save-planning-tools"]')).toBeDisabled()
+			let planning = await call(own, 'get', `/demands/${demand.id}/planning`)
+			expect(planning.providers.map(p => p.id)).not.toContain('mspdi')
+			expect(planning.canExport).toBe(true)
+			expect((await own.post(`/ocs/v2.php/apps/nc_nexus/api/v1/demands/${demand.id}/planning/import`, { data: { fileName: 'x.xml', content: '<Project/>' } })).status()).toBe(400)
+
+			// Export am Vorhaben
+			await page.locator('[data-test="nav-all"]').click()
+			await page.locator(`[data-test="demand-${demand.key}"]`).click()
+			const panel = page.locator('[data-test="planning"]')
+			await expect(panel.locator('[data-test="planning-import"]')).toHaveCount(0)
+			const [download] = await Promise.all([
+				page.waitForEvent('download'),
+				panel.locator('[data-test="planning-export"]').click(),
+			])
+			expect(download.suggestedFilename()).toBe(`${demand.projectKey}.xml`)
+			const file = await call(own, 'get', `/demands/${demand.id}/planning/export`)
+			expect(file.content).toContain('<Title>' + demand.projectKey)
+			expect(file.content).toMatch(/<Name>(Projektrahmen \(Governance\)|Project frame \(governance\))<\/Name>/)
+			expect(file.content).toContain('<Name>Abnahme Leitstand</Name>')
+
+			// Export aus: kein Button, API lehnt ab
+			await call(admin, 'put', '/planning/config', { mspdiImport: true, mspdiExport: false }, 200)
+			planning = await call(own, 'get', `/demands/${demand.id}/planning`)
+			expect(planning.canExport).toBe(false)
+			expect((await own.get(`/ocs/v2.php/apps/nc_nexus/api/v1/demands/${demand.id}/planning/export`)).status()).toBe(400)
+		} finally {
+			await call(admin, 'put', '/planning/config', { mspdiImport: true, mspdiExport: true }, 200).catch(() => {})
+			await context.close()
 			await own.dispose()
 			await admin.dispose()
 		}

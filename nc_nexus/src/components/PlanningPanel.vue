@@ -1,5 +1,5 @@
 <template>
-	<div v-if="planning && (planning.link || planning.canLink)" class="nx-section" data-test="planning">
+	<div v-if="planning && (planning.link || planning.canLink || planning.canExport)" class="nx-section" data-test="planning">
 		<h3>{{ planning.link ? t('nc_nexus', 'Planning ({tool})', { tool: planning.link.providerName }) : t('nc_nexus', 'Planning') }}</h3>
 		<template v-if="planning.link">
 			<p class="planning__title">
@@ -56,7 +56,7 @@
 				</NcButton>
 			</div>
 		</template>
-		<template v-else>
+		<template v-else-if="planning.canLink">
 			<label v-if="planning.providers.length > 1" class="planning__tool">
 				<span>{{ t('nc_nexus', 'Planning tool') }}</span>
 				<select v-model="providerId" class="nx-input planning__select" data-test="planning-provider">
@@ -128,6 +128,14 @@
 				{{ projectsError }}
 			</p>
 		</template>
+		<div v-if="planning.canExport" class="planning__actions">
+			<NcButton variant="tertiary"
+				:disabled="busy"
+				data-test="planning-export"
+				@click="exportPlan">
+				{{ t('nc_nexus', 'Export starting plan for MS Project (XML)') }}
+			</NcButton>
+		</div>
 		<input ref="file"
 			type="file"
 			accept=".xml,application/xml,text/xml"
@@ -141,7 +149,7 @@
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
-import { connectPlanning, disconnectPlanning, errorMessage, getPlanning, importPlanning, planningProjects, savePlanningCredentials } from '../api.js'
+import { connectPlanning, disconnectPlanning, errorMessage, exportPlanning, getPlanning, importPlanning, planningProjects, savePlanningCredentials } from '../api.js'
 import { formatDate, formatIsoDay } from '../labels.js'
 
 export default {
@@ -238,6 +246,21 @@ export default {
 				showError(errorMessage(e))
 			} finally {
 				this.busy = false
+			}
+		},
+		async exportPlan() {
+			try {
+				const file = await exportPlanning(this.demandId)
+				const url = URL.createObjectURL(new Blob([file.content], { type: 'application/xml' }))
+				const a = document.createElement('a')
+				a.href = url
+				a.download = file.fileName
+				document.body.appendChild(a)
+				a.click()
+				a.remove()
+				URL.revokeObjectURL(url)
+			} catch (e) {
+				showError(errorMessage(e))
 			}
 		},
 		async storeSecret(secret) {

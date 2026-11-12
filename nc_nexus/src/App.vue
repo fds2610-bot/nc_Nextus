@@ -326,6 +326,15 @@
 						</template>
 					</NcAppNavigationItem>
 					<NcAppNavigationItem v-if="me.canManageOrg"
+						:name="t('nc_nexus', 'Planning tools')"
+						:active="view === 'planningTools'"
+						data-test="nav-planning-tools"
+						@click="view = 'planningTools'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiChartGantt" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="me.canManageOrg"
 						:name="t('nc_nexus', 'Organization')"
 						:active="view === 'org'"
 						data-test="nav-org"
@@ -404,6 +413,7 @@
 				@open="openEditor" />
 			<GovernanceView v-else-if="view === 'governance'"
 				@changed="loadOrg" />
+			<PlanningToolsView v-else-if="view === 'planningTools'" />
 			<OrgView v-else-if="view === 'org'"
 				:units="orgUnits"
 				:assignments="assignments"
@@ -434,7 +444,7 @@
 </template>
 
 <script>
-import { mdiAccountGroupOutline, mdiAccountQuestion, mdiViewDashboardOutline, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiAlertOutline, mdiArchiveOutline, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiBullseyeArrow, mdiCancel, mdiFlagCheckered, mdiPlayCircleOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCompareHorizontal, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
+import { mdiAccountGroupOutline, mdiAccountQuestion, mdiViewDashboardOutline, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiAlertOutline, mdiArchiveOutline, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiBullseyeArrow, mdiCancel, mdiFlagCheckered, mdiPlayCircleOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiCalendarClock, mdiChartGantt, mdiChartBox, mdiCheckCircleOutline, mdiCompareHorizontal, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -468,6 +478,7 @@ import ScenariosView from './views/ScenariosView.vue'
 import ProjectsView from './views/ProjectsView.vue'
 import RisksView from './views/RisksView.vue'
 import GovernanceView from './views/GovernanceView.vue'
+import PlanningToolsView from './views/PlanningToolsView.vue'
 import QualityView from './views/QualityView.vue'
 import SessionsView from './views/SessionsView.vue'
 import { errorMessage, getMe, listDemands, listObjectives, listOrgUnits, listPools, listRoleAssignments, scoringModel } from './api.js'
@@ -506,6 +517,7 @@ export default {
 		ProjectsView,
 		RisksView,
 		GovernanceView,
+		PlanningToolsView,
 		QualityView,
 		SessionsView,
 		GlossaryDialog,
@@ -517,7 +529,7 @@ export default {
 		ScoringModelView,
 	},
 	setup() {
-		return { mdiAccountGroupOutline, mdiViewDashboardOutline, mdiAlertOutline, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiCompareHorizontal, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiAccountGroupOutline, mdiViewDashboardOutline, mdiAlertOutline, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartGantt, mdiChartBox, mdiCompareHorizontal, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {

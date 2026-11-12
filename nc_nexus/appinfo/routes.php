@@ -132,6 +132,8 @@ return [
 		['name' => 'planning_api#import', 'url' => '/api/v1/demands/{id}/planning/import', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 		['name' => 'planning_api#credentials', 'url' => '/api/v1/planning/credentials/{provider}', 'verb' => 'PUT'],
 		['name' => 'planning_api#config', 'url' => '/api/v1/planning/config', 'verb' => 'GET'],
+		['name' => 'planning_api#export', 'url' => '/api/v1/demands/{id}/planning/export', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'planning_api#testGantt', 'url' => '/api/v1/planning/config/test-gantt', 'verb' => 'POST'],
 		['name' => 'planning_api#saveConfig', 'url' => '/api/v1/planning/config', 'verb' => 'PUT'],
 		['name' => 'org_api#me', 'url' => '/api/v1/me', 'verb' => 'GET'],
 		['name' => 'org_api#units', 'url' => '/api/v1/org-units', 'verb' => 'GET'],

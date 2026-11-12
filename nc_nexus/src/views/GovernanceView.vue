@@ -192,31 +192,6 @@
 			</div>
 		</section>
 
-		<section v-if="planningConfig" class="nx-view__section" data-test="planning-tools">
-			<div class="nx-view__section-head">
-				<h3>{{ t('nc_nexus', 'Planning tools') }}</h3>
-				<NcButton v-if="planningConfig.canManage"
-					variant="secondary"
-					:disabled="planningConfig.openprojectUrl === planningSaved"
-					data-test="save-planning-tools"
-					@click="storePlanningConfig">
-					{{ t('nc_nexus', 'Save') }}
-				</NcButton>
-			</div>
-			<p class="nx-view__hint">
-				{{ t('nc_nexus', 'Gantt is used as soon as the app is installed, MS Project plans can always be imported as XML file. For OpenProject enter the address of the instance; every account stores its own API key at the project.') }}
-			</p>
-			<label class="gov__threshold gov__url">
-				<span>{{ t('nc_nexus', 'OpenProject address') }}</span>
-				<input v-model.trim="planningConfig.openprojectUrl"
-					type="url"
-					class="nx-input"
-					placeholder="https://openproject.example.com"
-					:disabled="!planningConfig.canManage"
-					data-test="openproject-url">
-			</label>
-		</section>
-
 		<section v-if="settings" class="nx-view__section" data-test="project-classes">
 			<div class="nx-view__section-head">
 				<h3>{{ t('nc_nexus', 'Project classes') }}</h3>
@@ -279,7 +254,7 @@ import GateProcess from '../components/GateProcess.vue'
 import GateSetDialog from '../components/GateSetDialog.vue'
 import RightDialog from '../components/RightDialog.vue'
 import { loadState } from '@nextcloud/initial-state'
-import { errorMessage, getPlanningConfig, getSettings, governance, savePlanningConfig, saveSettings } from '../api.js'
+import { errorMessage, getSettings, governance, saveSettings } from '../api.js'
 import NxNumberInput from '../components/NxNumberInput.vue'
 import { bodyTypeLabel, checkLabel, formatMoney, formatNumber, gateLabel, typeLabel } from '../labels.js'
 
@@ -291,7 +266,7 @@ export default {
 		return { mdiAccountGroup, mdiChevronDown, mdiChevronRight, mdiPencil, mdiPlus, mdiSourceBranch, n, t, bodyTypeLabel, checkLabel, gateLabel, typeLabel, gates: ['g2', 'g3', 'g4', 'g5', 'g6', 'change'], classes: loadState('nc_nexus', 'project_classes', []) }
 	},
 	data() {
-		return { canManage: false, bodies: [], rights: [], retired: 0, gateSets: [], checks: [], open: new Set(), bodyDialog: null, rightDialog: null, setDialog: null, settings: null, settingsSaved: '', planningConfig: null, planningSaved: '' }
+		return { canManage: false, bodies: [], rights: [], retired: 0, gateSets: [], checks: [], open: new Set(), bodyDialog: null, rightDialog: null, setDialog: null, settings: null, settingsSaved: '' }
 	},
 	computed: {
 		settingsDirty() {
@@ -313,10 +288,6 @@ export default {
 				this.checks = g.checks
 				if (!this.settings) {
 					await this.loadSettings()
-				}
-				if (!this.planningConfig) {
-					this.planningConfig = await getPlanningConfig().catch(() => null)
-					this.planningSaved = this.planningConfig?.openprojectUrl ?? ''
 				}
 				// Dialog mit aktuellem Gremium versorgen (Mitglieder)
 				if (this.bodyDialog?.body) {
@@ -345,15 +316,6 @@ export default {
 				this.settings = { ...result.values }
 				this.settingsSaved = JSON.stringify(this.settings)
 				showSuccess(t('nc_nexus', 'Thresholds saved'))
-			} catch (e) {
-				showError(errorMessage(e))
-			}
-		},
-		async storePlanningConfig() {
-			try {
-				this.planningConfig = await savePlanningConfig({ openprojectUrl: this.planningConfig.openprojectUrl })
-				this.planningSaved = this.planningConfig.openprojectUrl
-				showSuccess(t('nc_nexus', 'Planning tools saved'))
 			} catch (e) {
 				showError(errorMessage(e))
 			}
@@ -503,11 +465,6 @@ export default {
 	align-items: center;
 	padding: 4px 0;
 	font-size: 13px;
-}
-
-.gov__url {
-	grid-template-columns: 200px minmax(0, 480px);
-	padding: 4px 12px;
 }
 
 .gov__class {

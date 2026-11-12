@@ -6,29 +6,22 @@ namespace OCA\Nexus\Planning;
 
 use OCA\Nexus\AppInfo\Application;
 use OCA\Nexus\Exception\ValidationException;
-use OCP\Http\Client\IClientService;
-use OCP\IAppConfig;
 use OCP\Security\ICredentialsManager;
-use Psr\Log\LoggerInterface;
 
 /**
  * OpenProject über die REST-API v3 (Kapitel 07 §4.2, externer Provider). Die Adresse der Instanz
- * legt das PMO fest (IAppConfig „openproject_url“), jedes Konto hinterlegt seinen eigenen
+ * legt das PMO im Bereich „Planungstools“ fest, jedes Konto hinterlegt seinen eigenen
  * API-Schlüssel im Credential-Store – OpenProject prüft damit die Rechte des Kontos.
- * Hinweis: Instanzen im lokalen Netz lässt der HTTP-Client von Nextcloud nur mit
- * `allow_local_remote_servers` zu.
  */
 class OpenProjectProvider implements IPlanningProvider, IPlanningCredentials {
 	public const ID = 'openproject';
-	public const CONFIG_URL = 'openproject_url';
 	private const CREDENTIALS = Application::APP_ID . '::openproject';
 	private const PAGE_SIZE = 500;
 
 	public function __construct(
-		private IAppConfig $config,
+		private PlanningConfig $config,
 		private ICredentialsManager $credentials,
-		private IClientService $clients,
-		private LoggerInterface $logger,
+		private OcsClient $client,
 	) {
 	}
 
@@ -49,18 +42,7 @@ class OpenProjectProvider implements IPlanningProvider, IPlanningCredentials {
 	}
 
 	public function baseUrl(): string {
-		return rtrim(trim($this->config->getValueString(Application::APP_ID, self::CONFIG_URL, '')), '/');
-	}
-
-	/**
-	 * @throws ValidationException
-	 */
-	public function setBaseUrl(string $url): void {
-		$url = rtrim(trim($url), '/');
-		if ($url !== '' && (filter_var($url, FILTER_VALIDATE_URL) === false || !preg_match('#^https?://#i', $url))) {
-			throw new ValidationException('Enter the address of the OpenProject instance as http(s) URL');
-		}
-		$this->config->setValueString(Application::APP_ID, self::CONFIG_URL, $url);
+		return $this->config->openprojectUrl();
 	}
 
 	public function hasCredentials(string $userId): bool {
@@ -176,38 +158,6 @@ class OpenProjectProvider implements IPlanningProvider, IPlanningCredentials {
 		if ($token === '') {
 			throw new ValidationException('Store your OpenProject API key first');
 		}
-		$options = [
-			'auth' => ['apikey', $token],
-			'headers' => ['Accept' => 'application/hal+json'],
-			'timeout' => 15,
-			'http_errors' => false,
-		];
-		if ($query !== []) {
-			$options['query'] = $query;
-		}
-		if ($body !== null) {
-			$options['json'] = $body;
-		}
-		try {
-			$client = $this->clients->newClient();
-			$response = $method === 'POST' ? $client->post($base . $path, $options) : $client->get($base . $path, $options);
-			$status = $response->getStatusCode();
-			$data = json_decode((string)$response->getBody(), true);
-		} catch (\Throwable $e) {
-			$this->logger->info('nc_nexus: OpenProject request failed: ' . $e->getMessage(), ['app' => Application::APP_ID, 'exception' => $e]);
-			throw new ValidationException('The planning tool reported an error (%1$s)', ['unreachable']);
-		}
-		if ($status >= 400 || !is_array($data)) {
-			$code = match (true) {
-				$status === 401 => 'unauthorized',
-				$status === 403 => 'forbidden',
-				$status === 404 => 'not_found',
-				$status === 422 => 'invalid',
-				default => 'error',
-			};
-			$this->logger->info('nc_nexus: OpenProject answered ' . $status . ' for ' . $method . ' ' . $path, ['app' => Application::APP_ID]);
-			throw new ValidationException('The planning tool reported an error (%1$s)', [$code]);
-		}
-		return $data;
+		return $this->client->request($method, $base . $path, ['apikey', $token], ['Accept' => 'application/hal+json'], $query, $body);
 	}
 }

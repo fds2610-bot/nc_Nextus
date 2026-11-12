@@ -9,11 +9,18 @@ use OCA\Nexus\Exception\ValidationException;
 /**
  * MS Project als Datei (MSPDI, „XML-Format“ von Project und vielen anderen Planungstools,
  * Kapitel 07 §4.2): Der Plan wird als Schnappschuss importiert, Herkunft „Datei vom …“.
- * Ein neuer Stand wird durch erneuten Import übernommen.
+ * Ein neuer Stand wird durch erneuten Import übernommen. Der Export liefert einen Startplan
+ * mit Projektrahmen und Governance-Meilensteinen für MS Project (Kapitel 07 §3: Rahmentermine und
+ * Meilensteine führt die Governance).
  */
 class MsProjectProvider implements IPlanningProvider, IPlanningFileImport {
 	public const ID = 'mspdi';
 	public const MAX_BYTES = 10 * 1024 * 1024;
+
+	public function __construct(
+		private PlanningConfig $config,
+	) {
+	}
 
 	public function getId(): string {
 		return self::ID;
@@ -27,8 +34,13 @@ class MsProjectProvider implements IPlanningProvider, IPlanningFileImport {
 		return [self::CAP_IMPORT];
 	}
 
+	/** Import am Vorhaben; der Export hängt nicht an der Verknüpfung (canExport) */
 	public function isAvailable(string $userId): bool {
-		return true;
+		return $this->config->mspdiImport();
+	}
+
+	public function canExport(): bool {
+		return $this->config->mspdiExport();
 	}
 
 	public function listProjects(string $userId): array {
@@ -95,6 +107,71 @@ class MsProjectProvider implements IPlanningProvider, IPlanningFileImport {
 			}
 		}
 		return ['title' => mb_substr(trim($title), 0, 200), 'tasks' => $tasks];
+	}
+
+	/**
+	 * Startplan als MSPDI schreiben: Projekt-Vorgang (UID 0), Projektrahmen als Vorgang mit
+	 * „Anfang nicht früher als“, Meilensteine mit „Ende nicht später als“ ihrem Termin.
+	 *
+	 * @param list<array{name: string, date: string, external?: bool}> $milestones
+	 */
+	public static function write(string $title, string $start, string $end, string $frameName, array $milestones): string {
+		$doc = new \DOMDocument('1.0', 'UTF-8');
+		$doc->formatOutput = true;
+		$ns = 'http://schemas.microsoft.com/project';
+		$project = $doc->createElementNS($ns, 'Project');
+		$doc->appendChild($project);
+		$add = static function (\DOMElement $parent, string $name, string $value) use ($doc, $ns): void {
+			$el = $doc->createElementNS($ns, $name);
+			$el->appendChild($doc->createTextNode($value));
+			$parent->appendChild($el);
+		};
+		$at = static fn (string $day, string $time) => $day . 'T' . $time;
+		$add($project, 'SaveVersion', '14');
+		$add($project, 'Title', $title);
+		$add($project, 'ScheduleFromStart', '1');
+		$add($project, 'StartDate', $at($start, '08:00:00'));
+		$add($project, 'FinishDate', $at($end, '17:00:00'));
+		$add($project, 'MinutesPerDay', '480');
+		$add($project, 'MinutesPerWeek', '2400');
+		$add($project, 'DaysPerMonth', '20');
+		$tasks = $doc->createElementNS($ns, 'Tasks');
+		$project->appendChild($tasks);
+		$uid = 0;
+		$task = static function (string $name, string $from, string $to, int $level, array $extra) use ($doc, $ns, $tasks, $add, &$uid): void {
+			$t = $doc->createElementNS($ns, 'Task');
+			$tasks->appendChild($t);
+			$add($t, 'UID', (string)$uid);
+			$add($t, 'ID', (string)$uid);
+			$add($t, 'Name', $name);
+			$add($t, 'OutlineLevel', (string)$level);
+			$add($t, 'Start', $from);
+			$add($t, 'Finish', $to);
+			foreach ($extra as $k => $v) {
+				$add($t, $k, (string)$v);
+			}
+			$uid++;
+		};
+		$hours = self::workdays($start, $end) * 8;
+		$task($title, $at($start, '08:00:00'), $at($end, '17:00:00'), 0, ['Summary' => 1, 'Duration' => 'PT' . $hours . 'H0M0S']);
+		$task($frameName, $at($start, '08:00:00'), $at($end, '17:00:00'), 1, ['Duration' => 'PT' . $hours . 'H0M0S', 'DurationFormat' => 7, 'Milestone' => 0, 'ConstraintType' => 4, 'ConstraintDate' => $at($start, '08:00:00')]);
+		foreach ($milestones as $m) {
+			$task($m['name'], $at($m['date'], '17:00:00'), $at($m['date'], '17:00:00'), 1, ['Duration' => 'PT0H0M0S', 'DurationFormat' => 7, 'Milestone' => 1, 'ConstraintType' => 7, 'ConstraintDate' => $at($m['date'], '17:00:00')]);
+		}
+		return (string)$doc->saveXML();
+	}
+
+	/** Arbeitstage Mo–Fr einschließlich, mindestens 1 */
+	private static function workdays(string $start, string $end): int {
+		$from = new \DateTimeImmutable($start);
+		$to = new \DateTimeImmutable($end);
+		$days = 0;
+		for ($d = $from; $d <= $to; $d = $d->modify('+1 day')) {
+			if ((int)$d->format('N') <= 5) {
+				$days++;
+			}
+		}
+		return max(1, $days);
 	}
 
 	/** @return list<\DOMElement> */

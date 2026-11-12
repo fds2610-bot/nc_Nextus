@@ -6,13 +6,16 @@ namespace OCA\Nexus\Service;
 
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\PlanningLinkMapper;
+use OCA\Nexus\Db\ResourceNeedMapper;
 use OCA\Nexus\Exception\ForbiddenException;
 use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
 use OCA\Nexus\Planning\IPlanningCredentials;
 use OCA\Nexus\Planning\IPlanningFileImport;
+use OCA\Nexus\Planning\GanttProvider;
 use OCA\Nexus\Planning\IPlanningProvider;
-use OCA\Nexus\Planning\OpenProjectProvider;
+use OCA\Nexus\Planning\MsProjectProvider;
+use OCA\Nexus\Planning\PlanningConfig;
 use OCA\Nexus\Planning\PlanningProviderRegistry;
 use OCP\AppFramework\Utility\ITimeFactory;
 
@@ -32,7 +35,11 @@ class PlanningService {
 	public function __construct(
 		private PlanningLinkMapper $links,
 		private PlanningProviderRegistry $registry,
-		private OpenProjectProvider $openProject,
+		private PlanningConfig $config,
+		private GanttProvider $gantt,
+		private MsProjectProvider $msProject,
+		private ProjectService $projects,
+		private ResourceNeedMapper $needs,
 		private DemandService $demands,
 		private PermissionService $permissions,
 		private AuditService $audit,
@@ -75,7 +82,8 @@ class PlanningService {
 			'providers' => $providers,
 			'canLink' => $providers !== [] && $link === null && $canManage,
 			'canUnlink' => $link !== null && $canManage,
-			'canImport' => $link !== null && $canManage && $provider !== null && $this->has($provider, IPlanningProvider::CAP_IMPORT),
+			'canImport' => $link !== null && $canManage && $provider !== null && $this->has($provider, IPlanningProvider::CAP_IMPORT) && $this->registry->safeAvailable($provider, $userId),
+			'canExport' => $this->msProject->canExport() && in_array($demand->getStatus(), self::LINKABLE, true),
 			'link' => $link,
 		];
 	}
@@ -189,34 +197,121 @@ class PlanningService {
 	}
 
 	/**
-	 * Einstellungen der Planungstools (Adresse der OpenProject-Instanz).
+	 * Startplan für MS Project (MSPDI): Projektrahmen und Governance-Meilensteine.
 	 *
-	 * @return array<string, mixed>
+	 * @return array{fileName: string, content: string}
+	 * @throws NotFoundException|ValidationException
 	 */
-	public function config(string $userId): array {
+	public function export(string $userId, int $demandId, string $frameName): array {
+		$demand = $this->demands->findReadable($userId, $demandId);
+		if (!$this->msProject->canExport() || !in_array($demand->getStatus(), self::LINKABLE, true)) {
+			throw new ValidationException('The export is not available');
+		}
+		$row = $this->projects->projectRow($demand);
+		$start = $row['plannedStart'] ?? null;
+		$end = $row['plannedEnd'] ?? null;
+		if ($start === null || $end === null) {
+			// ohne Plantermine: Monate des Ressourcenbedarfs, sonst ab heute drei Monate
+			$periods = [];
+			foreach ($this->needs->findForDemand($demand->getId()) as $need) {
+				if ($need->getUpdatedAt() >= $demand->getCreatedAt()) {
+					$periods[] = $need->getPeriod();
+				}
+			}
+			sort($periods);
+			$today = date('Y-m-d', $this->time->getTime());
+			$start ??= $periods !== [] ? $periods[0] . '-01' : $today;
+			$end ??= $periods !== [] ? date('Y-m-t', (int)strtotime(end($periods) . '-01')) : date('Y-m-d', (int)strtotime($today . ' +3 months'));
+		}
+		if ($end < $start) {
+			$end = $start;
+		}
+		$milestones = array_map(static fn (array $m) => ['name' => (string)$m['name'], 'date' => (string)$m['dueDate'], 'external' => (int)$m['external'] === 1], $this->projects->milestones($demand));
+		$title = trim(($demand->getProjectKey() ?? $demand->getDemandKey()) . ' ' . $demand->getTitle());
+		$this->audit->log(DemandService::ENTITY, $demandId, 'planning_export', $userId, null);
 		return [
-			'canManage' => $this->permissions->canManageOrg($userId),
-			'openprojectUrl' => $this->openProject->baseUrl(),
+			'fileName' => (string)preg_replace('/[^A-Za-z0-9_-]+/', '-', $demand->getProjectKey() ?? $demand->getDemandKey()) . '.xml',
+			'content' => MsProjectProvider::write($title, (string)$start, (string)$end, $frameName, $milestones),
 		];
 	}
 
 	/**
-	 * @param array<string, mixed> $data
+	 * Einstellungen der Planungstools für den Bereich „Planungstools“.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function config(string $userId): array {
+		$canManage = $this->permissions->canManageOrg($userId);
+		return [
+			'canManage' => $canManage,
+			'ganttLocal' => $this->gantt->isLocalAvailable($userId),
+			'ganttUrl' => $this->config->ganttUrl(),
+			'ganttUser' => $canManage ? $this->config->ganttUser() : '',
+			'ganttHasPassword' => $this->config->ganttPassword() !== '',
+			'openprojectUrl' => $this->config->openprojectUrl(),
+			'mspdiImport' => $this->config->mspdiImport(),
+			'mspdiExport' => $this->config->mspdiExport(),
+		];
+	}
+
+	/**
+	 * @param array<string, mixed> $data ganttUrl, ganttUser, ganttPassword (leer = behalten), openprojectUrl, mspdiImport, mspdiExport
 	 * @return array<string, mixed>
 	 * @throws ForbiddenException|ValidationException
 	 */
 	public function saveConfig(string $userId, array $data): array {
+		$this->requireManage($userId);
+		$before = $this->config($userId);
+		if (array_key_exists('ganttUrl', $data)) {
+			$password = isset($data['ganttPassword']) && is_string($data['ganttPassword']) && trim($data['ganttPassword']) !== '' ? $data['ganttPassword'] : null;
+			if (trim((string)$data['ganttUrl']) !== '' && $password === null && $this->config->ganttPassword() === '') {
+				throw new ValidationException('Enter the app password of the account at the Gantt instance');
+			}
+			$this->config->setGantt((string)$data['ganttUrl'], (string)($data['ganttUser'] ?? ''), $password);
+		}
+		if (array_key_exists('openprojectUrl', $data)) {
+			$this->config->setOpenprojectUrl((string)$data['openprojectUrl']);
+		}
+		if (array_key_exists('mspdiImport', $data) || array_key_exists('mspdiExport', $data)) {
+			$this->config->setMspdi((bool)($data['mspdiImport'] ?? $before['mspdiImport']), (bool)($data['mspdiExport'] ?? $before['mspdiExport']));
+		}
+		$after = $this->config($userId);
+		$changes = [];
+		foreach (['ganttUrl', 'ganttUser', 'openprojectUrl', 'mspdiImport', 'mspdiExport'] as $key) {
+			if ($before[$key] !== $after[$key]) {
+				$changes[$key] = [$before[$key], $after[$key]];
+			}
+		}
+		if (isset($data['ganttPassword']) && is_string($data['ganttPassword']) && trim($data['ganttPassword']) !== '') {
+			$changes['ganttPassword'] = ['***', '***'];
+		}
+		if ($changes !== []) {
+			$this->audit->log('settings', 0, 'update', $userId, $changes);
+		}
+		return $after;
+	}
+
+	/**
+	 * Verbindung zur eingetragenen Gantt-Instanz prüfen.
+	 *
+	 * @return array{projects: int}
+	 * @throws ForbiddenException|ValidationException
+	 */
+	public function testGantt(string $userId): array {
+		$this->requireManage($userId);
+		if (!$this->gantt->isAvailable($userId)) {
+			throw new ValidationException('The planning tool is not available');
+		}
+		return ['projects' => count($this->gantt->listProjects($userId))];
+	}
+
+	/**
+	 * @throws ForbiddenException
+	 */
+	private function requireManage(string $userId): void {
 		if (!$this->permissions->canManageOrg($userId)) {
 			throw new ForbiddenException('Only the portfolio office may change the governance configuration');
 		}
-		if (array_key_exists('openprojectUrl', $data)) {
-			$before = $this->openProject->baseUrl();
-			$this->openProject->setBaseUrl((string)$data['openprojectUrl']);
-			if ($before !== $this->openProject->baseUrl()) {
-				$this->audit->log('settings', 0, 'update', $userId, ['openprojectUrl' => [$before, $this->openProject->baseUrl()]]);
-			}
-		}
-		return $this->config($userId);
 	}
 
 	/**

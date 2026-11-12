@@ -151,6 +151,8 @@ setup_apps() {
 	done
 	occ app:disable firstrunwizard >/dev/null 2>&1 || true
 	occ config:system:set trusted_domains 1 --value=host.docker.internal >/dev/null
+	# Planungstools anderer DEV-Stacks (z. B. nc-gantt auf http://host.docker.internal:8088) erreichbar machen
+	occ config:system:set allow_local_remote_servers --type=boolean --value=true >/dev/null
 	occ background:cron >/dev/null || true
 	if [ "$NX_ENV" = "shared" ]; then
 		# Liste vorab lesen: docker compose exec im Schleifenrumpf würde sonst stdin leeren
