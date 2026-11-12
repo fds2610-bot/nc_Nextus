@@ -76,13 +76,22 @@ binden Apps read-only aus den Nachbarprojekten ein (fehlt ein Projekt, wird es �
 ## Beispieldaten
 
 ```bash
-./dev.sh destroy && ./dev.sh up      # frische Instanz
-scripts/seed-demo.sh                 # Konten anna, ben, paula (PMO), boris (Board), sven (Pool), fiona (Finanzen); Portfolio-Board mit Sitzung, Projekt-Cockpit am Rechnungsworkflow
+./dev.sh reset-data                  # alle App-Daten (nx_*) löschen – oder frisch: ./dev.sh destroy && ./dev.sh up
+scripts/seed-demo.sh                 # Konten und Beispieldaten anlegen
 ```
 
-Legt Organisation, Rollen, Ziele, Pools mit Kapazität und zehn Vorhaben in allen Stufen an
-(freigegeben mit Zusage, Kandidaten, Pflichtvorhaben, Triage, Analyse, Rückfrage, zurückgestellt,
-abgelehnt, Entwurf). Passwort der Demo-Konten: `DEMO_PASSWORD` (Standard siehe Skript).
+Fiktives Unternehmen **Brenner Maschinenbau GmbH**: Technik (Konstruktion, OT-Softwareentwicklung),
+Produktion (Fertigung, Montage, Logistik), IT-Infrastruktur und kaufmännischer Bereich (Finanzen,
+Personal, Einkauf, Vertrieb). Rollen, Ziele (Smart Factory, Fernwartung, NIS-2/IEC 62443, PDM),
+acht Pools mit Kapazität (Engpässe OT, Security, SAP, Konstruktion) und gut 20 Vorhaben in allen
+Stadien: Entwurf, Triage, Rückfrage, Analyse, zurückgestellt, abgelehnt, Bewertung, Kandidat
+(L-Vorhaben in der Board-Sitzung), im Portfolio, freigegeben, in Umsetzung (MES gelb, Fernwartung
+rot, mit Risiken, Issue, Change Request), pausiert, abgebrochen, abgeschlossen mit Ist-Aufwand
+(Nachkalkulation) und nach G6 geschlossen mit Nutzenreview.
+
+Konten (Passwort `DEMO_PASSWORD`, Standard siehe Skript): paula (PMO), boris (Geschäftsführung),
+fiona (Finanzen), anna (Vertrieb), ben (IT), sven (Leitung IT), kai (Konstruktion), olga (OT),
+frank (Fertigung), mona (Montage), lars (Logistik), hanna (Personal).
 
 ## Tests
 

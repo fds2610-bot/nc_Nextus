@@ -16,6 +16,8 @@
 #   ls        alle nc_nexus-Umgebungen auflisten
 #   e2e ...   E2E-Tests (Playwright über ~/projects/e2e-runner) gegen die Umgebung ausführen,
 #             weitere Argumente gehen an playwright test, z. B. ./dev.sh e2e --db pgsql specs/demands.spec.js
+#   reset-data  alle App-Daten (nx_*-Tabellen) und Nexus-Benachrichtigungen löschen; Startmodelle
+#             (Kriterien, Gate-Sets, KPIs) legt die App beim nächsten Aufruf neu an
 #
 # Optionen (auch als Umgebungsvariable NX_ENV, NX_DB, NX_NC, NX_PHP, NX_PORT):
 #   --env simple|shared       simple: nur nc_nexus · shared: plus Apps aus docker-dev/shared-apps.conf
@@ -232,6 +234,17 @@ snapshot_restore() { # $1 = Sicherungsdatei, $2 = Startzeit des Laufs (Unix)
 	esac
 }
 
+reset_data() {
+	local empty
+	empty=$(mktemp)
+	case "$NX_DB" in
+	mariadb | pgsql) snapshot_restore "$empty" 0 ;;
+	*) rm -f "$empty"; die "reset-data unterstützt nur mariadb und pgsql" ;;
+	esac
+	rm -f "$empty"
+	echo "App-Daten gelöscht ($(db_tables | wc -l) Tabellen geleert)"
+}
+
 e2e() {
 	local snap='' rc=0 started
 	started=$(date +%s)
@@ -270,5 +283,6 @@ shell) dc exec --user www-data nextcloud bash ;;
 info) info ;;
 ls) docker compose ls -a --filter name=nc-nexus- ;;
 e2e) e2e ;;
+reset-data) reset_data ;;
 *) usage ;;
 esac
