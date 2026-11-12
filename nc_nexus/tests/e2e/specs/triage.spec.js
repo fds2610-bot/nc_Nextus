@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test')
 const { adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { E2E_OTHER_USER, E2E_PASSWORD, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
-const { navTo } = require('../helpers/nav')
+const { navTo, openDemands } = require('../helpers/nav')
 
 const unique = (prefix) => `${prefix} ${Date.now()}`
 const isoDay = (offset = 0) => {
@@ -42,7 +42,7 @@ test.describe('Triage', () => {
 		const { context, page: pmo } = await loginAs(browser, E2E_OTHER_USER, E2E_PASSWORD)
 		try {
 			// PMO: Arbeitsvorrat → Rückfrage
-			await pmo.goto('/apps/nc_nexus/')
+			await openDemands(pmo)
 			await navTo(pmo, 'triage', 'nav-queue-triage')
 			await pmo.locator(`[data-test="demand-${demand.key}"]`).click()
 			await pmo.locator('[data-test="open-triage"]').click()
@@ -63,7 +63,7 @@ test.describe('Triage', () => {
 			await expect(pmo.locator('[data-test="triage-next"]')).toContainText(E2E_USER)
 
 			// Antragsteller: Hinweis sehen, ergänzen, erneut einreichen
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator(`[data-test="demand-${demand.key}"]`).click()
 			const editor = page.locator('[data-test="demand-editor"]')
 			await expect(editor.locator('[data-test="query-notice"]')).toContainText('Welche Systeme sind betroffen?')
@@ -79,7 +79,7 @@ test.describe('Triage', () => {
 			await expect(editor.locator('[data-test="open-triage"]')).toHaveCount(0)
 
 			// PMO: Kommentar schreiben, Antragsteller sieht ihn
-			await pmo.reload()
+			await openDemands(pmo)
 			await pmo.locator(`[data-test="demand-${demand.key}"]`).click()
 			await pmo.locator('[data-test="field-comment"] textarea').fill('Danke, wird im Board besprochen.')
 			await pmo.locator('[data-test="send-comment"]').click()
@@ -132,7 +132,7 @@ test.describe('Triage', () => {
 		await call(other, 'post', `/demands/${demand.id}/triage`, { code: 'deferred', resubmissionDate: isoDay(0) }, 200)
 		const { context, page } = await loginAs(browser, E2E_OTHER_USER, E2E_PASSWORD)
 		try {
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await navTo(page, 'triage', 'nav-queue-resubmission')
 			await expect(page.locator(`[data-test="demand-${demand.key}"]`)).toBeVisible()
 			// erneut triagierbar: annehmen mit Vorhabensklasse
@@ -163,7 +163,7 @@ test.describe('Triage', () => {
 		const { context, page: pmo } = await loginAs(browser, E2E_OTHER_USER, E2E_PASSWORD)
 		try {
 			// PMO: Triage ausgegraut, Hinweis auf die ausstehende Analyse, nicht im Arbeitsvorrat
-			await pmo.goto('/apps/nc_nexus/')
+			await openDemands(pmo)
 			await navTo(pmo, 'triage', 'nav-queue-triage')
 			await expect(pmo.locator(`[data-test="demand-${demand.key}"]`)).toHaveCount(0)
 			await pmo.locator('[data-test="nav-all"]').click()
@@ -173,7 +173,7 @@ test.describe('Triage', () => {
 			await pmo.keyboard.press('Escape')
 
 			// Analyst: „Meine Analysen“ → Ergebnis liefern
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await navTo(page, 'triage', 'nav-queue-analysis')
 			await page.locator(`[data-test="demand-${demand.key}"]`).click()
 			await page.locator('[data-test="open-analysis"]').click()
@@ -185,7 +185,7 @@ test.describe('Triage', () => {
 			await expect(page.locator('[data-test="close-demand"]')).toHaveClass(/primary/)
 
 			// PMO: jetzt wieder im Arbeitsvorrat und triagierbar
-			await pmo.reload()
+			await openDemands(pmo)
 			await navTo(pmo, 'triage', 'nav-queue-triage')
 			await pmo.locator(`[data-test="demand-${demand.key}"]`).click()
 			await expect(pmo.locator('[data-test="open-triage"]')).toBeEnabled()
@@ -207,7 +207,7 @@ test.describe('Triage', () => {
 		expect((await other.post(`/ocs/v2.php/apps/nc_nexus/api/v1/demands/${demand.id}/triage`, { data: { code: 'accepted' } })).status()).toBe(400)
 		const { context, page } = await loginAs(browser, E2E_OTHER_USER, E2E_PASSWORD)
 		try {
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator(`[data-test="demand-${demand.key}"]`).click()
 			await expect(page.locator('[data-test="open-triage"]')).toBeDisabled()
 			await expect(page.locator('[data-test="triage-next"]')).toHaveText(/Deferred until|Zurückgestellt bis/)

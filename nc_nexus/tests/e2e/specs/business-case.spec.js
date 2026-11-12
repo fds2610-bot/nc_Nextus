@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { navTo, openDemands } = require('../helpers/nav')
 const { PATH, adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { E2E_USER } = require('../helpers/env')
 
@@ -21,7 +22,7 @@ test.describe('Business Case und Nutzenregister', () => {
 			})
 			expect(bad.status()).toBe(400)
 
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator(`[data-test="demand-${demand.key}"]`).click()
 			await page.locator('[data-test="open-business-case"]').click()
 			const dialog = page.locator('[data-test="business-case-dialog"]')
@@ -43,7 +44,7 @@ test.describe('Business Case und Nutzenregister', () => {
 
 			// Nutzenregister zeigt die Position mit Verantwortlichem
 			await page.keyboard.press('Escape')
-			await page.locator('[data-test="nav-benefits"]').click()
+			await navTo(page, 'steering', 'nav-benefits')
 			const row = page.locator(`[data-test="benefit-row-${demand.key}"]`)
 			await expect(row).toContainText('Wegfall Altvertrag')
 			await expect(row).toContainText(E2E_USER)

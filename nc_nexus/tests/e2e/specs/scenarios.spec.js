@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { navTo, openDemands } = require('../helpers/nav')
 const { API, adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { ADMIN_PASSWORD, ADMIN_USER, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
@@ -52,8 +53,8 @@ test.describe('Szenarioanalyse (POR-003)', () => {
 			const ui = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 			const page = ui.page
 			try {
-				await page.goto('/apps/nc_nexus/')
-				await page.locator('[data-test="nav-scenarios"]').click()
+				await openDemands(page)
+				await navTo(page, 'portfolio', 'nav-scenarios')
 				const view = page.locator('[data-test="scenarios-view"]')
 				await view.locator('[data-test="new-scenario"]').click()
 				const dialog = page.locator('[data-test="scenario-dialog"]')
@@ -116,8 +117,8 @@ test.describe('Szenarioanalyse (POR-003)', () => {
 			const pmo = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 			try {
 				const p = pmo.page
-				await p.goto('/apps/nc_nexus/')
-				await p.locator('[data-test="nav-scenarios"]').click()
+				await openDemands(p)
+				await navTo(p, 'portfolio', 'nav-scenarios')
 				const view = p.locator('[data-test="scenarios-view"]')
 				await view.locator(`[data-test="scenario-${id}"]`).click()
 				await expect(view.locator('[data-test="scenario-basis"]')).toContainText(/frozen|eingefroren/)

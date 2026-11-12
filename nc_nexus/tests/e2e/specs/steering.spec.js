@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test')
 const { API, adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { ADMIN_PASSWORD, ADMIN_USER, E2E_OTHER_USER, E2E_PASSWORD, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
-const { navTo } = require('../helpers/nav')
+const { navTo, openDemands } = require('../helpers/nav')
 
 const month = (offset = 0) => {
 	const d = new Date()
@@ -250,7 +250,7 @@ test.describe('Steuerung im Betrieb (Stufe 4)', () => {
 
 			// Projektleitung: Projekt über die Gruppe „Steuerung“ öffnen
 			const page = pmUi.page
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await navTo(page, 'steering', 'nav-projects')
 			await page.locator(`[data-test="project-${d.projectKey}"]`).click()
 			const cockpit = page.locator('[data-test="project-cockpit"]')
@@ -280,7 +280,7 @@ test.describe('Steuerung im Betrieb (Stufe 4)', () => {
 
 			// PMO: Überbuchung erkennen und im Dialog in Prüfreihenfolge lösen
 			const pmo = pmoUi.page
-			await pmo.goto('/apps/nc_nexus/')
+			await openDemands(pmo)
 			await navTo(pmo, 'steering', 'nav-conflicts')
 			await pmo.locator('[data-test="detect-conflicts"]').click()
 			await expect(pmo.locator('[data-test="conflicts-view"]')).toContainText(`E2E-Pool ${t}`)

@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { openDemands } = require('../helpers/nav')
 const { adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { E2E_OTHER_USER, E2E_USER } = require('../helpers/env')
 
@@ -21,7 +22,7 @@ test.describe('Dublettenvorschlag', () => {
 		const foreign = await createDemand(other, { title: `${marker} erneuern`, demandType: 'lifecycle', problemStatement: 'Veraltet.', orgUnitId: unit.id })
 		await call(other, 'post', `/demands/${foreign.id}/submit`, undefined, 200)
 		try {
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator('[data-test="new-demand"]').click()
 			const editor = page.locator('[data-test="demand-editor"]')
 			await editor.locator('[data-test="field-title"] input').fill(marker)

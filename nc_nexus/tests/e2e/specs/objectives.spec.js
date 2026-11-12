@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { navTo, openDemands } = require('../helpers/nav')
 const { adminApi, apiAs, call } = require('../helpers/api')
 const { ADMIN_PASSWORD, ADMIN_USER, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
@@ -16,8 +17,8 @@ test.describe('Strategische Ziele', () => {
 		let demandId = null
 		try {
 			// PMO legt das Ziel in der Oberfläche an
-			await pmo.goto('/apps/nc_nexus/')
-			await pmo.locator('[data-test="nav-objectives"]').click()
+			await openDemands(pmo)
+			await navTo(pmo, 'portfolio', 'nav-objectives')
 			await pmo.locator('[data-test="new-objective"]').click()
 			const dialog = pmo.locator('[data-test="objective-dialog"]')
 			await dialog.locator('[data-test="field-objective-code"] input').fill(c)
@@ -27,8 +28,8 @@ test.describe('Strategische Ziele', () => {
 			await expect(row.locator('[data-test="objective-coverage"]')).toHaveText(/not covered|nicht abgedeckt/)
 
 			// Antragsteller sieht die Ziele (ohne Anlegen) und ordnet seinen Antrag zu
-			await page.goto('/apps/nc_nexus/')
-			await page.locator('[data-test="nav-objectives"]').click()
+			await openDemands(page)
+			await navTo(page, 'portfolio', 'nav-objectives')
 			await expect(page.locator('[data-test="new-objective"]')).toHaveCount(0)
 			await page.locator('[data-test="new-demand"]').click()
 			const editor = page.locator('[data-test="demand-editor"]')

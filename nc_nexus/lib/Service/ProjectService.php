@@ -109,6 +109,7 @@ class ProjectService {
 				'contradiction' => $report !== null && $this->contradictions($report, $health) !== [],
 				'budgetFrame' => $finance['frame'],
 				'forecast' => $finance['forecast'],
+				'actual' => $finance['actual'],
 				'deviationPct' => $finance['deviationPct'],
 				'escalation' => $this->escalationLevel($demand),
 			];

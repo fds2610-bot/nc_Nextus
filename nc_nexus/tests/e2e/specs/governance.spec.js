@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { navTo, openDemands } = require('../helpers/nav')
 const { PATH, adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { ADMIN_PASSWORD, ADMIN_USER, E2E_OTHER_USER, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
@@ -65,7 +66,7 @@ test.describe('Entscheidungsprozess (Stufe 3)', () => {
 		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 		try {
 			// Gremium in der Oberfläche anlegen: Quorum 2, Pflichtsitz Finanzen
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator('[data-test="nav-governance"]').click()
 			await expect(page.locator('[data-test="gate-set-Standard"]')).toBeVisible()
 			await page.locator('[data-test="new-body"]').click()
@@ -113,7 +114,7 @@ test.describe('Entscheidungsprozess (Stufe 3)', () => {
 			await page.keyboard.press('Escape')
 
 			// Sitzung anlegen (ohne Kalender und Talk: die lägen außerhalb der App-Daten)
-			await page.locator('[data-test="nav-sessions"]').click()
+			await navTo(page, 'decisions', 'nav-sessions')
 			await page.locator('[data-test="new-session"]').click()
 			const sessionDialog = page.locator('[data-test="session-dialog"]')
 			await sessionDialog.locator('[data-test="field-session-body"] select').selectOption(String(body.id))
@@ -189,7 +190,7 @@ test.describe('Entscheidungsprozess (Stufe 3)', () => {
 			expect(condition.can.done).toBe(true)
 			expect(condition.can.waive).toBe(false)
 			await call(other, 'post', `/conditions/${condition.id}/close`, { status: 'done', evidence: 'Konzept liegt im Projektordner' }, 200)
-			await page.locator('[data-test="nav-conditions"]').click()
+			await navTo(page, 'decisions', 'nav-conditions')
 			await page.locator('[data-test="filter-closed"]').click()
 			await expect(page.locator(`[data-test="condition-${condition.id}"]`)).toContainText('Konzept liegt im Projektordner')
 			session = await call(admin, 'get', `/demands/${demand.id}/gate`)
@@ -278,7 +279,7 @@ test.describe('Entscheidungsprozess (Stufe 3)', () => {
 			const d = await createDemand(own, { title: `E2E-Qualität ${t}`, demandType: 'innovation', problemStatement: 'x' })
 			await call(own, 'post', `/demands/${d.id}/submit`, undefined, 200)
 
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator('[data-test="nav-governance"]').click()
 			// Prozessbild: Einreichung, G1 (nur PMO) bis G6, Gate-Sets mit ihren Gates
 			const process = page.locator('[data-test="gate-process"]')

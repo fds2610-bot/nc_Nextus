@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
-const { navTo } = require('../helpers/nav')
+const { navTo, openDemands } = require('../helpers/nav')
 const { PATH, apiAs, createDemand } = require('../helpers/api')
 const { E2E_OTHER_USER, E2E_USER } = require('../helpers/env')
 
@@ -8,7 +8,7 @@ const unique = (prefix) => `${prefix} ${Date.now()}`
 
 test.describe('Antragseingang', () => {
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/apps/nc_nexus/')
+		await openDemands(page)
 		await expect(page.getByRole('heading', { level: 2 }).first()).toBeVisible()
 	})
 

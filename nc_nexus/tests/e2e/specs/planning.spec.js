@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { openDemands } = require('../helpers/nav')
 const { adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { ADMIN_PASSWORD, ADMIN_USER, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
@@ -35,7 +36,7 @@ test.describe('Planungs-Integration (nc_gantt)', () => {
 
 		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 		try {
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator(`[data-test="demand-${demand.key}"]`).click()
 			const panel = page.locator('[data-test="planning"]')
 			await panel.locator('[data-test="planning-create"]').click()

@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { navTo, openDemands } = require('../helpers/nav')
 const { adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { ADMIN_PASSWORD, ADMIN_USER, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
@@ -23,8 +24,8 @@ test.describe('Portfolioübersicht', () => {
 
 		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 		try {
-			await page.goto('/apps/nc_nexus/')
-			await page.locator('[data-test="nav-portfolio"]').click()
+			await openDemands(page)
+			await navTo(page, 'portfolio', 'nav-portfolio')
 			const view = page.locator('[data-test="portfolio-phases"]')
 			// Bereich rollt das Team auf: 1 Antrag, 1 On Hold
 			await expect(view.locator(`[data-test="portfolio-cell-E2E-Bereich ${tag}-demand"]`)).toHaveText('1')

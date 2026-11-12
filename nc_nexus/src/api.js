@@ -99,6 +99,7 @@ export const decideGate = async (id, decision) => data(await axios.post(v1(`/dem
 export const capacityCut = async () => data(await axios.get(v1('/capacity/cut')))
 
 // Szenarioanalyse (POR-003)
+export const managementDashboard = async () => data(await axios.get(v1('/dashboard')))
 export const listScenarios = async () => data(await axios.get(v1('/scenarios')))
 export const getScenario = async (id) => data(await axios.get(v1(`/scenarios/${id}`)))
 export const createScenario = async (scenario) => data(await axios.post(v1('/scenarios'), scenario))

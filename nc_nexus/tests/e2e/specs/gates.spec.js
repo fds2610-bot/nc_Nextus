@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { navTo, openDemands } = require('../helpers/nav')
 const { PATH, adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { ADMIN_PASSWORD, ADMIN_USER, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
@@ -50,7 +51,7 @@ test.describe('Gates G2/G3 und Kapazitätsschnitt', () => {
 
 		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 		try {
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator(`[data-test="demand-${first.key}"]`).click()
 			const editor = page.locator('[data-test="demand-editor"]')
 			const dialog = page.locator('[data-test="gate-dialog"]')
@@ -91,7 +92,7 @@ test.describe('Gates G2/G3 und Kapazitätsschnitt', () => {
 			expect((await call(admin, 'get', `/demands/${second.id}`)).status).toBe('prioritized')
 
 			// Startplan: das zweite Vorhaben wartet (Pool im aktuellen Monat ausgeschöpft)
-			await page.locator('[data-test="nav-ranking"]').click()
+			await navTo(page, 'portfolio', 'nav-ranking')
 			await page.locator('[data-test="run-cut"]').click()
 			await expect(page.locator(`[data-test="plan-${second.key}"] .nx-chip`)).toBeVisible()
 			const cut = await call(admin, 'get', '/capacity/cut')

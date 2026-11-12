@@ -1,9 +1,10 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { openDemands } = require('../helpers/nav')
 
 test.describe('Glossar', () => {
 	test('über dem Bewertungsmodell erreichbar, durchsuchbar, Kopf- und Fußzeile fest', async ({ page }) => {
-		await page.goto('/apps/nc_nexus/')
+		await openDemands(page)
 		const nav = page.locator('[data-test="nav-glossary"]')
 		await expect(nav).toBeVisible()
 		// steht im Fuß der Navigation vor dem Bewertungsmodell (sofern dieses sichtbar ist)

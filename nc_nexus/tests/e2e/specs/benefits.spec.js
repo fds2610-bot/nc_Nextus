@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { navTo, openDemands } = require('../helpers/nav')
 const { API, adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { E2E_OTHER_USER, E2E_PASSWORD, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
@@ -136,8 +137,8 @@ test.describe('Nutzenreviews (Stufe 5, BEN-002)', () => {
 			await call(own, 'put', `/demands/${d.id}/benefits/p1`, { tracking: { realizationStatus: 'on_track', reviewDates: [inDays(-2)] } })
 
 			const page = ui.page
-			await page.goto('/apps/nc_nexus/')
-			await page.locator('[data-test="nav-benefits"]').click()
+			await openDemands(page)
+			await navTo(page, 'steering', 'nav-benefits')
 			const register = page.locator('[data-test="benefit-register"]')
 			await expect(register.locator('[data-test="benefit-balance"]')).toBeVisible()
 

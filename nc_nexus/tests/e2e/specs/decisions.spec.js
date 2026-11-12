@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { navTo, openDemands } = require('../helpers/nav')
 const { adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { E2E_OTHER_USER, E2E_PASSWORD, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
@@ -32,7 +33,7 @@ test.describe('Entscheidungsregister und PMO-Rechte', () => {
 		await call(other, 'post', `/demands/${demand.id}/triage`, { code: 'deferred', resubmissionDate: isoDay(60) }, 200)
 		const { context, page: pmo } = await loginAs(browser, E2E_OTHER_USER, E2E_PASSWORD)
 		try {
-			await pmo.goto('/apps/nc_nexus/')
+			await openDemands(pmo)
 			await pmo.locator(`[data-test="demand-${demand.key}"]`).click()
 			// regulärer Schritt grau, außerplanmäßig möglich
 			await expect(pmo.locator('[data-test="open-triage"]')).toBeDisabled()
@@ -47,7 +48,7 @@ test.describe('Entscheidungsregister und PMO-Rechte', () => {
 			await pmo.keyboard.press('Escape')
 
 			// Register: neuer Beschluss außerplanmäßig, ersetzt den vorigen; Mandat ist das globale PMO
-			await pmo.locator('[data-test="nav-decisions"]').click()
+			await navTo(pmo, 'decisions', 'nav-decisions')
 			const register = pmo.locator('[data-test="decision-register"]')
 			await register.getByRole('textbox').fill(demand.key)
 			const rows = register.locator('[data-test^="decision-BES-"]')
@@ -74,7 +75,7 @@ test.describe('Entscheidungsregister und PMO-Rechte', () => {
 		const demand = await call(own, 'post', `/demands/${draft.id}/submit`, undefined, 200)
 		const { context, page } = await loginAs(browser, E2E_OTHER_USER, E2E_PASSWORD)
 		try {
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator(`[data-test="demand-${demand.key}"]`).click()
 			const editor = page.locator('[data-test="demand-editor"]')
 			await expect(editor.locator('[data-test="submit-demand"]')).toHaveCount(0)

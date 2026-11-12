@@ -2,11 +2,11 @@
 const { expect } = require('@playwright/test')
 
 /**
- * Eintrag in einer eingeklappten Navigationsgruppe (Triage, Status, Antragstypen) anklicken;
+ * Eintrag in einer eingeklappten Navigationsgruppe (Triage, Status, Antragstypen, Portfolio, Steuerung, Gremien) anklicken;
  * die Gruppe wird bei Bedarf aufgeklappt.
  *
  * @param {import('@playwright/test').Page} page
- * @param {'triage'|'status'|'types'} group
+ * @param {'triage'|'status'|'types'|'portfolio'|'steering'|'decisions'} group
  * @param {string} item data-test des Eintrags
  */
 async function navTo(page, group, item) {
@@ -18,4 +18,14 @@ async function navTo(page, group, item) {
 	await entry.click()
 }
 
-module.exports = { navTo }
+/**
+ * App öffnen und die Antragsliste wählen (Governance-Rollen starten sonst auf der Übersicht).
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+async function openDemands(page) {
+	await page.goto('/apps/nc_nexus/')
+	await page.locator('[data-test="nav-all"]').click()
+}
+
+module.exports = { navTo, openDemands }

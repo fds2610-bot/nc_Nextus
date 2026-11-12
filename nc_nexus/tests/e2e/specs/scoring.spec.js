@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { navTo, openDemands } = require('../helpers/nav')
 const { adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { ADMIN_PASSWORD, ADMIN_USER, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
@@ -40,7 +41,7 @@ test.describe('Bewertung und Priorisierung', () => {
 		const model = await call(admin, 'get', '/scoring/model')
 		try {
 			// Antragsteller: Selbstbewertung in der Oberfläche (alle Kriterien 5, Aufwand 3)
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator(`[data-test="demand-${high.key}"]`).click()
 			await page.locator('[data-test="assess-self"]').click()
 			const dialog = page.locator('[data-test="assessment-dialog"]')
@@ -69,8 +70,8 @@ test.describe('Bewertung und Priorisierung', () => {
 			// Rangliste: „Niedrig“ hat nach der Fremdbewertung die höhere Wertdichte
 			const { context, page: pmo } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 			try {
-				await pmo.goto('/apps/nc_nexus/')
-				await pmo.locator('[data-test="nav-ranking"]').click()
+				await openDemands(pmo)
+				await navTo(pmo, 'portfolio', 'nav-ranking')
 				const bucket = pmo.locator('[data-test="bucket-C"]')
 				const rankOf = async (key) => Number(await bucket.locator(`[data-test="rank-${key}"] [data-test="rank-no"]`).innerText())
 				expect(await rankOf(low.key)).toBeLessThan(await rankOf(high.key))
@@ -101,7 +102,7 @@ test.describe('Bewertung und Priorisierung', () => {
 		const before = (await call(admin, 'get', '/scoring/model')).buckets.find(b => b.code === 'D')
 		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 		try {
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator('[data-test="nav-model"]').click()
 			const field = page.locator('[data-test="bucket-budget-D"]')
 			await expect(page.locator('[data-test="save-bucket-D"]')).toHaveCount(0)
@@ -127,7 +128,7 @@ test.describe('Bewertung und Priorisierung', () => {
 		await call(admin, 'post', `/demands/${demand.id}/assessments`, { kind: 'review', scores: scores(before, 3), effort: 3 }, 201)
 		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 		try {
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator('[data-test="nav-model"]').click()
 			await page.locator('[data-test="edit-criteria"]').click()
 			// Gewichte verschieben: N1 +5, N2 −5 → Summe bleibt 100

@@ -105,6 +105,7 @@ return [
 		['name' => 'steering_api#resolve', 'url' => '/api/v1/conflicts/{id}/resolve', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 		['name' => 'steering_api#postCalculation', 'url' => '/api/v1/post-calculation', 'verb' => 'GET'],
 		['name' => 'steering_api#estimateFactors', 'url' => '/api/v1/post-calculation/factors', 'verb' => 'GET'],
+		['name' => 'dashboard_api#management', 'url' => '/api/v1/dashboard', 'verb' => 'GET'],
 		['name' => 'scenario_api#list', 'url' => '/api/v1/scenarios', 'verb' => 'GET'],
 		['name' => 'scenario_api#create', 'url' => '/api/v1/scenarios', 'verb' => 'POST'],
 		['name' => 'scenario_api#get', 'url' => '/api/v1/scenarios/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],

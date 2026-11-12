@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { openDemands } = require('../helpers/nav')
 const { PATH, adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { ADMIN_PASSWORD, ADMIN_USER, E2E_OTHER_USER, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
@@ -8,7 +9,7 @@ const unique = (prefix) => `${prefix} ${Date.now()}`
 
 test.describe('Organisation und Rollen', () => {
 	test('Ohne PMO-Rolle keine Organisationsansicht', async ({ page }) => {
-		await page.goto('/apps/nc_nexus/')
+		await openDemands(page)
 		await expect(page.locator('[data-test="new-demand"]')).toBeVisible()
 		await expect(page.locator('[data-test="nav-org"]')).toHaveCount(0)
 	})
@@ -18,7 +19,7 @@ test.describe('Organisation und Rollen', () => {
 		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 		const admin = await adminApi()
 		try {
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator('[data-test="nav-org"]').click()
 			await expect(page.locator('[data-test="org-view"]')).toBeVisible()
 
@@ -87,7 +88,7 @@ test.describe('Organisation und Rollen', () => {
 			// ohne Rolle: weder in der Liste noch einzeln abrufbar
 			const own = await apiAs(E2E_USER)
 			expect((await own.get(`${PATH}/${demand.id}`)).status()).toBe(404)
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await expect(page.locator('[data-test="new-demand"]')).toBeVisible()
 			await expect(page.locator(`[data-test="demand-${demand.key}"]`)).toHaveCount(0)
 
@@ -95,7 +96,7 @@ test.describe('Organisation und Rollen', () => {
 			role = await call(admin, 'post', '/role-assignments', {
 				role: 'board_member', scopeType: 'org_unit', scopeId: unit.id, principalType: 'user', principalId: E2E_USER,
 			})
-			await page.reload()
+			await openDemands(page)
 			await page.locator(`[data-test="demand-${demand.key}"]`).click()
 			const editor = page.locator('[data-test="demand-editor"]')
 			await expect(editor.locator('[data-test="field-title"] input')).toBeDisabled()

@@ -23,6 +23,15 @@
 			</div>
 
 			<NcAppNavigationList>
+				<NcAppNavigationItem v-if="poolInfo.canSee"
+					:name="t('nc_nexus', 'Overview')"
+					:active="view === 'dashboard'"
+					data-test="nav-dashboard"
+					@click="view = 'dashboard'">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiViewDashboardOutline" />
+					</template>
+				</NcAppNavigationItem>
 				<NcAppNavigationItem :name="t('nc_nexus', 'All demands')"
 					:active="view === 'demands' && filter.kind === 'all'"
 					data-test="nav-all"
@@ -33,138 +42,6 @@
 					<template #counter>
 						<NcCounterBubble v-if="demands.length" :count="demands.length" />
 					</template>
-				</NcAppNavigationItem>
-
-				<NcAppNavigationItem :name="t('nc_nexus', 'Decision register')"
-					:active="view === 'decisions'"
-					data-test="nav-decisions"
-					@click="view = 'decisions'">
-					<template #icon>
-						<NcIconSvgWrapper :path="mdiScaleBalance" />
-					</template>
-				</NcAppNavigationItem>
-				<NcAppNavigationItem v-if="showSessions"
-					:name="t('nc_nexus', 'Sessions')"
-					:active="view === 'sessions'"
-					data-test="nav-sessions"
-					@click="view = 'sessions'">
-					<template #icon>
-						<NcIconSvgWrapper :path="mdiCalendarAccount" />
-					</template>
-				</NcAppNavigationItem>
-				<NcAppNavigationItem :name="t('nc_nexus', 'Decision follow-up')"
-					:active="view === 'conditions'"
-					data-test="nav-conditions"
-					@click="view = 'conditions'">
-					<template #icon>
-						<NcIconSvgWrapper :path="mdiClipboardCheckOutline" />
-					</template>
-				</NcAppNavigationItem>
-
-				<NcAppNavigationItem :name="t('nc_nexus', 'Strategic objectives')"
-					:active="view === 'objectives'"
-					data-test="nav-objectives"
-					@click="view = 'objectives'">
-					<template #icon>
-						<NcIconSvgWrapper :path="mdiBullseyeArrow" />
-					</template>
-				</NcAppNavigationItem>
-				<NcAppNavigationItem :name="t('nc_nexus', 'Benefit register')"
-					:active="view === 'benefits'"
-					data-test="nav-benefits"
-					@click="view = 'benefits'">
-					<template #icon>
-						<NcIconSvgWrapper :path="mdiCashMultiple" />
-					</template>
-				</NcAppNavigationItem>
-				<NcAppNavigationItem v-if="poolInfo.canSee"
-					:name="t('nc_nexus', 'Portfolio')"
-					:active="view === 'portfolio'"
-					data-test="nav-portfolio"
-					@click="view = 'portfolio'">
-					<template #icon>
-						<NcIconSvgWrapper :path="mdiViewGridOutline" />
-					</template>
-				</NcAppNavigationItem>
-				<NcAppNavigationItem v-if="poolInfo.canSee"
-					:name="t('nc_nexus', 'Prioritization')"
-					:active="view === 'ranking'"
-					data-test="nav-ranking"
-					@click="view = 'ranking'">
-					<template #icon>
-						<NcIconSvgWrapper :path="mdiSortNumericAscending" />
-					</template>
-				</NcAppNavigationItem>
-				<NcAppNavigationItem v-if="poolInfo.canSee"
-					:name="t('nc_nexus', 'Capacity')"
-					:active="view === 'capacity'"
-					data-test="nav-capacity"
-					@click="view = 'capacity'">
-					<template #icon>
-						<NcIconSvgWrapper :path="mdiChartBox" />
-					</template>
-				</NcAppNavigationItem>
-				<NcAppNavigationItem v-if="poolInfo.canSee"
-					:name="t('nc_nexus', 'Scenarios')"
-					:active="view === 'scenarios'"
-					data-test="nav-scenarios"
-					@click="view = 'scenarios'">
-					<template #icon>
-						<NcIconSvgWrapper :path="mdiCompareHorizontal" />
-					</template>
-				</NcAppNavigationItem>
-
-				<NcAppNavigationItem v-model:open="groups.steering"
-					:name="t('nc_nexus', 'Steering')"
-					:allow-collapse="true"
-					data-test="nav-group-steering"
-					@click="groups.steering = !groups.steering">
-					<template #icon>
-						<NcIconSvgWrapper :path="mdiSteering" />
-					</template>
-					<NcAppNavigationItem :name="t('nc_nexus', 'Projects')"
-						:active="view === 'projects'"
-						data-test="nav-projects"
-						@click="openProjects(null)">
-						<template #icon>
-							<NcIconSvgWrapper :path="mdiBriefcaseOutline" />
-						</template>
-					</NcAppNavigationItem>
-					<NcAppNavigationItem :name="t('nc_nexus', 'Portfolio risks')"
-						:active="view === 'risks'"
-						data-test="nav-risks"
-						@click="view = 'risks'">
-						<template #icon>
-							<NcIconSvgWrapper :path="mdiAlertOutline" />
-						</template>
-					</NcAppNavigationItem>
-					<NcAppNavigationItem v-if="poolInfo.canSee"
-						:name="t('nc_nexus', 'Resource conflicts')"
-						:active="view === 'conflicts'"
-						data-test="nav-conflicts"
-						@click="view = 'conflicts'">
-						<template #icon>
-							<NcIconSvgWrapper :path="mdiSwapHorizontal" />
-						</template>
-					</NcAppNavigationItem>
-					<NcAppNavigationItem v-if="poolInfo.canSee"
-						:name="t('nc_nexus', 'Key figures')"
-						:active="view === 'kpis'"
-						data-test="nav-kpis"
-						@click="view = 'kpis'">
-						<template #icon>
-							<NcIconSvgWrapper :path="mdiSpeedometer" />
-						</template>
-					</NcAppNavigationItem>
-					<NcAppNavigationItem v-if="poolInfo.canSee"
-						:name="t('nc_nexus', 'Post-calculation')"
-						:active="view === 'postcalc'"
-						data-test="nav-postcalc"
-						@click="view = 'postcalc'">
-						<template #icon>
-							<NcIconSvgWrapper :path="mdiCalculatorVariantOutline" />
-						</template>
-					</NcAppNavigationItem>
 				</NcAppNavigationItem>
 
 				<NcAppNavigationItem v-if="me.canTriage"
@@ -260,6 +137,156 @@
 						</template>
 					</NcAppNavigationItem>
 				</NcAppNavigationItem>
+
+				<NcAppNavigationItem v-model:open="groups.portfolio"
+					:name="t('nc_nexus', 'Portfolio')"
+					:allow-collapse="true"
+					data-test="nav-group-portfolio"
+					@click="groups.portfolio = !groups.portfolio">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiViewGridOutline" />
+					</template>
+					<NcAppNavigationItem v-if="poolInfo.canSee"
+						:name="t('nc_nexus', 'Portfolio overview')"
+						:active="view === 'portfolio'"
+						data-test="nav-portfolio"
+						@click="view = 'portfolio'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiViewGridOutline" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="poolInfo.canSee"
+						:name="t('nc_nexus', 'Prioritization')"
+						:active="view === 'ranking'"
+						data-test="nav-ranking"
+						@click="view = 'ranking'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiSortNumericAscending" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="poolInfo.canSee"
+						:name="t('nc_nexus', 'Capacity')"
+						:active="view === 'capacity'"
+						data-test="nav-capacity"
+						@click="view = 'capacity'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiChartBox" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="poolInfo.canSee"
+						:name="t('nc_nexus', 'Scenarios')"
+						:active="view === 'scenarios'"
+						data-test="nav-scenarios"
+						@click="view = 'scenarios'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiCompareHorizontal" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem :name="t('nc_nexus', 'Strategic objectives')"
+						:active="view === 'objectives'"
+						data-test="nav-objectives"
+						@click="view = 'objectives'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiBullseyeArrow" />
+						</template>
+					</NcAppNavigationItem>
+				</NcAppNavigationItem>
+
+				<NcAppNavigationItem v-model:open="groups.steering"
+					:name="t('nc_nexus', 'Steering')"
+					:allow-collapse="true"
+					data-test="nav-group-steering"
+					@click="groups.steering = !groups.steering">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiSteering" />
+					</template>
+					<NcAppNavigationItem :name="t('nc_nexus', 'Projects')"
+						:active="view === 'projects'"
+						data-test="nav-projects"
+						@click="openProjects(null)">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiBriefcaseOutline" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem :name="t('nc_nexus', 'Portfolio risks')"
+						:active="view === 'risks'"
+						data-test="nav-risks"
+						@click="view = 'risks'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiAlertOutline" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="poolInfo.canSee"
+						:name="t('nc_nexus', 'Resource conflicts')"
+						:active="view === 'conflicts'"
+						data-test="nav-conflicts"
+						@click="view = 'conflicts'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiSwapHorizontal" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem :name="t('nc_nexus', 'Benefit register')"
+						:active="view === 'benefits'"
+						data-test="nav-benefits"
+						@click="view = 'benefits'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiCashMultiple" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="poolInfo.canSee"
+						:name="t('nc_nexus', 'Key figures')"
+						:active="view === 'kpis'"
+						data-test="nav-kpis"
+						@click="view = 'kpis'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiSpeedometer" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem v-if="poolInfo.canSee"
+						:name="t('nc_nexus', 'Post-calculation')"
+						:active="view === 'postcalc'"
+						data-test="nav-postcalc"
+						@click="view = 'postcalc'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiCalculatorVariantOutline" />
+						</template>
+					</NcAppNavigationItem>
+				</NcAppNavigationItem>
+
+				<NcAppNavigationItem v-model:open="groups.decisions"
+					:name="t('nc_nexus', 'Boards & decisions')"
+					:allow-collapse="true"
+					data-test="nav-group-decisions"
+					@click="groups.decisions = !groups.decisions">
+					<template #icon>
+						<NcIconSvgWrapper :path="mdiAccountGroupOutline" />
+					</template>
+					<NcAppNavigationItem v-if="showSessions"
+						:name="t('nc_nexus', 'Sessions')"
+						:active="view === 'sessions'"
+						data-test="nav-sessions"
+						@click="view = 'sessions'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiCalendarAccount" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem :name="t('nc_nexus', 'Decision register')"
+						:active="view === 'decisions'"
+						data-test="nav-decisions"
+						@click="view = 'decisions'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiScaleBalance" />
+						</template>
+					</NcAppNavigationItem>
+					<NcAppNavigationItem :name="t('nc_nexus', 'Decision follow-up')"
+						:active="view === 'conditions'"
+						data-test="nav-conditions"
+						@click="view = 'conditions'">
+						<template #icon>
+							<NcIconSvgWrapper :path="mdiClipboardCheckOutline" />
+						</template>
+					</NcAppNavigationItem>
+				</NcAppNavigationItem>
 			</NcAppNavigationList>
 
 			<template #footer>
@@ -312,7 +339,12 @@
 		</NcAppNavigation>
 
 		<NcAppContent>
-			<BenefitRegister v-if="view === 'benefits'"
+			<DashboardView v-if="view === 'dashboard'"
+				:refresh-key="refresh"
+				@navigate="go"
+				@project="openProjects"
+				@open="openEditor" />
+			<BenefitRegister v-else-if="view === 'benefits'"
 				:refresh-key="refresh"
 				@open="openEditor" />
 			<RankingView v-else-if="view === 'ranking'"
@@ -402,7 +434,7 @@
 </template>
 
 <script>
-import { mdiAccountQuestion, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiAlertOutline, mdiArchiveOutline, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiBullseyeArrow, mdiCancel, mdiFlagCheckered, mdiPlayCircleOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCompareHorizontal, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
+import { mdiAccountGroupOutline, mdiAccountQuestion, mdiViewDashboardOutline, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiAlertOutline, mdiArchiveOutline, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiBullseyeArrow, mdiCancel, mdiFlagCheckered, mdiPlayCircleOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiCalendarClock, mdiChartBox, mdiCheckCircleOutline, mdiCompareHorizontal, mdiCloseCircleOutline, mdiContentDuplicate, mdiDomain, mdiFileDocumentEditOutline, mdiGavel, mdiInboxArrowDown, mdiMagnify, mdiMagnifyScan, mdiPauseCircleOutline, mdiPlus, mdiScaleBalance, mdiSend, mdiSortNumericAscending, mdiTuneVariant, mdiViewGridOutline } from '@mdi/js'
 import { showError } from '@nextcloud/dialogs'
 import { loadState } from '@nextcloud/initial-state'
 import { t } from '@nextcloud/l10n'
@@ -421,6 +453,7 @@ import GlossaryDialog from './components/GlossaryDialog.vue'
 import DemandList from './views/DemandList.vue'
 import BenefitRegister from './views/BenefitRegister.vue'
 import CapacityView from './views/CapacityView.vue'
+import DashboardView from './views/DashboardView.vue'
 import PortfolioView from './views/PortfolioView.vue'
 import RankingView from './views/RankingView.vue'
 import ScoringModelView from './views/ScoringModelView.vue'
@@ -440,6 +473,13 @@ import SessionsView from './views/SessionsView.vue'
 import { errorMessage, getMe, listDemands, listObjectives, listOrgUnits, listPools, listRoleAssignments, scoringModel } from './api.js'
 import { PHASE_OF, phaseLabel, STATUSES, statusLabel, typeColor, typeLabel } from './labels.js'
 
+// Ansichten je Navigationsgruppe
+const NAV_GROUPS = {
+	portfolio: ['portfolio', 'ranking', 'capacity', 'scenarios', 'objectives'],
+	steering: ['projects', 'risks', 'conflicts', 'benefits', 'kpis', 'postcalc'],
+	decisions: ['sessions', 'decisions', 'conditions'],
+}
+
 export default {
 	name: 'App',
 	components: {
@@ -457,6 +497,7 @@ export default {
 		NcTextField,
 		BenefitRegister,
 		CapacityView,
+		DashboardView,
 		ConditionsView,
 		ConflictsView,
 		KpiView,
@@ -476,7 +517,7 @@ export default {
 		ScoringModelView,
 	},
 	setup() {
-		return { mdiAlertOutline, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiCompareHorizontal, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
+		return { mdiAccountGroupOutline, mdiViewDashboardOutline, mdiAlertOutline, mdiCalculatorVariantOutline, mdiBookOpenVariant, mdiBriefcaseOutline, mdiSpeedometer, mdiSteering, mdiSwapHorizontal, mdiProgressCheck, mdiShapeOutline, mdiCalendarAccount, mdiClipboardCheckOutline, mdiShieldCheckOutline, mdiSitemapOutline, mdiCashMultiple, mdiSortNumericAscending, mdiTuneVariant, mdiBullseyeArrow, mdiCalendarClock, mdiChartBox, mdiCompareHorizontal, mdiViewGridOutline, mdiGavel, mdiMagnifyScan, mdiScaleBalance, mdiDomain, mdiFileDocumentEditOutline, mdiInboxArrowDown, mdiMagnify, mdiPlus, mdiSend, t, statusLabel, typeColor, typeLabel }
 	},
 	data() {
 		return {
@@ -489,8 +530,10 @@ export default {
 			filter: { kind: 'all', value: null },
 			types: loadState('nc_nexus', 'demand_types', []),
 			view: 'demands',
-			// Gruppen der Navigation, standardmäßig eingeklappt
-			groups: { steering: false, triage: false, status: false, types: false },
+			// Gruppen der Navigation, standardmäßig eingeklappt; die Gruppe der offenen Ansicht klappt auf
+			groups: { portfolio: false, steering: false, decisions: false, triage: false, status: false, types: false },
+			// Startseite: Governance-Rollen landen auf der Übersicht, sobald ihre Rechte geladen sind
+			startPending: true,
 			projectOpenId: null,
 			refresh: 0,
 			me: { canManageOrg: false, canTriage: false, roles: [], bodies: [] },
@@ -554,6 +597,14 @@ export default {
 			return t('nc_nexus', 'Demands')
 		},
 	},
+	watch: {
+		view(view) {
+			const group = Object.entries(NAV_GROUPS).find(([, views]) => views.includes(view))?.[0]
+			if (group) {
+				this.groups[group] = true
+			}
+		},
+	},
 	mounted() {
 		this.load()
 		this.loadOrg()
@@ -604,13 +655,23 @@ export default {
 				this.orgUnits = await listOrgUnits()
 				this.assignments = this.me.canManageOrg ? await listRoleAssignments() : []
 				this.poolInfo = await listPools()
+				if (this.startPending && this.poolInfo.canSee && this.view === 'demands' && this.filter.kind === 'all') {
+					this.view = 'dashboard'
+				}
+				this.startPending = false
 				this.objectiveInfo = await listObjectives()
 				this.scoring = await scoringModel()
 			} catch (e) {
 				showError(errorMessage(e))
 			}
 		},
+		// Klick in die Navigation vor dem Laden der Rechte: keine automatische Startseite mehr
+		go(view) {
+			this.startPending = false
+			this.view = view
+		},
 		setFilter(kind, value = null) {
+			this.startPending = false
 			this.filter = { kind, value }
 			this.view = 'demands'
 		},

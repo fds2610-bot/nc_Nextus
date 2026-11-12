@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { navTo, openDemands } = require('../helpers/nav')
 const { adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { ADMIN_PASSWORD, ADMIN_USER, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
@@ -32,7 +33,7 @@ async function cleanup(admin, poolCode) {
 
 test.describe('Ressourcenpools und Kapazität', () => {
 	test('Ohne Governance-Rolle keine Kapazitätsansicht', async ({ page }) => {
-		await page.goto('/apps/nc_nexus/')
+		await openDemands(page)
 		await expect(page.locator('[data-test="new-demand"]')).toBeVisible()
 		await expect(page.locator('[data-test="nav-capacity"]')).toHaveCount(0)
 	})
@@ -42,8 +43,8 @@ test.describe('Ressourcenpools und Kapazität', () => {
 		const admin = await adminApi()
 		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 		try {
-			await page.goto('/apps/nc_nexus/')
-			await page.locator('[data-test="nav-capacity"]').click()
+			await openDemands(page)
+			await navTo(page, 'portfolio', 'nav-capacity')
 			await page.locator('[data-test="new-pool"]').click()
 			const dialog = page.locator('[data-test="pool-dialog"]')
 			await dialog.locator('[data-test="field-pool-name"] input').fill(`E2E-Pool ${poolCode}`)
@@ -79,7 +80,7 @@ test.describe('Ressourcenpools und Kapazität', () => {
 		try {
 			// Antragsteller erfasst 15 PT im Antrag und reicht ein
 			const title = `E2E-Bedarf ${poolCode}`
-			await page.goto('/apps/nc_nexus/')
+			await openDemands(page)
 			await page.locator('[data-test="new-demand"]').click()
 			const editor = page.locator('[data-test="demand-editor"]')
 			await editor.locator('[data-test="field-title"] input').fill(title)
@@ -97,8 +98,8 @@ test.describe('Ressourcenpools und Kapazität', () => {
 			// PMO sieht 75 % Auslastung und den Antrag in der Aufschlüsselung
 			const { context, page: pmo } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 			try {
-				await pmo.goto('/apps/nc_nexus/')
-				await pmo.locator('[data-test="nav-capacity"]').click()
+				await openDemands(pmo)
+				await navTo(pmo, 'portfolio', 'nav-capacity')
 				const cell = pmo.locator(`[data-test="cell-${poolCode}-${thisMonth()}"]`)
 				await expect(cell).toContainText('75 %')
 				await cell.click()

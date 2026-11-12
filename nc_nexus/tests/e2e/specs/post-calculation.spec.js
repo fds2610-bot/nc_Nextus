@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test')
 const { API, adminApi, apiAs, call, createDemand } = require('../helpers/api')
 const { ADMIN_PASSWORD, ADMIN_USER, E2E_PASSWORD, E2E_USER } = require('../helpers/env')
 const { loginAs } = require('../helpers/login')
-const { navTo } = require('../helpers/nav')
+const { navTo, openDemands } = require('../helpers/nav')
 
 const month = (offset = 0) => {
 	const d = new Date()
@@ -90,7 +90,7 @@ test.describe('Nachkalkulation und Schätzkorrekturfaktoren (Stufe 5)', () => {
 			// Oberfläche PMO: Matrix und Cockpit
 			const pmo = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 			try {
-				await pmo.page.goto('/apps/nc_nexus/')
+				await openDemands(pmo.page)
 				await navTo(pmo.page, 'steering', 'nav-postcalc')
 				const view = pmo.page.locator('[data-test="postcalc-view"]')
 				await expect(view.locator(`[data-test="postcalc-all-${code}"]`)).toContainText('130 %')
@@ -107,7 +107,7 @@ test.describe('Nachkalkulation und Schätzkorrekturfaktoren (Stufe 5)', () => {
 			const ui = await loginAs(browser, E2E_USER, E2E_PASSWORD)
 			try {
 				const page = ui.page
-				await page.goto('/apps/nc_nexus/')
+				await openDemands(page)
 				await page.locator('[data-test="new-demand"]').click()
 				const editor = page.locator('[data-test="demand-editor"]')
 				await editor.locator('[data-test="add-need"]').click()
