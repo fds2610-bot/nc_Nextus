@@ -27,7 +27,8 @@ use OCP\AppFramework\Db\Entity;
  */
 class AuditEntry extends Entity implements JsonSerializable {
 	protected string $entityType = '';
-	protected int $entityId = 0;
+	// null statt 0: sonst gilt setEntityId(0) (z. B. Einstellungen) nicht als Änderung und die Spalte fehlt im INSERT
+	protected ?int $entityId = null;
 	protected string $action = '';
 	protected ?string $fieldChanges = null;
 	protected string $userId = '';

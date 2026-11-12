@@ -521,7 +521,7 @@ class GateService {
 				$missing = $this->benefits->unreviewed($demand);
 				return ['key' => $key, 'ok' => $missing === [], 'detail' => implode(', ', $missing)];
 			case 'planning_link':
-				return ['key' => $key, 'ok' => $this->planningLinks->find($demand->getId(), 'gantt') !== null];
+				return ['key' => $key, 'ok' => $this->planningLinks->findByDemand($demand->getId()) !== null];
 		}
 		return ['key' => $key, 'ok' => true];
 	}

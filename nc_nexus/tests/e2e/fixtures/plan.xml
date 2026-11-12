@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Project xmlns="http://schemas.microsoft.com/project">
+	<Name>Leitstand.xml</Name>
+	<Title>Leitstand Montage</Title>
+	<Tasks>
+		<Task><UID>0</UID><Name>Leitstand Montage</Name><Summary>1</Summary><Start>2026-11-02T08:00:00</Start><Finish>2027-03-31T17:00:00</Finish></Task>
+		<Task><UID>1</UID><Name>Phase Konzept</Name><Summary>1</Summary><Start>2026-11-02T08:00:00</Start><Finish>2026-11-27T17:00:00</Finish><PercentComplete>50</PercentComplete></Task>
+		<Task><UID>2</UID><Name>Anforderungen</Name><Start>2026-11-02T08:00:00</Start><Finish>2026-11-11T17:00:00</Finish><PercentComplete>100</PercentComplete><Milestone>0</Milestone></Task>
+		<Task><UID>3</UID><Name>Grobkonzept</Name><Start>2026-11-12T08:00:00</Start><Finish>2026-11-21T17:00:00</Finish><PercentComplete>50</PercentComplete><Milestone>0</Milestone></Task>
+		<Task><UID>4</UID><Name>Konzept abgenommen</Name><Start>2026-11-27T17:00:00</Start><Finish>2026-11-27T17:00:00</Finish><PercentComplete>0</PercentComplete><Milestone>1</Milestone></Task>
+		<Task><UID>5</UID><IsNull>1</IsNull></Task>
+		<Task><UID>6</UID><Name>Inbetriebnahme</Name><Start>2027-03-31T17:00:00</Start><Finish>2027-03-31T17:00:00</Finish><PercentComplete>0</PercentComplete><Milestone>1</Milestone></Task>
+	</Tasks>
+</Project>

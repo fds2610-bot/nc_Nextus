@@ -10,6 +10,7 @@ use OCA\Nexus\Db\PlanningLinkMapper;
 use OCA\Nexus\Db\ResourceNeedMapper;
 use OCA\Nexus\Db\ScoringMapper;
 use OCA\Nexus\Exception\ForbiddenException;
+use OCA\Nexus\Planning\PlanningProviderRegistry;
 use OCP\AppFramework\Utility\ITimeFactory;
 
 /**
@@ -33,7 +34,7 @@ class QualityService {
 		private ResourceNeedMapper $needs,
 		private ObjectiveMapper $objectives,
 		private PlanningLinkMapper $planningLinks,
-		private GanttGateway $gantt,
+		private PlanningProviderRegistry $planningProviders,
 		private CapacityService $capacity,
 		private ConditionService $conditions,
 		private PermissionService $permissions,
@@ -100,8 +101,8 @@ class QualityService {
 		$add('analysis_overdue', 'analysis_owner', $where(['further_analysis'], static fn (Demand $d) => $d->getAnalysisDue() !== null && $d->getAnalysisDue() < $today ? $d->getAnalysisOwner() . ' · ' . $d->getAnalysisDue() : false));
 		$add('query_overdue', 'requestor', $where(['query'], static fn (Demand $d) => $d->getQueryDue() !== null && $d->getQueryDue() < $today ? (string)$d->getQueryDue() : false));
 		$add('stale', 'requestor', $where(self::OPEN, static fn (Demand $d) => $d->getUpdatedAt() < $now - self::STALE_DAYS * 86400 ? date('Y-m-d', $d->getUpdatedAt()) : false));
-		if ($this->gantt->isAvailable($userId)) {
-			$add('no_planning_link', 'project_manager', $where(['released', 'in_execution'], fn (Demand $d) => $this->planningLinks->find($d->getId(), 'gantt') === null));
+		if ($this->planningProviders->hasLiveProvider($userId)) {
+			$add('no_planning_link', 'project_manager', $where(['released', 'in_execution'], fn (Demand $d) => $this->planningLinks->findByDemand($d->getId()) === null));
 		}
 
 		$overdue = [];

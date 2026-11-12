@@ -23,6 +23,6 @@ class PlanningServiceTest extends TestCase {
 	}
 
 	public function testEmptyProject(): void {
-		$this->assertSame(['tasks' => 0, 'done' => 0, 'progress' => 0, 'start' => null, 'end' => null, 'overdue' => 0], PlanningService::summarize([], '2026-11-11'));
+		$this->assertSame(['tasks' => 0, 'done' => 0, 'progress' => 0, 'start' => null, 'end' => null, 'overdue' => 0, 'milestones' => []], PlanningService::summarize([], '2026-11-11'));
 	}
 }

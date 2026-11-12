@@ -45,6 +45,33 @@ class PlanningLinkMapper {
 		];
 	}
 
+	/**
+	 * Verknüpfung eines Vorhabens, gleich mit welchem Planungstool (je Vorhaben höchstens eine).
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	public function findByDemand(int $demandId): ?array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('provider')->from(self::TABLE)
+			->where($qb->expr()->eq('demand_id', $qb->createNamedParameter($demandId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'DESC')
+			->setMaxResults(1);
+		$result = $qb->executeQuery();
+		$provider = $result->fetchOne();
+		$result->closeCursor();
+		return $provider === false ? null : $this->find($demandId, (string)$provider);
+	}
+
+	/** Ziel einer Verknüpfung ersetzen (neuer Datei-Schnappschuss) */
+	public function updateTarget(int $id, string $externalId, string $title, string $url): void {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update(self::TABLE)
+			->set('external_id', $qb->createNamedParameter($externalId))
+			->set('title', $qb->createNamedParameter($title))
+			->set('url', $qb->createNamedParameter($url))
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))->executeStatement();
+	}
+
 	public function insert(int $demandId, string $provider, string $externalId, string $title, string $url, string $userId, int $now): void {
 		$qb = $this->db->getQueryBuilder();
 		$qb->insert(self::TABLE)->values([

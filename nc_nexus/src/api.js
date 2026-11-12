@@ -111,9 +111,13 @@ export const scenarioAction = async (id, action, payload = {}) => data(await axi
 export const setScenarioTask = async (id, index, done) => data(await axios.put(v1(`/scenarios/${id}/tasks/${index}`), { done }))
 
 export const getPlanning = async (id) => data(await axios.get(v1(`/demands/${id}/planning`)))
-export const connectPlanning = async (id, projectId = null) => data(await axios.post(v1(`/demands/${id}/planning`), { projectId }))
+export const connectPlanning = async (id, provider, projectId = null) => data(await axios.post(v1(`/demands/${id}/planning`), { provider, projectId }))
+export const importPlanning = async (id, fileName, content, provider = 'mspdi') => data(await axios.post(v1(`/demands/${id}/planning/import`), { provider, fileName, content }))
 export const disconnectPlanning = async (id) => data(await axios.delete(v1(`/demands/${id}/planning`)))
-export const planningProjects = async () => data(await axios.get(v1('/planning/projects')))
+export const planningProjects = async (provider) => data(await axios.get(v1('/planning/projects'), { params: { provider } }))
+export const savePlanningCredentials = async (provider, secret) => data(await axios.put(v1(`/planning/credentials/${provider}`), { secret }))
+export const getPlanningConfig = async () => data(await axios.get(v1('/planning/config')))
+export const savePlanningConfig = async (values) => data(await axios.put(v1('/planning/config'), values))
 
 // Stufe 3: Gates, Governance-Konfiguration, Sitzungen, Auflagen, Datenqualität
 export const submitGate = async (id, step) => data(await axios.post(`${base}/${id}/gate/submit`, { step }))

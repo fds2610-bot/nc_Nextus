@@ -217,6 +217,38 @@ snapshot_save() { # $1 = Zieldatei
 	esac
 }
 
+# App-Konfiguration von nc_nexus (Schwellenwerte, Adresse von OpenProject …) generisch sichern
+# und wiederherstellen: Schlüssel, die der Lauf neu angelegt hat, werden gelöscht, alle anderen
+# auf den gesicherten Wert gesetzt. Versionsschlüssel der App bleiben unberührt.
+config_save() { # $1 = Zieldatei (JSON)
+	occ config:list nc_nexus --private >"$1"
+}
+
+config_restore() { # $1 = Sicherungsdatei
+	local action key value
+	# je Zeile: „del <key>“ oder „set <key> <wert-base64>“; occ bekommt /dev/null als stdin,
+	# sonst liest docker exec die restlichen Zeilen der Schleife weg
+	occ config:list nc_nexus --private </dev/null | python3 -c '
+import base64, json, sys
+skip = {"enabled", "installed_version", "types"}
+before = json.load(open(sys.argv[1]))["apps"].get("nc_nexus", {})
+now = json.load(sys.stdin)["apps"].get("nc_nexus", {})
+for k in now:
+    if k not in before and k not in skip:
+        print("del", k)
+for k, v in before.items():
+    if k not in skip and now.get(k) != v:
+        print("set", k, base64.b64encode(str(v).encode()).decode() or "-")' "$1" |
+		while read -r action key value; do
+			if [ "$action" = del ]; then
+				occ config:app:delete nc_nexus "$key" </dev/null >/dev/null
+			else
+				[ "$value" = - ] && value='' || value=$(printf %s "$value" | base64 -d)
+				occ config:app:set nc_nexus "$key" --value="$value" </dev/null >/dev/null
+			fi
+		done
+}
+
 snapshot_restore() { # $1 = Sicherungsdatei, $2 = Startzeit des Laufs (Unix)
 	local tables
 	# Benachrichtigungen, die Nexus während des Laufs erzeugt hat, gehören zu den Testdaten
@@ -246,9 +278,11 @@ reset_data() {
 }
 
 e2e() {
-	local snap='' rc=0 started
+	local snap='' conf='' rc=0 started
 	started=$(date +%s)
 	if [ -z "${NX_E2E_KEEP:-}" ]; then
+		conf=$(mktemp)
+		config_save "$conf" || { rm -f "$conf"; die "Sicherung der App-Konfiguration vor den E2E-Tests fehlgeschlagen"; }
 		snap=$(mktemp)
 		snapshot_save "$snap" || { rm -f "$snap"; die "Sicherung der App-Daten vor den E2E-Tests fehlgeschlagen"; }
 		[ "$NX_DB" = sqlite ] || [ -s "$snap" ] || { rm -f "$snap"; die "Sicherung der App-Daten ist leer"; }
@@ -262,6 +296,10 @@ e2e() {
 			echo "WARNUNG: App-Daten konnten nicht zurückgesetzt werden" >&2
 		fi
 		rm -f "$snap"
+	fi
+	if [ -n "$conf" ]; then
+		config_restore "$conf" && echo "App-Konfiguration wiederhergestellt" || echo "WARNUNG: App-Konfiguration konnte nicht wiederhergestellt werden" >&2
+		rm -f "$conf"
 	fi
 	return "$rc"
 }
