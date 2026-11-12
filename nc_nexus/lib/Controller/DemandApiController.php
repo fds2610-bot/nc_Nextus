@@ -245,22 +245,13 @@ class DemandApiController extends OCSController {
 	 * @param string $title Titel (Suchtext)
 	 * @param string $problem Problembeschreibung (optional)
 	 * @param int|null $excludeId eigener Antrag, der nicht vorgeschlagen werden soll
-	 * @return DataResponse<Http::STATUS_OK, array{matches: list<array{id: int, key: string, title: string, status: string, score: float}>}, array{}>
+	 * @return DataResponse<Http::STATUS_OK, array{matches: list<array{id: int, key: string, title: string, status: string, score: float, orgUnitId: ?int, orgUnitName: ?string, requestorId: string, requestorName: string}>}, array{}>
 	 *
 	 * 200: Vorschläge
 	 */
 	#[NoAdminRequired]
 	public function similar(string $title = '', string $problem = '', ?int $excludeId = null): DataResponse {
-		$matches = $this->similarity->similar($this->uid(), $title, $problem, $excludeId);
-		return new DataResponse([
-			'matches' => array_map(static fn ($m) => [
-				'id' => $m['demand']->getId(),
-				'key' => $m['demand']->getDemandKey(),
-				'title' => $m['demand']->getTitle(),
-				'status' => $m['demand']->getStatus(),
-				'score' => $m['score'],
-			], $matches),
-		]);
+		return new DataResponse(['matches' => $this->similarity->suggestions($this->uid(), $title, $problem, $excludeId)]);
 	}
 
 	/**

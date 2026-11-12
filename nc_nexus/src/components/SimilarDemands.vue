@@ -7,7 +7,10 @@
 		<ul>
 			<li v-for="m in matches" :key="m.id" :data-test="'similar-' + m.key">
 				<span class="similar__key">{{ m.key }}</span>
-				<span class="similar__title">{{ m.title }}</span>
+				<span class="similar__main">
+					<span class="similar__title">{{ m.title }}</span>
+					<span class="similar__meta" data-test="similar-meta">{{ meta(m) }}</span>
+				</span>
 				<span class="nx-chip" :class="'nx-chip--' + statusChip(m.status)">{{ statusLabel(m.status) }}</span>
 			</li>
 		</ul>
@@ -64,6 +67,10 @@ export default {
 		clearTimeout(this.timer)
 	},
 	methods: {
+		meta(m) {
+			const person = m.requestorName && m.requestorName !== m.requestorId ? `${m.requestorName} (${m.requestorId})` : m.requestorId
+			return t('nc_nexus', 'Organizational unit: {unit} · Requestor: {person}', { unit: m.orgUnitName || t('nc_nexus', 'none'), person })
+		},
 		schedule() {
 			if (this.mode !== 'input') {
 				return
@@ -120,6 +127,20 @@ export default {
 	&__key {
 		color: var(--color-text-maxcontrast);
 		font-variant-numeric: tabular-nums;
+	}
+
+	&__main {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	&__meta {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		color: var(--color-text-maxcontrast);
+		font-size: 0.9em;
 	}
 
 	&__title {

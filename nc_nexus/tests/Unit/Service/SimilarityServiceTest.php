@@ -6,8 +6,11 @@ namespace OCA\Nexus\Tests\Unit\Service;
 
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\DemandMapper;
+use OCA\Nexus\Db\OrgUnit;
+use OCA\Nexus\Db\OrgUnitMapper;
 use OCA\Nexus\Service\PermissionService;
 use OCA\Nexus\Service\SimilarityService;
+use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 
 class SimilarityServiceTest extends TestCase {
@@ -28,6 +31,8 @@ class SimilarityServiceTest extends TestCase {
 			$d->setProblemStatement($problem);
 			$d->setStatus($status);
 			$d->setRequestorId($requestor);
+			$d->setDemandKey('D-' . $id);
+			$d->setOrgUnitId($id === 1 ? 7 : null);
 			$demands[] = $d;
 		}
 		$mapper = $this->createMock(DemandMapper::class);
@@ -35,7 +40,14 @@ class SimilarityServiceTest extends TestCase {
 		$permissions = $this->createMock(PermissionService::class);
 		// alice sieht nur ihre eigenen Anträge
 		$permissions->method('canReadDemand')->willReturnCallback(fn (string $uid, Demand $d) => $d->getRequestorId() === $uid);
-		$this->service = new SimilarityService($mapper, $permissions);
+		$unit = new OrgUnit();
+		$unit->setId(7);
+		$unit->setName('IT-Service');
+		$units = $this->createMock(OrgUnitMapper::class);
+		$units->method('find')->willReturn($unit);
+		$users = $this->createMock(IUserManager::class);
+		$users->method('getDisplayName')->willReturnCallback(fn (string $uid) => $uid === 'alice' ? 'Alice Adler' : null);
+		$this->service = new SimilarityService($mapper, $permissions, $units, $users);
 	}
 
 	public function testStemsNormalizeUmlautsAndDropStopwords(): void {
@@ -65,5 +77,11 @@ class SimilarityServiceTest extends TestCase {
 
 	public function testShortOrEmptyInputFindsNothing(): void {
 		$this->assertSame([], $this->service->similar('alice', 'IT'));
+	}
+
+	public function testSuggestionsNameUnitAndRequestor(): void {
+		$result = $this->service->suggestions('alice', 'Ticketsystem ablösen');
+		$this->assertCount(1, $result);
+		$this->assertSame(['D-1', 'IT-Service', 'alice', 'Alice Adler'], [$result[0]['key'], $result[0]['orgUnitName'], $result[0]['requestorId'], $result[0]['requestorName']]);
 	}
 }

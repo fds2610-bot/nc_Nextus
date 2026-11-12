@@ -6,6 +6,9 @@ namespace OCA\Nexus\Service;
 
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\DemandMapper;
+use OCA\Nexus\Db\OrgUnitMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IUserManager;
 
 /**
  * Dublettenvorschlag beim Antragseingang (DEM-001, Kapitel 02 §2): ähnliche offene und
@@ -33,7 +36,48 @@ class SimilarityService {
 	public function __construct(
 		private DemandMapper $mapper,
 		private PermissionService $permissions,
+		private OrgUnitMapper $orgUnits,
+		private IUserManager $userManager,
 	) {
+	}
+
+	/**
+	 * Vorschläge für die Anzeige: mit Bereich (Org-Einheit) und antragstellender Person,
+	 * damit sich eine Dublette ohne Öffnen des Antrags einordnen lässt.
+	 *
+	 * @return list<array{id: int, key: string, title: string, status: string, score: float, orgUnitId: ?int, orgUnitName: ?string, requestorId: string, requestorName: string}>
+	 */
+	public function suggestions(string $userId, string $title, string $problem = '', ?int $excludeId = null): array {
+		$units = [];
+		$names = [];
+		$out = [];
+		foreach ($this->similar($userId, $title, $problem, $excludeId) as $m) {
+			$d = $m['demand'];
+			$unitId = $d->getOrgUnitId();
+			if ($unitId !== null && !array_key_exists($unitId, $units)) {
+				try {
+					$units[$unitId] = $this->orgUnits->find($unitId)->getName();
+				} catch (DoesNotExistException) {
+					$units[$unitId] = null;
+				}
+			}
+			$uid = $d->getRequestorId();
+			if (!array_key_exists($uid, $names)) {
+				$names[$uid] = $this->userManager->getDisplayName($uid) ?? $uid;
+			}
+			$out[] = [
+				'id' => (int)$d->getId(),
+				'key' => (string)$d->getDemandKey(),
+				'title' => $d->getTitle(),
+				'status' => $d->getStatus(),
+				'score' => $m['score'],
+				'orgUnitId' => $unitId,
+				'orgUnitName' => $unitId !== null ? $units[$unitId] : null,
+				'requestorId' => $uid,
+				'requestorName' => $names[$uid],
+			];
+		}
+		return $out;
 	}
 
 	/**

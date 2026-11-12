@@ -16,7 +16,7 @@ test.describe('Dublettenvorschlag', () => {
 		const unit = await call(admin, 'post', '/org-units', { name: `E2E-Dubletten ${marker}` })
 
 		// eigener eingereichter Antrag (lesbar) und fremder in einer Einheit ohne Rolle (nicht lesbar)
-		const mine = await createDemand(own, { title: `${marker} ablösen`, demandType: 'lifecycle', problemStatement: 'Support endet.' })
+		const mine = await createDemand(own, { title: `${marker} ablösen`, demandType: 'lifecycle', problemStatement: 'Support endet.', orgUnitId: unit.id })
 		await call(own, 'post', `/demands/${mine.id}/submit`, undefined, 200)
 		const foreign = await createDemand(other, { title: `${marker} erneuern`, demandType: 'lifecycle', problemStatement: 'Veraltet.', orgUnitId: unit.id })
 		await call(other, 'post', `/demands/${foreign.id}/submit`, undefined, 200)
@@ -27,6 +27,11 @@ test.describe('Dublettenvorschlag', () => {
 			await editor.locator('[data-test="field-title"] input').fill(marker)
 			const box = editor.locator('[data-test="similar-demands"]')
 			await expect(box.locator(`[data-test="similar-${mine.key}"]`)).toBeVisible()
+			// Bereich und antragstellende Person helfen beim Einordnen
+			const meta = box.locator(`[data-test="similar-${mine.key}"] [data-test="similar-meta"]`)
+			await expect(meta).toContainText(`E2E-Dubletten ${marker}`)
+			await expect(meta).toContainText(E2E_USER)
+			await expect(meta).toContainText(/Requestor|Antragsteller/)
 			await expect(box).not.toContainText(foreign.key)
 			// nicht lesbare Treffer werden weder genannt noch gezählt
 			await expect(box).not.toContainText(/other areas|anderen Bereich/)
