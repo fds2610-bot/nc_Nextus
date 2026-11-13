@@ -1,14 +1,17 @@
 <template>
-	<div v-if="ai && ai.available" class="nx-section" data-test="ai">
+	<div v-if="ai && ai.enabled" class="nx-section" data-test="ai">
 		<h3>{{ t('nc_nexus', 'AI assistance') }}</h3>
 		<p class="ai__muted">
 			{{ t('nc_nexus', 'The AI only receives the data of this project that you may see. Results are proposals: check them against the data; decisions stay with the responsible people.') }}
 		</p>
-		<div class="ai__actions">
+		<!-- Hinweis am umgebenden Element: deaktivierte Buttons zeigen in manchen Browsern keinen Tooltip -->
+		<div class="ai__actions"
+			:title="ai.available ? '' : noService"
+			data-test="ai-actions">
 			<NcButton v-for="kind in ai.kinds"
 				:key="kind"
 				variant="secondary"
-				:disabled="busy || pending(kind)"
+				:disabled="!ai.available || busy || pending(kind)"
 				:data-test="'ai-request-' + kind"
 				@click="request(kind)">
 				{{ kindAction(kind) }}
@@ -69,6 +72,11 @@ export default {
 	},
 	data() {
 		return { ai: null, busy: false, timer: null }
+	},
+	computed: {
+		noService() {
+			return t('nc_nexus', 'No AI service is set up in this Nextcloud. Administrators set one up under Administration settings → Artificial intelligence (e.g. a local model).')
+		},
 	},
 	watch: {
 		status: 'load',

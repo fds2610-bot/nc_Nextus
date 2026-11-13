@@ -101,13 +101,18 @@ class AiService {
 	/**
 	 * Mögliche Aufträge und die letzten Ergebnisse des Kontos zu einem Vorhaben.
 	 *
-	 * @return array{available: bool, kinds: list<string>, results: list<array<string, mixed>>}
+	 * @return array{enabled: bool, available: bool, kinds: list<string>, results: list<array<string, mixed>>}
 	 * @throws NotFoundException
 	 */
 	public function get(string $userId, int $demandId): array {
 		$demand = $this->demands->findReadable($userId, $demandId);
+		if (!$this->enabled()) {
+			// vom PMO abgeschaltet: gar nicht anbieten
+			return ['enabled' => false, 'available' => false, 'kinds' => [], 'results' => []];
+		}
 		if (!$this->available($userId)) {
-			return ['available' => false, 'kinds' => [], 'results' => []];
+			// kein KI-Dienst in Nextcloud: Aufträge zeigen, aber gesperrt (mit Hinweis)
+			return ['enabled' => true, 'available' => false, 'kinds' => $this->kinds($demand), 'results' => []];
 		}
 		$results = [];
 		foreach (self::KINDS as $kind) {
@@ -119,13 +124,13 @@ class AiService {
 				$results[] = $this->result($kind, $list[0]);
 			}
 		}
-		return ['available' => true, 'kinds' => $this->kinds($demand), 'results' => $results];
+		return ['enabled' => true, 'available' => true, 'kinds' => $this->kinds($demand), 'results' => $results];
 	}
 
 	/**
 	 * Auftrag an die KI geben. Die Datenbasis entsteht aus dem, was das Konto lesen darf.
 	 *
-	 * @return array{available: bool, kinds: list<string>, results: list<array<string, mixed>>}
+	 * @return array{enabled: bool, available: bool, kinds: list<string>, results: list<array<string, mixed>>}
 	 * @throws NotFoundException|ValidationException
 	 */
 	public function request(string $userId, int $demandId, string $kind): array {

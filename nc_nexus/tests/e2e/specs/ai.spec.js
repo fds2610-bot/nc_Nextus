@@ -24,6 +24,7 @@ test.describe('KI-Assistenz', () => {
 
 		// API: Aufträge je Status, ohne Leserecht wie „nicht vorhanden“
 		const state = await call(own, 'get', `/demands/${d.id}/ai`)
+		expect(state.enabled).toBe(true)
 		expect(state.available).toBe(true)
 		expect(state.kinds).toEqual(['summary', 'proposal'])
 		await call(own, 'post', `/demands/${d.id}/ai`, { kind: 'contradictions' }, 400)
@@ -36,6 +37,9 @@ test.describe('KI-Assistenz', () => {
 			await page.locator(`[data-test="demand-${d.key}"]`).click()
 			const panel = page.locator('[data-test="ai"]')
 			await expect(panel).toBeVisible()
+			// nur der Inhalt scrollt, nicht der Modal-Container (sonst wandern die Buttons mit)
+			await expect(page.locator('[data-test="group-request"]')).toBeVisible()
+			expect(await page.locator('.modal-container').evaluate(el => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1)
 			await panel.locator('[data-test="ai-request-summary"]').click()
 			const result = panel.locator('[data-test="ai-result-summary"]')
 			await expect(result.locator('[data-test="ai-text"]')).toContainText('[DEV-KI]', { timeout: 30000 })
@@ -66,7 +70,7 @@ test.describe('KI-Assistenz', () => {
 			await expect(section.locator('[data-test="ai-provider"]')).toContainText(config.provider)
 			await section.getByText(/^(KI-Assistenz anbieten|Offer AI assistance)$/).click()
 			await expect.poll(async () => (await call(admin, 'get', '/ai/config')).enabled).toBe(false)
-			expect((await call(own, 'get', `/demands/${d.id}/ai`)).available).toBe(false)
+			expect((await call(own, 'get', `/demands/${d.id}/ai`)).enabled).toBe(false)
 			await call(own, 'post', `/demands/${d.id}/ai`, { kind: 'summary' }, 400)
 		} finally {
 			await call(admin, 'put', '/ai/config', { enabled: config.enabled })

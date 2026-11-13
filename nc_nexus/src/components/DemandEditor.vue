@@ -101,332 +101,352 @@
 						{{ nextStep }}
 					</p>
 
-					<div v-if="demand && demand.triageCode" class="nx-section" data-test="triage-result">
-						<h3>{{ t('nc_nexus', 'Triage') }}</h3>
-						<div class="nx-summary__facts editor__triage">
-							<div class="nx-fact">
-								{{ t('nc_nexus', 'Decision') }}
-								<b>{{ statusLabel(demand.status) }}</b>
+					<div class="editor__group editor__group--request" data-test="group-request">
+						<h3 class="editor__group-title">
+							{{ t('nc_nexus', 'Request') }}
+						</h3>
+						<div class="nx-section">
+							<h3>{{ t('nc_nexus', 'Basic data') }}</h3>
+							<div class="nx-field-row">
+								<label class="nx-field" data-test="field-title">
+									<span>{{ t('nc_nexus', 'Title') }} *</span>
+									<input v-model="form.title"
+										class="nx-input"
+										maxlength="255"
+										:disabled="readonly"
+										:placeholder="readonly ? '' : t('nc_nexus', 'e.g. Replace the ticket system')">
+								</label>
+								<label class="nx-field" data-test="field-type">
+									<span>{{ t('nc_nexus', 'Type') }} *</span>
+									<select v-model="form.demandType" class="nx-input" :disabled="readonly">
+										<option v-for="type in types" :key="type" :value="type">
+											{{ typeLabel(type) }}
+										</option>
+									</select>
+								</label>
 							</div>
-							<div v-if="demand.resubmissionDate" class="nx-fact">
-								{{ t('nc_nexus', 'Resubmission') }}
-								<b>{{ formatIsoDay(demand.resubmissionDate) }}</b>
-							</div>
-							<div v-if="demand.analysisOwner" class="nx-fact">
-								{{ t('nc_nexus', 'Analysis by') }}
-								<b>{{ demand.analysisOwner }}</b>
-							</div>
-							<div v-if="demand.analysisDue" class="nx-fact">
-								{{ t('nc_nexus', 'Analysis due') }}
-								<b>{{ formatIsoDay(demand.analysisDue) }}</b>
-							</div>
-							<div v-if="demand.duplicateOfId" class="nx-fact">
-								{{ t('nc_nexus', 'Duplicate of') }}
-								<b>{{ duplicateLabel }}</b>
-							</div>
-							<div v-if="demand.triagedBy" class="nx-fact">
-								{{ t('nc_nexus', 'Decided by') }}
-								<b>{{ demand.triagedBy }} · {{ formatDay(demand.triagedAt) }}</b>
-							</div>
-						</div>
-						<p v-if="nextStep" class="editor__next" data-test="triage-next">
-							{{ nextStep }}
-						</p>
-						<p v-if="demand.triageReason" class="editor__reason">
-							{{ demand.triageReason }}
-						</p>
-					</div>
-
-					<div class="nx-section">
-						<h3>{{ t('nc_nexus', 'Basic data') }}</h3>
-						<div class="nx-field-row">
-							<label class="nx-field" data-test="field-title">
-								<span>{{ t('nc_nexus', 'Title') }} *</span>
-								<input v-model="form.title"
-									class="nx-input"
-									maxlength="255"
-									:disabled="readonly"
-									:placeholder="readonly ? '' : t('nc_nexus', 'e.g. Replace the ticket system')">
-							</label>
-							<label class="nx-field" data-test="field-type">
-								<span>{{ t('nc_nexus', 'Type') }} *</span>
-								<select v-model="form.demandType" class="nx-input" :disabled="readonly">
-									<option v-for="type in types" :key="type" :value="type">
-										{{ typeLabel(type) }}
+							<!-- Dublettenvorschlag beim Tippen (DEM-001) -->
+							<SimilarDemands v-if="!readonly"
+								:title="form.title"
+								:problem="form.problemStatement"
+								:exclude-id="id" />
+							<label class="nx-field" data-test="field-org-unit">
+								<span>{{ t('nc_nexus', 'Organizational unit') }}</span>
+								<select v-model="form.orgUnitId" class="nx-input" :disabled="readonly">
+									<option :value="null">{{ t('nc_nexus', '– none –') }}</option>
+									<option v-for="unit in orgTreeList" :key="unit.id" :value="unit.id">
+										{{ indented(unit) }}
 									</option>
 								</select>
+								<p v-if="!readonly" class="nx-hint">{{ t('nc_nexus', 'Determines who besides you can see the demand (sponsor, PMO, board of the area).') }}</p>
+							</label>
+							<label class="nx-field" data-test="field-deadline">
+								<span>{{ t('nc_nexus', 'Deadline (e.g. legal or contractual date)') }}</span>
+								<input v-model="form.deadline"
+									type="date"
+									class="nx-input editor__date"
+									:disabled="readonly">
 							</label>
 						</div>
-						<!-- Dublettenvorschlag beim Tippen (DEM-001) -->
-						<SimilarDemands v-if="!readonly"
-							:title="form.title"
-							:problem="form.problemStatement"
-							:exclude-id="id" />
-						<label class="nx-field" data-test="field-org-unit">
-							<span>{{ t('nc_nexus', 'Organizational unit') }}</span>
-							<select v-model="form.orgUnitId" class="nx-input" :disabled="readonly">
-								<option :value="null">{{ t('nc_nexus', '– none –') }}</option>
-								<option v-for="unit in orgTreeList" :key="unit.id" :value="unit.id">
-									{{ indented(unit) }}
-								</option>
-							</select>
-							<p v-if="!readonly" class="nx-hint">{{ t('nc_nexus', 'Determines who besides you can see the demand (sponsor, PMO, board of the area).') }}</p>
-						</label>
-						<label class="nx-field" data-test="field-deadline">
-							<span>{{ t('nc_nexus', 'Deadline (e.g. legal or contractual date)') }}</span>
-							<input v-model="form.deadline"
-								type="date"
-								class="nx-input editor__date"
-								:disabled="readonly">
-						</label>
-					</div>
 
-					<div class="nx-section">
-						<h3>{{ t('nc_nexus', 'Justification') }}</h3>
-						<label class="nx-field" data-test="field-problem">
-							<span>{{ t('nc_nexus', 'Problem statement') }} *</span>
-							<textarea v-model="form.problemStatement"
-								class="nx-input"
-								:disabled="readonly"
-								:placeholder="readonly ? '' : t('nc_nexus', 'What happens if we do nothing?')" />
-							<p v-if="!readonly" class="nx-hint">{{ t('nc_nexus', 'Required for submitting.') }}</p>
-						</label>
-						<label class="nx-field" data-test="field-benefit">
-							<span>{{ t('nc_nexus', 'Expected benefit') }}</span>
-							<textarea v-model="form.expectedBenefit" class="nx-input" :disabled="readonly" />
-						</label>
-					</div>
+						<div class="nx-section">
+							<h3>{{ t('nc_nexus', 'Justification') }}</h3>
+							<label class="nx-field" data-test="field-problem">
+								<span>{{ t('nc_nexus', 'Problem statement') }} *</span>
+								<textarea v-model="form.problemStatement"
+									class="nx-input"
+									:disabled="readonly"
+									:placeholder="readonly ? '' : t('nc_nexus', 'What happens if we do nothing?')" />
+								<p v-if="!readonly" class="nx-hint">{{ t('nc_nexus', 'Required for submitting.') }}</p>
+							</label>
+							<label class="nx-field" data-test="field-benefit">
+								<span>{{ t('nc_nexus', 'Expected benefit') }}</span>
+								<textarea v-model="form.expectedBenefit" class="nx-input" :disabled="readonly" />
+							</label>
+						</div>
 
-					<div v-if="objectives.length" class="nx-section" data-test="demand-objectives">
-						<h3>{{ t('nc_nexus', 'Strategic objectives') }}</h3>
-						<p v-if="!readonly" class="nx-hint editor__objectives-hint">
-							{{ t('nc_nexus', 'Which objectives does the demand contribute to?') }}
-						</p>
-						<p v-if="readonly && !objectiveIds.length" class="editor__muted">
-							{{ t('nc_nexus', 'Not assigned to any objective.') }}
-						</p>
-						<ul class="editor__objectives">
-							<li v-for="o in objectiveList"
-								v-show="!readonly || objectiveIds.includes(o.id)"
-								:key="o.id"
-								:style="{ paddingInlineStart: (readonly ? 0 : o.depth * 20) + 'px' }">
-								<label>
-									<input v-if="!readonly"
-										v-model="objectiveIds"
-										type="checkbox"
-										:value="o.id"
-										:data-test="'objective-check-' + o.code">
-									<span class="editor__objective-code">{{ o.code }}</span> {{ o.title }}
-								</label>
-							</li>
-						</ul>
-					</div>
+						<div class="nx-section">
+							<h3>{{ t('nc_nexus', 'Description') }}</h3>
+							<label class="nx-field" data-test="field-description">
+								<span class="nx-hidden-visually">{{ t('nc_nexus', 'Description') }}</span>
+								<textarea v-model="form.description"
+									class="nx-input"
+									:disabled="readonly"
+									:placeholder="readonly ? '' : t('nc_nexus', 'Scope, affected areas, desired time frame …')" />
+							</label>
+						</div>
 
-					<NeedsEditor v-model="needs"
-						:pools="pools"
-						:readonly="readonly"
-						:project-class="demand?.projectClass ?? null" />
-
-					<div class="nx-section">
-						<h3>{{ t('nc_nexus', 'Description') }}</h3>
-						<label class="nx-field" data-test="field-description">
-							<span class="nx-hidden-visually">{{ t('nc_nexus', 'Description') }}</span>
-							<textarea v-model="form.description"
-								class="nx-input"
-								:disabled="readonly"
-								:placeholder="readonly ? '' : t('nc_nexus', 'Scope, affected areas, desired time frame …')" />
-						</label>
-					</div>
-
-					<div v-if="demand && gate && (gate.step || gate.allocations.length || gate.conditions.length || PROJECT_STATES.includes(demand.status))" class="nx-section" data-test="demand-gate">
-						<h3>{{ t('nc_nexus', 'Gates') }}</h3>
-						<ol v-if="PROJECT_STATES.includes(demand.status) || gate.step && gate.step !== 'candidate'" class="editor__path" data-test="gate-path">
-							<li v-for="g in gate.gateSet.gates"
-								:key="g.code"
-								:class="'editor__path--' + g.state"
-								:title="g.name">
-								{{ g.code.toUpperCase() }}
-							</li>
-							<li class="editor__path-set">
-								{{ gate.gateSet.name }}
-							</li>
-						</ol>
-						<template v-for="step in (gate.steps.length ? gate.steps : [])" :key="step">
-							<p class="editor__step">
-								<b>{{ gateLabel(step) }}</b>
-								<span v-if="step !== 'candidate'" data-test="gate-decider">
-									· {{ gate.decider.kind === 'body'
-										? t('nc_nexus', 'decided by {body} in a session', { body: gate.decider.body.name })
-										: t('nc_nexus', 'decided directly by the board or the portfolio office of the area') }}
-								</span>
-								<span v-if="gate.instance && step === gate.step" class="nx-chip nx-chip--submitted" data-test="gate-instance">
-									{{ instanceStatusLabel(gate.instance.status) }}
-								</span>
+						<div v-if="objectives.length" class="nx-section" data-test="demand-objectives">
+							<h3>{{ t('nc_nexus', 'Strategic objectives') }}</h3>
+							<p v-if="!readonly" class="nx-hint editor__objectives-hint">
+								{{ t('nc_nexus', 'Which objectives does the demand contribute to?') }}
 							</p>
-						</template>
-						<ul v-if="gate.step" class="editor__checks">
-							<li v-for="c in gate.checks" :key="c.key" :class="c.ok ? 'editor__check--ok' : 'editor__check--fail'">
-								{{ c.ok ? '✓' : '✗' }} {{ checkLabel(c.key) }}<template v-if="!c.ok && c.detail">
-									· {{ c.detail }}
-								</template>
-							</li>
-						</ul>
-						<p v-if="gate.step && !gate.canDecide && !gate.canSubmit" class="editor__next">
-							{{ gate.step === 'candidate'
-								? t('nc_nexus', 'The portfolio office puts the project up for prioritization once everything is complete.')
-								: (gate.decider.kind === 'body'
-									? t('nc_nexus', 'The portfolio office submits the gate to {body}; the decision is taken in a session.', { body: gate.decider.body.name })
-									: t('nc_nexus', 'The board or the portfolio office of the area decides.')) }}
-						</p>
-						<div v-if="gate.conditions.length" class="editor__conditions" data-test="demand-conditions">
-							<h4>{{ t('nc_nexus', 'Conditions and actions') }}</h4>
-							<ul>
-								<li v-for="c in gate.conditions"
-									:key="c.id"
-									:class="{ 'editor__condition--overdue': c.overdue, 'editor__condition--closed': c.status !== 'open' }">
-									<span class="nx-chip" :class="c.status === 'open' ? (c.blocking ? 'nx-chip--rejected' : 'nx-chip--on-hold') : 'nx-chip--accepted'">
-										{{ c.status === 'open' ? (c.blocking ? t('nc_nexus', 'blocking') : t('nc_nexus', 'open')) : (c.status === 'done' ? t('nc_nexus', 'done') : t('nc_nexus', 'waived')) }}
-									</span>
-									{{ c.title }} · {{ c.ownerId }} · {{ formatIsoDay(c.dueDate) }}
+							<p v-if="readonly && !objectiveIds.length" class="editor__muted">
+								{{ t('nc_nexus', 'Not assigned to any objective.') }}
+							</p>
+							<ul class="editor__objectives">
+								<li v-for="o in objectiveList"
+									v-show="!readonly || objectiveIds.includes(o.id)"
+									:key="o.id"
+									:style="{ paddingInlineStart: (readonly ? 0 : o.depth * 20) + 'px' }">
+									<label>
+										<input v-if="!readonly"
+											v-model="objectiveIds"
+											type="checkbox"
+											:value="o.id"
+											:data-test="'objective-check-' + o.code">
+										<span class="editor__objective-code">{{ o.code }}</span> {{ o.title }}
+									</label>
 								</li>
 							</ul>
 						</div>
-						<p v-if="gate.tranches.length" class="editor__tranches" data-test="demand-tranches">
-							{{ t('nc_nexus', 'Budget released') }}: <b>{{ formatMoney(gate.budgetReleased) }}</b>
-							<template v-if="businessCase && businessCase.kpis && businessCase.kpis.oneTimeCost">
-								{{ t('nc_nexus', 'of {total} one-time cost', { total: formatMoney(businessCase.kpis.oneTimeCost) }) }}
-							</template>
-							<small>({{ gate.tranches.map(tr => tr.gateCode.toUpperCase() + ' ' + formatMoney(tr.amount) + ' / ' + tr.fiscalYear).join(' · ') }})</small>
-						</p>
-						<h4 v-if="gate.allocations.length">
-							{{ t('nc_nexus', 'Firm commitments') }}
-						</h4>
-						<table v-if="gate.allocations.length" class="editor__alloc" data-test="allocations">
-							<tbody>
-								<tr v-for="(a, i) in gate.allocations" :key="i">
-									<td>{{ poolName(a.poolId) }}</td>
-									<td>{{ formatMonth(a.period) }}</td>
-									<td>{{ formatNumber(a.personDays) }} {{ t('nc_nexus', 'PD') }}</td>
-								</tr>
-							</tbody>
-						</table>
 					</div>
 
-					<PlanningPanel v-if="demand && ['released', 'in_execution', 'paused', 'completed'].includes(demand.status)"
-						:demand-id="demand.id"
-						:status="demand.status"
-						@changed="onPlanning" />
-
-					<AiPanel v-if="demand && demand.id"
-						:demand-id="demand.id"
-						:status="demand.status" />
-
-					<div v-if="demand && businessCase && (businessCase.canEdit || businessCase.versions.length)"
-						class="nx-section"
-						data-test="demand-business-case">
-						<h3>{{ t('nc_nexus', 'Business case') }}</h3>
-						<div v-if="businessCase.versions.length" class="nx-summary__facts editor__triage">
-							<div class="nx-fact">
-								{{ t('nc_nexus', 'Benefit p. a.') }}<b data-test="bc-summary-benefit">{{ formatMoney(businessCase.kpis.benefitPerYear) }}</b>
+					<div class="editor__group editor__group--economics" data-test="group-economics">
+						<h3 class="editor__group-title">
+							{{ t('nc_nexus', 'Economics and resources') }}
+						</h3>
+						<div v-if="demand && businessCase && (businessCase.canEdit || businessCase.versions.length)"
+							class="nx-section"
+							data-test="demand-business-case">
+							<h3>{{ t('nc_nexus', 'Business case') }}</h3>
+							<div v-if="businessCase.versions.length" class="nx-summary__facts editor__triage">
+								<div class="nx-fact">
+									{{ t('nc_nexus', 'Benefit p. a.') }}<b data-test="bc-summary-benefit">{{ formatMoney(businessCase.kpis.benefitPerYear) }}</b>
+								</div>
+								<div class="nx-fact">
+									{{ t('nc_nexus', 'One-time cost') }}<b>{{ formatMoney(businessCase.kpis.oneTimeCost) }}</b>
+								</div>
+								<div class="nx-fact">
+									{{ t('nc_nexus', 'Payback') }}<b>{{ businessCase.kpis.paybackYears === null ? '–' : t('nc_nexus', '{y} years', { y: businessCase.kpis.paybackYears }) }}</b>
+								</div>
 							</div>
-							<div class="nx-fact">
-								{{ t('nc_nexus', 'One-time cost') }}<b>{{ formatMoney(businessCase.kpis.oneTimeCost) }}</b>
-							</div>
-							<div class="nx-fact">
-								{{ t('nc_nexus', 'Payback') }}<b>{{ businessCase.kpis.paybackYears === null ? '–' : t('nc_nexus', '{y} years', { y: businessCase.kpis.paybackYears }) }}</b>
+							<p v-else class="editor__muted">
+								{{ t('nc_nexus', 'No business case yet.') }}
+							</p>
+							<p v-if="businessCase.versions.length && !businessCase.complete" class="editor__next">
+								{{ t('nc_nexus', 'Incomplete: at least one cost item and one benefit item are needed for prioritization.') }}
+							</p>
+							<div class="editor__rating-actions">
+								<NcButton variant="secondary" data-test="open-business-case" @click="bcOpen = true">
+									{{ businessCase.canEdit ? t('nc_nexus', 'Edit business case') : t('nc_nexus', 'Show business case') }}
+								</NcButton>
 							</div>
 						</div>
-						<p v-else class="editor__muted">
-							{{ t('nc_nexus', 'No business case yet.') }}
-						</p>
-						<p v-if="businessCase.versions.length && !businessCase.complete" class="editor__next">
-							{{ t('nc_nexus', 'Incomplete: at least one cost item and one benefit item are needed for prioritization.') }}
-						</p>
-						<div class="editor__rating-actions">
-							<NcButton variant="secondary" data-test="open-business-case" @click="bcOpen = true">
-								{{ businessCase.canEdit ? t('nc_nexus', 'Edit business case') : t('nc_nexus', 'Show business case') }}
-							</NcButton>
+
+						<div v-if="demand && rating && (rating.assessments.length || rating.can.self || rating.can.review)"
+							class="nx-section"
+							data-test="demand-rating">
+							<h3>{{ t('nc_nexus', 'Assessment') }}</h3>
+							<div v-if="rating.current" class="nx-summary__facts editor__triage">
+								<div class="nx-fact">
+									{{ t('nc_nexus', 'Value density') }}
+									<b data-test="rating-density">{{ formatNumber2(rating.current.density) }}</b>
+								</div>
+								<div class="nx-fact">
+									{{ t('nc_nexus', 'Benefit') }}
+									<b>{{ formatNumber2(rating.current.benefit) }}</b>
+								</div>
+								<div class="nx-fact">
+									{{ t('nc_nexus', 'Urgency') }}
+									<b>{{ rating.current.urgency }}</b>
+								</div>
+								<div class="nx-fact">
+									{{ t('nc_nexus', 'Risk') }}
+									<b>{{ formatNumber2(rating.current.risk) }}</b>
+								</div>
+								<div class="nx-fact">
+									{{ t('nc_nexus', 'Effort class') }}
+									<b>{{ rating.current.effort }} · {{ qualityLabel(rating.current.estimateQuality) }}</b>
+								</div>
+								<div class="nx-fact">
+									{{ t('nc_nexus', 'Bucket') }}
+									<b>{{ rating.bucket }}</b>
+								</div>
+							</div>
+							<p v-else class="editor__muted">
+								{{ t('nc_nexus', 'Not assessed yet.') }}
+							</p>
+							<p v-if="rating.current" class="editor__next">
+								{{ assessmentKindLabel(rating.current.kind) }} · {{ rating.current.createdBy }} · {{ formatDay(rating.current.createdAt) }}
+								<template v-if="rating.current.selfDensity !== null && rating.current.reviewDensity !== null">
+									· {{ t('nc_nexus', 'self-assessment {s}, review {r}', { s: formatNumber2(rating.current.selfDensity), r: formatNumber2(rating.current.reviewDensity) }) }}
+								</template>
+							</p>
+							<div class="editor__rating-actions">
+								<NcButton v-if="rating.can.self"
+									variant="secondary"
+									data-test="assess-self"
+									@click="assessKind = 'self'">
+									{{ t('nc_nexus', 'Self-assessment') }}
+								</NcButton>
+								<NcButton v-if="rating.can.review"
+									variant="secondary"
+									data-test="assess-review"
+									@click="assessKind = 'review'">
+									{{ t('nc_nexus', 'Review assessment') }}
+								</NcButton>
+							</div>
 						</div>
+
+						<NeedsEditor v-model="needs"
+							:pools="pools"
+							:readonly="readonly"
+							:project-class="demand?.projectClass ?? null" />
 					</div>
 
-					<div v-if="demand && rating && (rating.assessments.length || rating.can.self || rating.can.review)"
-						class="nx-section"
-						data-test="demand-rating">
-						<h3>{{ t('nc_nexus', 'Assessment') }}</h3>
-						<div v-if="rating.current" class="nx-summary__facts editor__triage">
-							<div class="nx-fact">
-								{{ t('nc_nexus', 'Value density') }}
-								<b data-test="rating-density">{{ formatNumber2(rating.current.density) }}</b>
+					<div class="editor__group editor__group--decision" data-test="group-decision">
+						<h3 class="editor__group-title">
+							{{ t('nc_nexus', 'Decision and implementation') }}
+						</h3>
+						<div v-if="demand && demand.triageCode" class="nx-section" data-test="triage-result">
+							<h3>{{ t('nc_nexus', 'Triage') }}</h3>
+							<div class="nx-summary__facts editor__triage">
+								<div class="nx-fact">
+									{{ t('nc_nexus', 'Decision') }}
+									<b>{{ statusLabel(demand.status) }}</b>
+								</div>
+								<div v-if="demand.resubmissionDate" class="nx-fact">
+									{{ t('nc_nexus', 'Resubmission') }}
+									<b>{{ formatIsoDay(demand.resubmissionDate) }}</b>
+								</div>
+								<div v-if="demand.analysisOwner" class="nx-fact">
+									{{ t('nc_nexus', 'Analysis by') }}
+									<b>{{ demand.analysisOwner }}</b>
+								</div>
+								<div v-if="demand.analysisDue" class="nx-fact">
+									{{ t('nc_nexus', 'Analysis due') }}
+									<b>{{ formatIsoDay(demand.analysisDue) }}</b>
+								</div>
+								<div v-if="demand.duplicateOfId" class="nx-fact">
+									{{ t('nc_nexus', 'Duplicate of') }}
+									<b>{{ duplicateLabel }}</b>
+								</div>
+								<div v-if="demand.triagedBy" class="nx-fact">
+									{{ t('nc_nexus', 'Decided by') }}
+									<b>{{ demand.triagedBy }} · {{ formatDay(demand.triagedAt) }}</b>
+								</div>
 							</div>
-							<div class="nx-fact">
-								{{ t('nc_nexus', 'Benefit') }}
-								<b>{{ formatNumber2(rating.current.benefit) }}</b>
-							</div>
-							<div class="nx-fact">
-								{{ t('nc_nexus', 'Urgency') }}
-								<b>{{ rating.current.urgency }}</b>
-							</div>
-							<div class="nx-fact">
-								{{ t('nc_nexus', 'Risk') }}
-								<b>{{ formatNumber2(rating.current.risk) }}</b>
-							</div>
-							<div class="nx-fact">
-								{{ t('nc_nexus', 'Effort class') }}
-								<b>{{ rating.current.effort }} · {{ qualityLabel(rating.current.estimateQuality) }}</b>
-							</div>
-							<div class="nx-fact">
-								{{ t('nc_nexus', 'Bucket') }}
-								<b>{{ rating.bucket }}</b>
-							</div>
+							<p v-if="nextStep" class="editor__next" data-test="triage-next">
+								{{ nextStep }}
+							</p>
+							<p v-if="demand.triageReason" class="editor__reason">
+								{{ demand.triageReason }}
+							</p>
 						</div>
-						<p v-else class="editor__muted">
-							{{ t('nc_nexus', 'Not assessed yet.') }}
-						</p>
-						<p v-if="rating.current" class="editor__next">
-							{{ assessmentKindLabel(rating.current.kind) }} · {{ rating.current.createdBy }} · {{ formatDay(rating.current.createdAt) }}
-							<template v-if="rating.current.selfDensity !== null && rating.current.reviewDensity !== null">
-								· {{ t('nc_nexus', 'self-assessment {s}, review {r}', { s: formatNumber2(rating.current.selfDensity), r: formatNumber2(rating.current.reviewDensity) }) }}
-							</template>
-						</p>
-						<div class="editor__rating-actions">
-							<NcButton v-if="rating.can.self"
-								variant="secondary"
-								data-test="assess-self"
-								@click="assessKind = 'self'">
-								{{ t('nc_nexus', 'Self-assessment') }}
-							</NcButton>
-							<NcButton v-if="rating.can.review"
-								variant="secondary"
-								data-test="assess-review"
-								@click="assessKind = 'review'">
-								{{ t('nc_nexus', 'Review assessment') }}
-							</NcButton>
-						</div>
-					</div>
 
-					<CommentThread v-if="demand"
-						:demand-id="demand.id"
-						:refresh-key="commentRefresh"
-						@dirty="commentDirty = $event" />
-
-					<div v-if="history.length" class="nx-section" data-test="demand-history">
-						<h3>{{ t('nc_nexus', 'History') }}</h3>
-						<ul class="editor__history">
-							<li v-for="entry in history" :key="entry.id">
-								<span class="editor__history-when">{{ formatDate(entry.createdAt) }}</span>
-								<span :data-test="'history-' + entry.action">
-									<strong>{{ actionLabel(entry.action) }}</strong>
-									<!-- Statuswechsel immer mit „alt → neu“ und dem Konto, das ihn ausgelöst hat -->
-									<span v-if="statusChange(entry)" class="editor__transition">
-										{{ statusLabel(statusChange(entry)[0]) }} → {{ statusLabel(statusChange(entry)[1]) }}
+						<div v-if="demand && gate && (gate.step || gate.allocations.length || gate.conditions.length || PROJECT_STATES.includes(demand.status))" class="nx-section" data-test="demand-gate">
+							<h3>{{ t('nc_nexus', 'Gates') }}</h3>
+							<ol v-if="PROJECT_STATES.includes(demand.status) || gate.step && gate.step !== 'candidate'" class="editor__path" data-test="gate-path">
+								<li v-for="g in gate.gateSet.gates"
+									:key="g.code"
+									:class="'editor__path--' + g.state"
+									:title="g.name">
+									{{ g.code.toUpperCase() }}
+								</li>
+								<li class="editor__path-set">
+									{{ gate.gateSet.name }}
+								</li>
+							</ol>
+							<template v-for="step in (gate.steps.length ? gate.steps : [])" :key="step">
+								<p class="editor__step">
+									<b>{{ gateLabel(step) }}</b>
+									<span v-if="step !== 'candidate'" data-test="gate-decider">
+										· {{ gate.decider.kind === 'body'
+											? t('nc_nexus', 'decided by {body} in a session', { body: gate.decider.body.name })
+											: t('nc_nexus', 'decided directly by the board or the portfolio office of the area') }}
 									</span>
-									<span class="editor__by">{{ t('nc_nexus', 'by {user}', { user: entry.userId }) }}</span>
-									<span v-if="changedFields(entry).length" class="editor__changes">
-										· {{ changedFields(entry).map(fieldLabel).join(', ') }}
+									<span v-if="gate.instance && step === gate.step" class="nx-chip nx-chip--submitted" data-test="gate-instance">
+										{{ instanceStatusLabel(gate.instance.status) }}
 									</span>
-								</span>
-							</li>
-						</ul>
+								</p>
+							</template>
+							<ul v-if="gate.step" class="editor__checks">
+								<li v-for="c in gate.checks" :key="c.key" :class="c.ok ? 'editor__check--ok' : 'editor__check--fail'">
+									{{ c.ok ? '✓' : '✗' }} {{ checkLabel(c.key) }}<template v-if="!c.ok && c.detail">
+										· {{ c.detail }}
+									</template>
+								</li>
+							</ul>
+							<p v-if="gate.step && !gate.canDecide && !gate.canSubmit" class="editor__next">
+								{{ gate.step === 'candidate'
+									? t('nc_nexus', 'The portfolio office puts the project up for prioritization once everything is complete.')
+									: (gate.decider.kind === 'body'
+										? t('nc_nexus', 'The portfolio office submits the gate to {body}; the decision is taken in a session.', { body: gate.decider.body.name })
+										: t('nc_nexus', 'The board or the portfolio office of the area decides.')) }}
+							</p>
+							<div v-if="gate.conditions.length" class="editor__conditions" data-test="demand-conditions">
+								<h4>{{ t('nc_nexus', 'Conditions and actions') }}</h4>
+								<ul>
+									<li v-for="c in gate.conditions"
+										:key="c.id"
+										:class="{ 'editor__condition--overdue': c.overdue, 'editor__condition--closed': c.status !== 'open' }">
+										<span class="nx-chip" :class="c.status === 'open' ? (c.blocking ? 'nx-chip--rejected' : 'nx-chip--on-hold') : 'nx-chip--accepted'">
+											{{ c.status === 'open' ? (c.blocking ? t('nc_nexus', 'blocking') : t('nc_nexus', 'open')) : (c.status === 'done' ? t('nc_nexus', 'done') : t('nc_nexus', 'waived')) }}
+										</span>
+										{{ c.title }} · {{ c.ownerId }} · {{ formatIsoDay(c.dueDate) }}
+									</li>
+								</ul>
+							</div>
+							<p v-if="gate.tranches.length" class="editor__tranches" data-test="demand-tranches">
+								{{ t('nc_nexus', 'Budget released') }}: <b>{{ formatMoney(gate.budgetReleased) }}</b>
+								<template v-if="businessCase && businessCase.kpis && businessCase.kpis.oneTimeCost">
+									{{ t('nc_nexus', 'of {total} one-time cost', { total: formatMoney(businessCase.kpis.oneTimeCost) }) }}
+								</template>
+								<small>({{ gate.tranches.map(tr => tr.gateCode.toUpperCase() + ' ' + formatMoney(tr.amount) + ' / ' + tr.fiscalYear).join(' · ') }})</small>
+							</p>
+							<h4 v-if="gate.allocations.length">
+								{{ t('nc_nexus', 'Firm commitments') }}
+							</h4>
+							<table v-if="gate.allocations.length" class="editor__alloc" data-test="allocations">
+								<tbody>
+									<tr v-for="(a, i) in gate.allocations" :key="i">
+										<td>{{ poolName(a.poolId) }}</td>
+										<td>{{ formatMonth(a.period) }}</td>
+										<td>{{ formatNumber(a.personDays) }} {{ t('nc_nexus', 'PD') }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<PlanningPanel v-if="demand && ['released', 'in_execution', 'paused', 'completed'].includes(demand.status)"
+							:demand-id="demand.id"
+							:status="demand.status"
+							@changed="onPlanning" />
+
+						<AiPanel v-if="demand && demand.id"
+							:demand-id="demand.id"
+							:status="demand.status" />
+					</div>
+
+					<div class="editor__group editor__group--exchange" data-test="group-exchange">
+						<h3 class="editor__group-title">
+							{{ t('nc_nexus', 'Discussion and history') }}
+						</h3>
+						<CommentThread v-if="demand"
+							:demand-id="demand.id"
+							:refresh-key="commentRefresh"
+							@dirty="commentDirty = $event" />
+
+						<div v-if="history.length" class="nx-section" data-test="demand-history">
+							<h3>{{ t('nc_nexus', 'History') }}</h3>
+							<ul class="editor__history">
+								<li v-for="entry in history" :key="entry.id">
+									<span class="editor__history-when">{{ formatDate(entry.createdAt) }}</span>
+									<span :data-test="'history-' + entry.action">
+										<strong>{{ actionLabel(entry.action) }}</strong>
+										<!-- Statuswechsel immer mit „alt → neu“ und dem Konto, das ihn ausgelöst hat -->
+										<span v-if="statusChange(entry)" class="editor__transition">
+											{{ statusLabel(statusChange(entry)[0]) }} → {{ statusLabel(statusChange(entry)[1]) }}
+										</span>
+										<span class="editor__by">{{ t('nc_nexus', 'by {user}', { user: entry.userId }) }}</span>
+										<span v-if="changedFields(entry).length" class="editor__changes">
+											· {{ changedFields(entry).map(fieldLabel).join(', ') }}
+										</span>
+									</span>
+								</li>
+							</ul>
+						</div>
 					</div>
 				</form>
 			</div>
@@ -897,6 +917,7 @@ export default {
 		flex: 1 1 auto;
 		min-height: 0;
 		overflow-y: auto;
+		position: relative;
 		padding: 0 22px;
 	}
 
@@ -1077,6 +1098,7 @@ export default {
 
 	&__rating-actions {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 8px;
 		margin-top: 12px;
 	}
@@ -1116,10 +1138,75 @@ export default {
 	&__actions {
 		flex: none;
 		display: flex;
+		flex-wrap: wrap;
 		justify-content: flex-end;
 		gap: 8px;
 		padding: 12px 22px;
 		border-top: 1px solid var(--color-border);
+	}
+
+	// Beschriftungen nie kürzen: lieber in eine zweite Zeile umbrechen
+	&__actions,
+	&__body {
+		:deep(.button-vue) {
+			flex: none;
+			max-width: 100%;
+		}
+
+		:deep(.button-vue__text) {
+			overflow: visible;
+			text-overflow: clip;
+		}
+	}
+
+	// Thematische Gruppen, leicht eingefärbt
+	&__group {
+		--nx-group-tint: var(--color-primary-element);
+		margin: 16px 0;
+		padding: 4px 16px 6px;
+		border-radius: var(--border-radius-large, 10px);
+		border-inline-start: 4px solid color-mix(in srgb, var(--nx-group-tint) 55%, transparent);
+		background: color-mix(in srgb, var(--nx-group-tint) 6%, transparent);
+
+		// ohne Inhalt (z. B. Entwurf ohne Triage, Gates und Planung) gar nicht zeigen
+		&:not(:has(> .nx-section)) {
+			display: none;
+		}
+
+		> .nx-section {
+			border-top-color: color-mix(in srgb, var(--nx-group-tint) 18%, var(--color-border));
+		}
+
+		> .editor__group-title + .nx-section {
+			border-top: none;
+			padding-top: 4px;
+		}
+
+		&--economics {
+			--nx-group-tint: var(--color-element-success, var(--color-success-text));
+		}
+
+		&--decision {
+			--nx-group-tint: var(--color-element-warning, var(--color-warning-text));
+		}
+
+		&--exchange {
+			--nx-group-tint: var(--color-text-maxcontrast);
+		}
+	}
+
+	// Zwischenüberschriften in Abschnitten (z. B. Harte Zusagen) kleiner als die Gruppentitel
+	&__body h4 {
+		margin: 14px 0 6px;
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	&__group-title {
+		margin: 12px 0 0;
+		font-size: 16px;
+		font-weight: 700;
+		color: var(--color-main-text);
 	}
 
 	&__delete {

@@ -86,6 +86,7 @@ export default {
 		min-height: 0;
 		overflow-y: auto;
 		padding: 18px 22px;
+		position: relative;
 	}
 
 	&__actions {

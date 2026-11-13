@@ -78,6 +78,34 @@ mit eigenen Volumes und eigenem Port (8092–8127), mehrere können parallel lau
 binden Apps read-only aus den Nachbarprojekten ein (fehlt ein Projekt, wird es übersprungen),
 `store`-Einträge werden aus dem App-Store installiert.
 
+## Mehrere DEV-Stacks verbinden (z. B. Gantt auf :8088)
+
+Jeder Stack läuft in seinem eigenen Docker-Netz. `localhost` ist im Container der Container
+selbst; ein anderer Stack ist nur über den Host erreichbar. Deshalb überall den Namen
+`host.docker.internal` verwenden, z. B. in Nexus → Planungstools → Gantt:
+`http://host.docker.internal:8088`.
+
+- **Im Nexus-Container** zeigt der Name per `extra_hosts: host.docker.internal:host-gateway`
+  (`docker-dev/compose.base.yml`) auf den Host. `dev.sh` setzt außerdem
+  `allow_local_remote_servers`, sonst blockiert Nextcloud Verbindungen ins lokale Netz.
+- **Auf dem Host (nur DEV-Rechner)** zusätzlich in `/etc/hosts` eintragen, damit der Browser
+  dieselben Links öffnen kann (z. B. den Rücklink ins Gantt-Projekt):
+
+  ```
+  127.0.0.1  localhost host.docker.internal
+  ```
+
+  Für Browser-Sitzungen ist `host.docker.internal:8092` eine andere Adresse als
+  `localhost:8092`: Anmeldung und Cookies gelten getrennt. Der Name muss in den
+  `trusted_domains` der jeweiligen Instanz stehen (bei Nexus setzt das `dev.sh`).
+- **Nebenwirkung des Eintrags:** Container **ohne** `extra_hosts` (z. B. der Gantt-Stack aus
+  nc-gantt) fragen Dockers DNS, das an den Host weiterreicht – und bekommen dann aus
+  `/etc/hosts` `127.0.0.1`, also sich selbst. Statt „Name unbekannt“ heißt der Fehler dort
+  „Verbindung abgelehnt“; erreichbar ist der andere Stack von dort so oder so nicht. Wer aus so
+  einem Container zurück zu Nexus muss, ergänzt in dessen Compose-Datei
+  `extra_hosts: ["host.docker.internal:host-gateway"]`.
+- Im Betrieb ist nichts davon nötig: Dort stehen echte Hostnamen in den Planungstools.
+
 ## Beispieldaten
 
 ```bash

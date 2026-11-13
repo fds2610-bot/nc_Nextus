@@ -49,7 +49,7 @@
 					{{ t('nc_nexus', 'Import new version') }}
 				</NcButton>
 				<NcButton v-if="planning.canUnlink"
-					variant="tertiary"
+					variant="secondary"
 					data-test="planning-unlink"
 					@click="unlink">
 					{{ t('nc_nexus', 'Disconnect') }}
@@ -129,7 +129,7 @@
 			</p>
 		</template>
 		<div v-if="planning.canExport" class="planning__actions">
-			<NcButton variant="tertiary"
+			<NcButton variant="secondary"
 				:disabled="busy"
 				data-test="planning-export"
 				@click="exportPlan">

@@ -275,6 +275,10 @@ textarea.nx-input.nx-input {
 /* Nur für Screenreader sichtbar */
 .nx-hidden-visually {
 	position: absolute;
+	// fest oben verankern: ohne Position landet das Element an seiner Fließtextstelle und
+	// verlängert den Modal-Container (zweiter, äußerer Scrollbalken)
+	top: 0;
+	left: 0;
 	width: 1px;
 	height: 1px;
 	margin: -1px;
