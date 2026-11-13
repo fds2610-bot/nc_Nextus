@@ -35,6 +35,7 @@ class QualityService {
 		private ObjectiveMapper $objectives,
 		private PlanningLinkMapper $planningLinks,
 		private PlanningProviderRegistry $planningProviders,
+		private PlanningService $planning,
 		private CapacityService $capacity,
 		private ConditionService $conditions,
 		private PermissionService $permissions,
@@ -104,6 +105,9 @@ class QualityService {
 		if ($this->planningProviders->hasLiveProvider($userId)) {
 			$add('no_planning_link', 'project_manager', $where(['released', 'in_execution'], fn (Demand $d) => $this->planningLinks->findByDemand($d->getId()) === null));
 		}
+		// Abgleichsfehler (Kapitel 07 §4.2) – auch ohne live verfügbares Tool, gerade dann
+		$syncErrors = $this->planning->syncErrors();
+		$add('planning_sync_failed', 'project_manager', $where(PlanningService::LINKABLE, static fn (Demand $d) => $syncErrors[$d->getId()] ?? false));
 
 		$overdue = [];
 		foreach ($this->conditions->list($userId) as $c) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\Nexus\Service;
 
 use OCA\Nexus\Db\Demand;
+use OCA\Nexus\Db\DemandMapper;
 use OCA\Nexus\Db\PlanningLinkMapper;
 use OCA\Nexus\Db\PoolMapper;
 use OCA\Nexus\Db\ResourceNeedMapper;
@@ -21,6 +22,7 @@ use OCA\Nexus\Planning\PlanDemand;
 use OCA\Nexus\Planning\PlanningConfig;
 use OCA\Nexus\Planning\PlanningProviderRegistry;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\IL10N;
 
 /**
  * Planungs-Integration (INT-001, Kapitel 07 §4/§5): freigegebenes Vorhaben in einem Planungstool
@@ -51,6 +53,8 @@ class PlanningService {
 		private PermissionService $permissions,
 		private AuditService $audit,
 		private ITimeFactory $time,
+		private DemandMapper $demandMapper,
+		private IL10N $l10n,
 	) {
 	}
 
@@ -81,6 +85,7 @@ class PlanningService {
 			if ($provider !== null && $this->has($provider, IPlanningProvider::CAP_SYNC) && $this->registry->safeAvailable($provider, $userId)) {
 				$link = $this->sync($userId, $provider, $link);
 			}
+			$link['syncError'] = $this->errorText($link['syncError'] ?? null);
 			$link['providerName'] = $provider?->getName() ?? (string)$link['provider'];
 			$link['capabilities'] = $provider?->getCapabilities() ?? [];
 			$link['demand'] = $this->planDemand($link, $demand);
@@ -420,6 +425,9 @@ class PlanningService {
 			'openprojectUrl' => $this->config->openprojectUrl(),
 			'mspdiImport' => $this->config->mspdiImport(),
 			'mspdiExport' => $this->config->mspdiExport(),
+			'syncHours' => $this->config->syncHours(),
+			'syncChoices' => PlanningConfig::SYNC_CHOICES,
+			'lastSync' => $this->config->lastSync(),
 		];
 	}
 
@@ -441,12 +449,15 @@ class PlanningService {
 		if (array_key_exists('openprojectUrl', $data)) {
 			$this->config->setOpenprojectUrl((string)$data['openprojectUrl']);
 		}
+		if (array_key_exists('syncHours', $data)) {
+			$this->config->setSyncHours((int)$data['syncHours']);
+		}
 		if (array_key_exists('mspdiImport', $data) || array_key_exists('mspdiExport', $data)) {
 			$this->config->setMspdi((bool)($data['mspdiImport'] ?? $before['mspdiImport']), (bool)($data['mspdiExport'] ?? $before['mspdiExport']));
 		}
 		$after = $this->config($userId);
 		$changes = [];
-		foreach (['ganttUrl', 'ganttUser', 'openprojectUrl', 'mspdiImport', 'mspdiExport'] as $key) {
+		foreach (['ganttUrl', 'ganttUser', 'openprojectUrl', 'mspdiImport', 'mspdiExport', 'syncHours'] as $key) {
 			if ($before[$key] !== $after[$key]) {
 				$changes[$key] = [$before[$key], $after[$key]];
 			}
@@ -495,11 +506,96 @@ class PlanningService {
 		try {
 			$summary = self::summarize($provider->tasks($userId, (string)$link['externalId']), date('Y-m-d', $now));
 			$this->links->updateSync($link['id'], 'ok', $summary, $now);
-			return ['summary' => $summary, 'syncStatus' => 'ok', 'syncedAt' => $now] + $link;
+			return ['summary' => $summary, 'syncStatus' => 'ok', 'syncError' => null, 'syncedAt' => $now] + $link;
 		} catch (ValidationException $e) {
-			$this->links->updateSync($link['id'], 'error', null, $now);
-			return ['syncStatus' => 'error', 'syncError' => $e->getMessage()] + $link;
+			$error = ['key' => $e->key, 'params' => $e->params];
+			$this->links->updateSync($link['id'], 'error', null, $now, $error);
+			return ['syncStatus' => 'error', 'syncError' => $error, 'syncedAt' => $now] + $link;
 		}
+	}
+
+	/**
+	 * Hintergrundabgleich (Kapitel 07 §4.2): alle live abgeglichenen Verknüpfungen, deren letzter
+	 * Abgleich älter als der eingestellte Abstand ist, im Namen des Kontos abgleichen, das die
+	 * Verknüpfung angelegt hat (dessen Rechte und Zugangsdaten im Planungstool gelten).
+	 * Fehler setzen nur den Sync-Status und blockieren nichts.
+	 *
+	 * @param bool $force alle fälligen und nicht fälligen abgleichen („Jetzt abgleichen“)
+	 * @return array{at: int, ok: int, failed: int}
+	 */
+	public function syncAll(bool $force = false): array {
+		$now = $this->time->getTime();
+		$hours = $this->config->syncHours();
+		$run = ['at' => $now, 'ok' => 0, 'failed' => 0];
+		if ($hours === 0 && !$force) {
+			return $run;
+		}
+		$demands = [];
+		foreach ($this->demandMapper->findAll() as $d) {
+			$demands[$d->getId()] = $d;
+		}
+		// 5 Minuten Spielraum, damit ein stündlicher Job nicht um Sekunden zu früh kommt
+		$due = $now - $hours * 3600 + 300;
+		foreach ($this->links->all() as $link) {
+			$demand = $demands[$link['demandId']] ?? null;
+			$provider = $this->registry->get((string)$link['provider']);
+			if ($demand === null || $provider === null || !$this->has($provider, IPlanningProvider::CAP_SYNC)
+				|| !in_array($demand->getStatus(), self::LINKABLE, true) || $link['createdAt'] < $demand->getCreatedAt()) {
+				continue;
+			}
+			if (!$force && $link['syncedAt'] !== null && $link['syncedAt'] > $due) {
+				continue;
+			}
+			$account = (string)$link['createdBy'];
+			if (!$this->registry->safeAvailable($provider, $account)) {
+				$this->links->updateSync($link['id'], 'error', null, $now, ['key' => 'The planning tool is not available for the account %1$s that connected the project', 'params' => [$account]]);
+				$run['failed']++;
+				continue;
+			}
+			$result = $this->sync($account, $provider, $link);
+			if ($result['syncStatus'] === 'ok') {
+				$run['ok']++;
+			} else {
+				$run['failed']++;
+			}
+		}
+		$this->config->setLastSync($run);
+		return $run;
+	}
+
+	/**
+	 * „Jetzt abgleichen“ im Bereich Planungstools (nur PMO).
+	 *
+	 * @return array<string, mixed> Einstellungen mit dem Ergebnis des Laufs
+	 * @throws ForbiddenException
+	 */
+	public function syncNow(string $userId): array {
+		$this->requireManage($userId);
+		$this->syncAll(true);
+		return $this->config($userId);
+	}
+
+	/**
+	 * Verknüpfungen mit fehlgeschlagenem Abgleich (Datenqualitäts-Cockpit).
+	 *
+	 * @return array<int, string> Vorhaben-ID => übersetzte Meldung
+	 */
+	public function syncErrors(): array {
+		$errors = [];
+		foreach ($this->links->all() as $link) {
+			if ($link['syncStatus'] === 'error') {
+				$errors[$link['demandId']] = $this->errorText($link['syncError']) ?? '';
+			}
+		}
+		return $errors;
+	}
+
+	/** @param array{key: string, params: list<string>}|string|null $error */
+	private function errorText(array|string|null $error): ?string {
+		if (is_array($error)) {
+			return $this->l10n->t($error['key'], $error['params']);
+		}
+		return $error;
 	}
 
 	/**

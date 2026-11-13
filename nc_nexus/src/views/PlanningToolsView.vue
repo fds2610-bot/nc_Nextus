@@ -129,6 +129,50 @@
 						</p>
 					</div>
 				</div>
+
+				<!-- Hintergrundabgleich (Kapitel 07 §4.2) -->
+				<div class="tools__row" data-test="tool-sync">
+					<div class="tools__name">
+						<NcIconSvgWrapper :path="mdiSync" />
+						<b>{{ t('nc_nexus', 'Background sync') }}</b>
+					</div>
+					<div class="tools__status">
+						<span class="nx-chip" :class="config.syncHours ? 'nx-chip--accepted' : 'nx-chip--draft'" data-test="sync-status">
+							{{ config.syncHours ? t('nc_nexus', 'active') : t('nc_nexus', 'off') }}
+						</span>
+						<span v-if="config.lastSync && config.lastSync.failed"
+							class="nx-chip nx-chip--rejected"
+							data-test="sync-failed">
+							{{ n('nc_nexus', '%n failed', '%n failed', config.lastSync.failed) }}
+						</span>
+					</div>
+					<div class="tools__fields">
+						<label class="tools__label" for="nx-sync-hours">{{ t('nc_nexus', 'Sync connected projects') }}</label>
+						<select id="nx-sync-hours"
+							v-model.number="form.syncHours"
+							class="nx-input"
+							:disabled="!config.canManage"
+							data-test="sync-hours">
+							<option v-for="h in config.syncChoices" :key="h" :value="h">
+								{{ syncLabel(h) }}
+							</option>
+						</select>
+						<p class="tools__hint" data-test="sync-last">
+							{{ lastSyncText }}
+						</p>
+						<div v-if="config.canManage" class="tools__pair">
+							<NcButton variant="secondary"
+								:disabled="busy"
+								data-test="sync-now"
+								@click="syncNow">
+								{{ t('nc_nexus', 'Sync now') }}
+							</NcButton>
+						</div>
+						<p class="tools__hint">
+							{{ t('nc_nexus', 'Progress, dates, milestones and effort of projects connected with Gantt or OpenProject are fetched regularly in the background, with the rights of the account that connected the project. Failures appear at the project and in the data quality cockpit; they never block the governance. Opening a project always fetches the current state.') }}
+						</p>
+					</div>
+				</div>
 			</div>
 		</section>
 		<section v-if="roles" class="nx-view__section" data-test="role-pool">
@@ -174,21 +218,29 @@ import { n, t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
-import { mdiChartGantt, mdiClipboardTextOutline, mdiFileDelimitedOutline } from '@mdi/js'
-import { errorMessage, getPlanningConfig, getPlanningRoles, savePlanningConfig, savePlanningRole, testGanttConnection } from '../api.js'
+import { mdiChartGantt, mdiClipboardTextOutline, mdiFileDelimitedOutline, mdiSync } from '@mdi/js'
+import { errorMessage, getPlanningConfig, getPlanningRoles, savePlanningConfig, savePlanningRole, syncPlanningNow, testGanttConnection } from '../api.js'
+import { formatDate } from '../labels.js'
 
-const FIELDS = ['ganttUrl', 'ganttUser', 'openprojectUrl', 'mspdiImport', 'mspdiExport']
+const FIELDS = ['ganttUrl', 'ganttUser', 'openprojectUrl', 'mspdiImport', 'mspdiExport', 'syncHours']
 
 export default {
 	name: 'PlanningToolsView',
 	components: { NcButton, NcCheckboxRadioSwitch, NcIconSvgWrapper },
 	setup() {
-		return { n, t, mdiChartGantt, mdiClipboardTextOutline, mdiFileDelimitedOutline }
+		return { n, t, mdiChartGantt, mdiClipboardTextOutline, mdiFileDelimitedOutline, mdiSync }
 	},
 	data() {
 		return { config: null, form: null, roles: null, busy: false, testResult: null }
 	},
 	computed: {
+		lastSyncText() {
+			const last = this.config?.lastSync
+			if (!last) {
+				return t('nc_nexus', 'No sync has run yet.')
+			}
+			return t('nc_nexus', 'Last sync {date}: {ok} successful, {failed} failed', { date: formatDate(last.at), ok: last.ok, failed: last.failed })
+		},
 		dirty() {
 			return !!this.form && (FIELDS.some(k => this.form[k] !== this.config[k]) || this.form.ganttPassword !== '')
 		},
@@ -228,6 +280,25 @@ export default {
 				this.apply(await savePlanningConfig(this.form))
 				this.testResult = null
 				showSuccess(t('nc_nexus', 'Planning tools saved'))
+			} catch (e) {
+				showError(errorMessage(e))
+			} finally {
+				this.busy = false
+			}
+		},
+		syncLabel(hours) {
+			if (hours === 0) {
+				return t('nc_nexus', 'never (only when a project is opened)')
+			}
+			return n('nc_nexus', 'every hour', 'every %n hours', hours)
+		},
+		async syncNow() {
+			this.busy = true
+			try {
+				const config = await syncPlanningNow()
+				// ungespeicherte Eingaben im Formular behalten
+				this.config = { ...this.config, lastSync: config.lastSync }
+				showSuccess(this.lastSyncText)
 			} catch (e) {
 				showError(errorMessage(e))
 			} finally {

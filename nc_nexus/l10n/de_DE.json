@@ -70,6 +70,10 @@
             "%n frühere Version bleibt für die Revision erhalten.",
             "%n frühere Versionen bleiben für die Revision erhalten."
         ],
+        "_%n failed_::_%n failed_": [
+            "%n fehlgeschlagen",
+            "%n fehlgeschlagen"
+        ],
         "_%n finding_::_%n findings_": [
             "%n Befund",
             "%n Befunde"
@@ -153,6 +157,10 @@
         "_Add %n gate ready for decision_::_Add %n gates ready for decision_": [
             "%n entscheidungsreifes Gate aufnehmen",
             "%n entscheidungsreife Gates aufnehmen"
+        ],
+        "_every hour_::_every %n hours_": [
+            "stündlich",
+            "alle %n Stunden"
         ],
         "_overbooked bottleneck pool_::_overbooked bottleneck pools_": [
             "überbuchter Engpass-Pool",
@@ -323,6 +331,7 @@
         "Back": "Zurück",
         "Back to draft": "Zurück in den Entwurf",
         "Back to the scenarios": "Zurück zu den Szenarien",
+        "Background sync": "Hintergrundabgleich",
         "Baseline": "Ausgangswert",
         "Baseline {b}, target {t}": "Ausgangswert {b}, Ziel {t}",
         "Baselines": "Baselines",
@@ -453,6 +462,7 @@
         "Check the options from top to bottom and document why the cheaper ones are not possible (chapter 01 §7).": "Prüfe die Optionen von oben nach unten und halte fest, warum die günstigeren nicht möglich sind (Kapitel 01 §7).",
         "Checked at every phase gate: does the assumption still hold?": "Wird an jedem Phasen-Gate geprüft: Gilt die Annahme noch?",
         "Checklist": "Prüfliste",
+        "Choose a valid interval for the background sync": "Wähle einen gültigen Abstand für den Hintergrundabgleich",
         "Circle area = cost": "Kreisfläche = Kosten",
         "Class L from (person days)": "Klasse L ab (Personentage)",
         "Class L from (€)": "Klasse L ab (€)",
@@ -895,6 +905,8 @@
         "Large, not yet released": "Groß, noch nicht freigegeben",
         "Large, released or running": "Groß, freigegeben oder laufend",
         "Last gate passed: {gate}": "Zuletzt durchlaufen: {gate}",
+        "Last sync {date}: {ok} successful, {failed} failed": "Letzter Abgleich {date}: {ok} erfolgreich, {failed} fehlgeschlagen",
+        "Last sync: {date}": "Zuletzt abgeglichen: {date}",
         "Latest status report": "Letzter Statusbericht",
         "Leading demand": "Führender Antrag",
         "Leading demand not found": "Führender Antrag nicht gefunden",
@@ -965,6 +977,7 @@
         "Net": "Netto",
         "Net present value": "Kapitalwert",
         "Net present value 5 years": "Kapitalwert 5 Jahre",
+        "never (only when a project is opened)": "nie (nur beim Öffnen eines Vorhabens)",
         "New": "Neu",
         "new": "neu",
         "New action": "Neue Maßnahme",
@@ -1051,6 +1064,7 @@
         "no strategic objectives": "keine strategischen Ziele",
         "No strategic objectives yet": "Noch keine strategischen Ziele",
         "No submitted, deferred or further analysed demand outside the ranking.": "Kein eingereichter, zurückgestellter oder in Analyse befindlicher Antrag außerhalb der Rangliste.",
+        "No sync has run yet.": "Es lief noch kein Abgleich.",
         "No units yet. Demands without a unit are visible only to their requestor and to global roles.": "Noch keine Einheiten. Anträge ohne Einheit sehen nur der Antragsteller und globale Rollen.",
         "none": "keine",
         "none planned": "keine geplant",
@@ -1264,6 +1278,7 @@
         "Process from submission to benefit review": "Prozess von der Einreichung bis zum Nutzenreview",
         "Progress": "Fortschritt",
         "Progress (%)": "Fortschritt (%)",
+        "Progress, dates, milestones and effort of projects connected with Gantt or OpenProject are fetched regularly in the background, with the rights of the account that connected the project. Failures appear at the project and in the data quality cockpit; they never block the governance. Opening a project always fetches the current state.": "Fortschritt, Termine, Meilensteine und Aufwand der mit Gantt oder OpenProject verknüpften Vorhaben werden regelmäßig im Hintergrund abgerufen, mit den Rechten des Kontos, das die Verknüpfung angelegt hat. Fehler erscheinen am Vorhaben und im Datenqualitäts-Cockpit; sie blockieren nie die Governance. Beim Öffnen eines Vorhabens wird immer der aktuelle Stand abgerufen.",
         "Project": "Vorhaben",
         "Project baseline": "Baseline",
         "Project capacity": "Projekt-Kapazität",
@@ -1282,6 +1297,7 @@
         "Project {key}": "Projekt {key}",
         "Projects": "Projekte",
         "Projects evaluated": "Ausgewertete Projekte",
+        "Projects whose sync with the planning tool failed": "Vorhaben, deren Abgleich mit dem Planungstool fehlschlug",
         "Projects without strategic objective": "Projekte ohne strategisches Ziel",
         "Put up for prioritization": "Zur Priorisierung stellen",
         "Qualified demands without project class": "Qualifizierte Anträge ohne Vorhabensklasse",
@@ -1574,7 +1590,9 @@
         "Summarize": "Zusammenfassen",
         "Summary": "Zusammenfassung",
         "Supplier": "Lieferant",
+        "Sync connected projects": "Verknüpfte Vorhaben abgleichen",
         "sync failed": "Abgleich fehlgeschlagen",
+        "Sync now": "Jetzt abgleichen",
         "Take %s out of the capacity cut": "%s aus dem Kapazitätsschnitt nehmen",
         "Take a project out": "Vorhaben herausnehmen",
         "Take over as resource needs": "Als Ressourcenbedarf übernehmen",
@@ -1643,6 +1661,7 @@
         "The objective still has sub-objectives": "Das Ziel hat noch Unterziele",
         "The plan contains no effort for roles assigned to a pool": "Der Plan enthält keinen Aufwand für Rollen, die einem Pool zugeordnet sind",
         "The planning tool is not available": "Das Planungstool ist nicht verfügbar",
+        "The planning tool is not available for the account %1$s that connected the project": "Das Planungstool ist für das Konto %1$s, das die Verknüpfung angelegt hat, nicht verfügbar",
         "The planning tool rejected the login. Check the account and the app password or API key.": "Das Planungstool hat die Anmeldung abgelehnt. Prüfen Sie Konto und App-Passwort bzw. API-Schlüssel.",
         "The planning tool reported an error (%1$s)": "Das Planungstool meldet einen Fehler (%1$s)",
         "The portfolio office confirms that the required information is complete; the project then competes in the ranking.": "Das Portfolio-Office bestätigt, dass die Pflichtangaben vollständig sind; danach konkurriert das Vorhaben in der Rangliste.",
@@ -1671,6 +1690,7 @@
         "The target share must be between 0 and 100 %": "Die Zielquote muss zwischen 0 und 100 % liegen",
         "The tranche needs an amount and a fiscal year": "Die Tranche braucht einen Betrag und ein Geschäftsjahr",
         "The unit still has subunits": "Die Einheit hat noch Untereinheiten",
+        "The values below are from the last successful sync.": "Die Werte unten stammen aus dem letzten erfolgreichen Abgleich.",
         "The weights of the benefit criteria must add up to 100": "Die Gewichte der Nutzenkriterien müssen zusammen 100 ergeben",
         "There is already a decision right for this gate and these classes": "Für dieses Gate und diese Klassen gibt es bereits ein Entscheidungsrecht",
         "This assistance is not available for the demand": "Diese Unterstützung gibt es für das Vorhaben nicht",

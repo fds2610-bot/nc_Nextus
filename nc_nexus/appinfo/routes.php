@@ -135,6 +135,7 @@ return [
 		['name' => 'planning_api#export', 'url' => '/api/v1/demands/{id}/planning/export', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 		['name' => 'planning_api#testGantt', 'url' => '/api/v1/planning/config/test-gantt', 'verb' => 'POST'],
 		['name' => 'planning_api#saveConfig', 'url' => '/api/v1/planning/config', 'verb' => 'PUT'],
+		['name' => 'planning_api#syncNow', 'url' => '/api/v1/planning/sync', 'verb' => 'POST'],
 		['name' => 'planning_api#applyDemand', 'url' => '/api/v1/demands/{id}/planning/demand', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 		['name' => 'planning_api#roles', 'url' => '/api/v1/planning/roles', 'verb' => 'GET'],
 		['name' => 'planning_api#saveRole', 'url' => '/api/v1/planning/roles', 'verb' => 'PUT'],

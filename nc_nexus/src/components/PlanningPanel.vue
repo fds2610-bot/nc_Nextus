@@ -11,6 +11,12 @@
 				<b v-else data-test="planning-open">{{ planning.link.title }}</b>
 				<span v-if="planning.link.syncStatus === 'error'" class="nx-chip nx-chip--rejected" :title="planning.link.syncError">{{ t('nc_nexus', 'sync failed') }}</span>
 			</p>
+			<p v-if="planning.link.syncStatus === 'error'" class="planning__error" data-test="planning-sync-error">
+				{{ planning.link.syncError }}
+				<template v-if="planning.link.summary">
+					{{ t('nc_nexus', 'The values below are from the last successful sync.') }}
+				</template>
+			</p>
 			<div v-if="planning.link.summary" class="nx-summary__facts" data-test="planning-summary">
 				<div class="nx-fact">
 					{{ t('nc_nexus', 'Progress') }}<b data-test="planning-progress">{{ planning.link.summary.progress }} %</b>
@@ -89,6 +95,7 @@
 				</template>
 				<template v-else>
 					{{ t('nc_nexus', 'After release the plan leads for dates and progress; the values are read from {tool}.', { tool: planning.link.providerName }) }}
+					<span v-if="planning.link.syncedAt" data-test="planning-synced-at">{{ t('nc_nexus', 'Last sync: {date}', { date: formatDate(planning.link.syncedAt) }) }}</span>
 				</template>
 			</p>
 			<div class="planning__actions">
@@ -364,6 +371,11 @@ export default {
 <style scoped lang="scss">
 .planning__muted {
 	color: var(--color-text-maxcontrast);
+}
+
+.planning__error {
+	color: var(--color-error-text);
+	margin: 4px 0 8px;
 }
 
 .planning__title {

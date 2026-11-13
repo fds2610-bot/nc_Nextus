@@ -50,6 +50,15 @@ class PlanningLinkMapper {
 		return $rows;
 	}
 
+	/** @return array{key: string, params: list<string>}|null */
+	private static function error(mixed $raw): ?array {
+		if (!is_string($raw) || $raw === '') {
+			return null;
+		}
+		$e = json_decode($raw, true);
+		return is_array($e) && isset($e['key']) ? ['key' => (string)$e['key'], 'params' => array_values(array_map('strval', (array)($e['params'] ?? [])))] : null;
+	}
+
 	/**
 	 * @param array<string, mixed> $r
 	 * @return array<string, mixed>
@@ -65,6 +74,7 @@ class PlanningLinkMapper {
 			'syncStatus' => (string)$r['sync_status'],
 			'summary' => $r['summary'] === null ? null : json_decode((string)$r['summary'], true),
 			'syncedAt' => $r['synced_at'] === null ? null : (int)$r['synced_at'],
+			'syncError' => self::error($r['sync_error'] ?? null),
 			'createdBy' => (string)$r['created_by'],
 			'createdAt' => (int)$r['created_at'],
 		];
@@ -111,12 +121,16 @@ class PlanningLinkMapper {
 		])->executeStatement();
 	}
 
-	/** @param array<string, mixed>|null $summary */
-	public function updateSync(int $id, string $status, ?array $summary, int $now): void {
+	/**
+	 * @param array<string, mixed>|null $summary null = letzten Stand behalten
+	 * @param array{key: string, params: list<string>}|null $error Meldung bei Status „error“
+	 */
+	public function updateSync(int $id, string $status, ?array $summary, int $now, ?array $error = null): void {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update(self::TABLE)
 			->set('sync_status', $qb->createNamedParameter($status))
-			->set('synced_at', $qb->createNamedParameter($now, IQueryBuilder::PARAM_INT));
+			->set('synced_at', $qb->createNamedParameter($now, IQueryBuilder::PARAM_INT))
+			->set('sync_error', $qb->createNamedParameter($error === null ? null : mb_substr(json_encode($error, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), 0, 1024)));
 		if ($summary !== null) {
 			$qb->set('summary', $qb->createNamedParameter(json_encode($summary, JSON_THROW_ON_ERROR)));
 		}

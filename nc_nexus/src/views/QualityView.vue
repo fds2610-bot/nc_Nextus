@@ -110,6 +110,7 @@ export default {
 				query_overdue: t('nc_nexus', 'Queries to requestors overdue'),
 				stale: t('nc_nexus', 'Open demands not updated for 90 days'),
 				no_planning_link: t('nc_nexus', 'Released projects not connected with the planning tool'),
+				planning_sync_failed: t('nc_nexus', 'Projects whose sync with the planning tool failed'),
 				conditions_overdue: t('nc_nexus', 'Conditions and actions overdue'),
 				pool_capacity_missing: t('nc_nexus', 'Pools without capacity in the next 3 months'),
 				objectives_uncovered: t('nc_nexus', 'Strategic objectives without a running project'),

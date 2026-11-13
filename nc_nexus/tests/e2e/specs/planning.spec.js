@@ -277,6 +277,43 @@ test.describe('Bereich Planungstools', () => {
 			await admin.dispose()
 		}
 	})
+	test('Hintergrundabgleich: Abstand nur durch PMO, Jetzt abgleichen', async ({ browser }) => {
+		const admin = await adminApi()
+		const own = await apiAs(E2E_USER)
+		const before = await call(admin, 'get', '/planning/config')
+		try {
+			expect(before.syncChoices).toEqual([0, 1, 6, 12, 24])
+			expect((await own.put('/ocs/v2.php/apps/nc_nexus/api/v1/planning/config', { data: { syncHours: 1 } })).status()).toBe(403)
+			expect((await own.post('/ocs/v2.php/apps/nc_nexus/api/v1/planning/sync')).status()).toBe(403)
+			expect((await admin.put('/ocs/v2.php/apps/nc_nexus/api/v1/planning/config', { data: { syncHours: 5 } })).status()).toBe(400)
+
+			const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
+			try {
+				await openDemands(page)
+				await page.locator('[data-test="nav-planning-tools"]').click()
+				const row = page.locator('[data-test="tool-sync"]')
+				await row.locator('[data-test="sync-hours"]').selectOption('6')
+				await page.locator('[data-test="save-planning-tools"]').click()
+				await expect(page.locator('[data-test="save-planning-tools"]')).toBeDisabled()
+				expect((await call(admin, 'get', '/planning/config')).syncHours).toBe(6)
+				await row.locator('[data-test="sync-hours"]').selectOption('0')
+				await page.locator('[data-test="save-planning-tools"]').click()
+				await expect(row.locator('[data-test="sync-status"]')).toHaveClass(/nx-chip--draft/)
+				// „Jetzt abgleichen“ läuft auch, wenn der regelmäßige Abgleich aus ist
+				await row.locator('[data-test="sync-now"]').click()
+				await expect(row.locator('[data-test="sync-last"]')).toContainText(/Letzter Abgleich|Last sync/)
+			} finally {
+				await context.close()
+			}
+			const after = await call(admin, 'get', '/planning/config')
+			expect(after.syncHours).toBe(0)
+			expect(after.lastSync.at).toBeGreaterThan(Date.now() / 1000 - 300)
+		} finally {
+			await call(admin, 'put', '/planning/config', { syncHours: before.syncHours }, 200).catch(() => {})
+			await own.dispose()
+			await admin.dispose()
+		}
+	})
 })
 
 test.describe('Planungs-Integration (nc_gantt)', () => {
@@ -314,6 +351,12 @@ test.describe('Planungs-Integration (nc_gantt)', () => {
 			const link = (await call(admin, 'get', `/demands/${d.id}/planning`)).link
 			expect(link.provider).toBe('gantt')
 			expect(link.syncStatus).toBe('ok')
+			// Hintergrundabgleich im Namen des verknüpfenden Kontos
+			const run = (await call(admin, 'post', '/planning/sync')).lastSync
+			expect(run.ok).toBeGreaterThanOrEqual(1)
+			const synced = (await call(admin, 'get', `/demands/${d.id}/planning`)).link
+			expect(synced.syncedAt).toBeGreaterThanOrEqual(run.at)
+			await expect(panel.locator('[data-test="planning-synced-at"]')).toBeVisible()
 			// doppelt verknüpfen geht nicht
 			expect((await admin.post(`/ocs/v2.php/apps/nc_nexus/api/v1/demands/${d.id}/planning`, { data: {} })).status()).toBe(400)
 		} finally {

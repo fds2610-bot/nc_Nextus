@@ -102,6 +102,19 @@ class PlanningApiController extends BaseApiController {
 	}
 
 	/**
+	 * Alle live verknüpften Projekte sofort abgleichen (nur PMO).
+	 *
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: Einstellungen mit dem Ergebnis des Laufs
+	 * 403: keine Berechtigung
+	 */
+	#[NoAdminRequired]
+	public function syncNow(): DataResponse {
+		return $this->handle(fn () => $this->planning->syncNow($this->uid()));
+	}
+
+	/**
 	 * Verbindung zur eingetragenen Gantt-Instanz prüfen (nur PMO).
 	 *
 	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>

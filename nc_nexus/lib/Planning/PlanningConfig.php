@@ -21,6 +21,11 @@ class PlanningConfig {
 	private const OPENPROJECT_URL = 'openproject_url';
 	private const MSPDI_IMPORT = 'mspdi_import';
 	private const MSPDI_EXPORT = 'mspdi_export';
+	private const SYNC_HOURS = 'planning_sync_hours';
+	private const SYNC_LAST = 'planning_sync_last';
+	/** wählbare Abstände des Hintergrundabgleichs in Stunden; 0 = aus */
+	public const SYNC_CHOICES = [0, 1, 6, 12, 24];
+	public const SYNC_DEFAULT = 24;
 
 	public function __construct(
 		private IAppConfig $config,
@@ -98,6 +103,33 @@ class PlanningConfig {
 	public function setMspdi(bool $import, bool $export): void {
 		$this->config->setValueString(Application::APP_ID, self::MSPDI_IMPORT, $import ? '1' : '0');
 		$this->config->setValueString(Application::APP_ID, self::MSPDI_EXPORT, $export ? '1' : '0');
+	}
+
+	/** Abstand des Hintergrundabgleichs in Stunden, 0 = aus */
+	public function syncHours(): int {
+		$hours = (int)$this->config->getValueString(Application::APP_ID, self::SYNC_HOURS, (string)self::SYNC_DEFAULT);
+		return in_array($hours, self::SYNC_CHOICES, true) ? $hours : self::SYNC_DEFAULT;
+	}
+
+	/**
+	 * @throws ValidationException
+	 */
+	public function setSyncHours(int $hours): void {
+		if (!in_array($hours, self::SYNC_CHOICES, true)) {
+			throw new ValidationException('Choose a valid interval for the background sync');
+		}
+		$this->config->setValueString(Application::APP_ID, self::SYNC_HOURS, (string)$hours);
+	}
+
+	/** @return array{at: int, ok: int, failed: int}|null letzter Lauf des Hintergrundabgleichs */
+	public function lastSync(): ?array {
+		$raw = json_decode($this->config->getValueString(Application::APP_ID, self::SYNC_LAST, ''), true);
+		return is_array($raw) && isset($raw['at']) ? ['at' => (int)$raw['at'], 'ok' => (int)($raw['ok'] ?? 0), 'failed' => (int)($raw['failed'] ?? 0)] : null;
+	}
+
+	/** @param array{at: int, ok: int, failed: int} $run */
+	public function setLastSync(array $run): void {
+		$this->config->setValueString(Application::APP_ID, self::SYNC_LAST, json_encode($run, JSON_THROW_ON_ERROR));
 	}
 
 	private function url(string $key): string {

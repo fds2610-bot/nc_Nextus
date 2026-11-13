@@ -119,6 +119,7 @@ export const savePlanningCredentials = async (provider, secret) => data(await ax
 export const getPlanningConfig = async () => data(await axios.get(v1('/planning/config')))
 export const savePlanningConfig = async (values) => data(await axios.put(v1('/planning/config'), values))
 export const testGanttConnection = async () => data(await axios.post(v1('/planning/config/test-gantt')))
+export const syncPlanningNow = async () => data(await axios.post(v1('/planning/sync')))
 export const exportPlanning = async (id) => data(await axios.get(v1(`/demands/${id}/planning/export`)))
 export const applyPlanDemand = async (id) => data(await axios.post(v1(`/demands/${id}/planning/demand`)))
 export const getPlanningRoles = async () => data(await axios.get(v1('/planning/roles')))
