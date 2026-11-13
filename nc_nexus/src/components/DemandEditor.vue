@@ -317,6 +317,10 @@
 						:status="demand.status"
 						@changed="onPlanning" />
 
+					<AiPanel v-if="demand && demand.id"
+						:demand-id="demand.id"
+						:status="demand.status" />
+
 					<div v-if="demand && businessCase && (businessCase.canEdit || businessCase.versions.length)"
 						class="nx-section"
 						data-test="demand-business-case">
@@ -562,6 +566,7 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcModal from '@nextcloud/vue/components/NcModal'
 import { createDemand, deleteDemand, demandAssessments, demandHistory, demandNeeds, demandObjectives, errorMessage, gateStatus, getBusinessCase, getDemand, saveDemandNeeds, saveDemandObjectives, submitDemand, submitGate, updateDemand } from '../api.js'
+import AiPanel from './AiPanel.vue'
 import AnalysisDialog from './AnalysisDialog.vue'
 import AssessmentDialog from './AssessmentDialog.vue'
 import BusinessCaseDialog from './BusinessCaseDialog.vue'
@@ -577,7 +582,7 @@ const emptyForm = () => ({ title: '', demandType: 'strategic', orgUnitId: null, 
 
 export default {
 	name: 'DemandEditor',
-	components: { AnalysisDialog, AssessmentDialog, BusinessCaseDialog, GateDialog, PlanningPanel, CommentThread, NcButton, NeedsEditor, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
+	components: { AiPanel, AnalysisDialog, AssessmentDialog, BusinessCaseDialog, GateDialog, PlanningPanel, CommentThread, NcButton, NeedsEditor, NcLoadingIcon, NcModal, SimilarDemands, TriageDialog },
 	props: {
 		demandId: { type: Number, default: null },
 		orgUnits: { type: Array, default: () => [] },

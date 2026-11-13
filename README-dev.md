@@ -38,6 +38,11 @@ Anmeldung: `admin` / `admin123`. Beim ersten Start installiert sich Nextcloud se
 Post-Install-Hooks aktivieren nc_nexus und legen die Testkonten `e2e` und `e2e-other` (ohne
 Adminrechte) an. Compose-Projekt: `nc-nexus-dev`.
 
+Für die KI-Assistenz bringt jede DEV-Instanz den Dummy-Anbieter `nexus_dev_ai`
+(`docker-dev/apps/`) mit: Er beantwortet Aufträge „Text zu Text“ sofort mit einem festen Text,
+ohne Sprachmodell. Für echte Antworten in der Nextcloud-Verwaltung unter „Künstliche Intelligenz“
+einen anderen Anbieter (z. B. `integration_openai` mit Ollama) vorziehen oder `nexus_dev_ai` abschalten.
+
 `./dev.sh up` (ohne Optionen) startet genau dieselbe Instanz; `./dev.sh e2e` führt die
 E2E-Tests dagegen aus. `dev.sh` braucht es nur für die Varianten unten.
 
@@ -99,8 +104,10 @@ frank (Fertigung), mona (Montage), lars (Logistik), hanna (Personal).
 scripts/php-check.sh          # PHP 8.3/8.4/8.5: Syntax + PHPUnit, dazu PHPStan
 cd nc_nexus && npm run lint   # ESLint
 ./dev.sh e2e [--db …]         # Playwright über den e2e-runner
-# Hinweis: ./dev.sh e2e sichert vorher die App-Tabellen (nx_*) und spielt sie nach dem Lauf
-# wieder ein, die Testdaten verschwinden also. NX_E2E_KEEP=1 ./dev.sh e2e … behält sie.
+# Hinweis: ./dev.sh e2e sichert vorher die App-Tabellen (nx_*), die App-Konfiguration und die
+# gespeicherten Zugangsdaten (Credential-Store, nc_nexus::*) und spielt sie nach dem Lauf wieder
+# ein; Benachrichtigungen und KI-Aufträge des Laufs werden gelöscht. Während eines Laufs keine
+# Einstellungen auf der Instanz ändern. NX_E2E_KEEP=1 ./dev.sh e2e … behält die Testdaten.
 scripts/matrix.sh             # E2E über die ganze Matrix (DBs, NC 34, PHP 8.3)
 ```
 

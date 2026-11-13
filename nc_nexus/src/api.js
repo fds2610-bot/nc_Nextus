@@ -120,6 +120,10 @@ export const getPlanningConfig = async () => data(await axios.get(v1('/planning/
 export const savePlanningConfig = async (values) => data(await axios.put(v1('/planning/config'), values))
 export const testGanttConnection = async () => data(await axios.post(v1('/planning/config/test-gantt')))
 export const exportPlanning = async (id) => data(await axios.get(v1(`/demands/${id}/planning/export`)))
+export const getAi = async (id) => data(await axios.get(v1(`/demands/${id}/ai`)))
+export const requestAi = async (id, kind) => data(await axios.post(v1(`/demands/${id}/ai`), { kind }))
+export const getAiConfig = async () => data(await axios.get(v1('/ai/config')))
+export const saveAiConfig = async (enabled) => data(await axios.put(v1('/ai/config'), { enabled }))
 
 // Stufe 3: Gates, Governance-Konfiguration, Sitzungen, Auflagen, Datenqualität
 export const submitGate = async (id, step) => data(await axios.post(`${base}/${id}/gate/submit`, { step }))

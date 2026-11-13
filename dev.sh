@@ -175,6 +175,10 @@ setup_apps() {
 		done
 	fi
 	occ app:enable nc_nexus
+	# DEV-Dummy für die KI-Assistenz (feste Antworten, kein Sprachmodell)
+	if dc exec -T nextcloud test -f /custom_apps/nexus_dev_ai/appinfo/info.xml </dev/null; then
+		occ app:enable nexus_dev_ai >/dev/null || echo "WARNUNG: nexus_dev_ai ließ sich nicht aktivieren"
+	fi
 	# Testkonten für die E2E-Tests (nc_nexus/tests/e2e), ohne Adminrechte
 	for user in e2e e2e-other; do
 		if ! occ user:info "$user" >/dev/null 2>&1; then
@@ -251,10 +255,38 @@ for k, v in before.items():
 		done
 }
 
+# Gespeicherte Zugangsdaten von nc_nexus (App-Passwort der Gantt-Instanz, API-Schlüssel je Konto)
+# liegen im Credential-Store von Nextcloud. Die Zeilen bleiben verschlüsselt, wie sie sind.
+CREDS_WHERE="identifier LIKE 'nc_nexus::%'"
+creds_save() { # $1 = Zieldatei
+	case "$NX_DB" in
+	mariadb)
+		dc exec -T db mariadb-dump -uroot -p"${NX_DB_PASSWORD:-nextcloud}" --no-create-info --skip-triggers --complete-insert \
+			--where="$CREDS_WHERE" nextcloud oc_storages_credentials </dev/null >"$1" ;;
+	pgsql)
+		dc exec -T db psql -U nextcloud -d nextcloud -c "COPY (SELECT \"user\", identifier, credentials FROM oc_storages_credentials WHERE $CREDS_WHERE) TO STDOUT" </dev/null >"$1" ;;
+	sqlite) : ;; # steckt in der Kopie der Datenbank
+	esac
+}
+
+creds_restore() { # $1 = Sicherungsdatei
+	case "$NX_DB" in
+	mariadb)
+		{ echo "DELETE FROM oc_storages_credentials WHERE $CREDS_WHERE;"; cat "$1"; } \
+			| dc exec -T db mariadb -uroot -p"${NX_DB_PASSWORD:-nextcloud}" nextcloud ;;
+	pgsql)
+		{ echo "DELETE FROM oc_storages_credentials WHERE $CREDS_WHERE;"
+			echo "COPY oc_storages_credentials (\"user\", identifier, credentials) FROM STDIN;"; cat "$1"; echo '\.'; } \
+			| dc exec -T db psql -q -v ON_ERROR_STOP=1 -U nextcloud -d nextcloud >/dev/null ;;
+	sqlite) : ;;
+	esac
+}
+
 snapshot_restore() { # $1 = Sicherungsdatei, $2 = Startzeit des Laufs (Unix)
 	local tables
-	# Benachrichtigungen, die Nexus während des Laufs erzeugt hat, gehören zu den Testdaten
-	local notes="DELETE FROM oc_notifications WHERE app = 'nc_nexus' AND timestamp >= ${2:-0};"
+	# Benachrichtigungen und KI-Aufträge, die Nexus während des Laufs erzeugt hat, gehören zu den Testdaten
+	local notes="DELETE FROM oc_notifications WHERE app = 'nc_nexus' AND timestamp >= ${2:-0};
+DELETE FROM oc_taskprocessing_tasks WHERE app_id = 'nc_nexus' AND last_updated >= ${2:-0};"
 	case "$NX_DB" in
 	mariadb)
 		{ echo 'SET FOREIGN_KEY_CHECKS=0;'; for t in $(db_tables); do echo "TRUNCATE $t;"; done; cat "$1"; echo "$notes"; } \
@@ -280,11 +312,14 @@ reset_data() {
 }
 
 e2e() {
-	local snap='' conf='' rc=0 started
+	local snap='' conf='' creds='' rc=0 started
 	started=$(date +%s)
 	if [ -z "${NX_E2E_KEEP:-}" ]; then
 		conf=$(mktemp)
 		config_save "$conf" || { rm -f "$conf"; die "Sicherung der App-Konfiguration vor den E2E-Tests fehlgeschlagen"; }
+		creds=$(mktemp)
+		chmod 600 "$creds"
+		creds_save "$creds" || { rm -f "$conf" "$creds"; die "Sicherung der Zugangsdaten vor den E2E-Tests fehlgeschlagen"; }
 		snap=$(mktemp)
 		snapshot_save "$snap" || { rm -f "$snap"; die "Sicherung der App-Daten vor den E2E-Tests fehlgeschlagen"; }
 		[ "$NX_DB" = sqlite ] || [ -s "$snap" ] || { rm -f "$snap"; die "Sicherung der App-Daten ist leer"; }
@@ -302,6 +337,10 @@ e2e() {
 	if [ -n "$conf" ]; then
 		config_restore "$conf" && echo "App-Konfiguration wiederhergestellt" || echo "WARNUNG: App-Konfiguration konnte nicht wiederhergestellt werden" >&2
 		rm -f "$conf"
+	fi
+	if [ -n "$creds" ]; then
+		creds_restore "$creds" && echo "Zugangsdaten (Credential-Store) wiederhergestellt" || echo "WARNUNG: Zugangsdaten konnten nicht wiederhergestellt werden" >&2
+		rm -f "$creds"
 	fi
 	return "$rc"
 }

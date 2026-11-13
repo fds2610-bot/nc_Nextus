@@ -148,6 +148,7 @@ export const actionLabel = (action) => ({
 	decision: t('nc_nexus', 'Triage decision'),
 	analysis: t('nc_nexus', 'Analysis completed'),
 	delete: t('nc_nexus', 'Deleted'),
+	ai_request: t('nc_nexus', 'AI assistance requested'),
 })[action] || action
 
 export const formatDate = (ts) => ts ? new Date(ts * 1000).toLocaleString(getCanonicalLocale(), { dateStyle: 'medium', timeStyle: 'short' }) : ''

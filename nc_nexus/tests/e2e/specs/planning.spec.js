@@ -137,6 +137,8 @@ test.describe('Bereich Planungstools', () => {
 		const own = await apiAs(E2E_USER)
 		const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
 		try {
+			// Ausgangslage herstellen (dev.sh e2e stellt Einstellungen und Zugangsdaten danach wieder her)
+			await call(admin, 'put', '/planning/config', { ganttUrl: '' }, 200)
 			// ohne App-Passwort wird nichts gespeichert
 			expect((await admin.put('/ocs/v2.php/apps/nc_nexus/api/v1/planning/config', { data: { ganttUrl: 'http://gantt.example.invalid', ganttUser: 'pmo' } })).status()).toBe(400)
 			expect((await call(admin, 'get', '/planning/config')).ganttUrl).toBe('')

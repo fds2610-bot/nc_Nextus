@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+	<id>nexus_dev_ai</id>
+	<name>Nexus DEV-KI</name>
+	<summary>Nur für die DEV-Umgebung: Dummy-Anbieter für TaskProcessing (Text zu Text)</summary>
+	<description>Liefert sofort eine feste Antwort, damit die KI-Assistenz von nc_nexus ohne Sprachmodell getestet werden kann. Nicht für den Betrieb.</description>
+	<version>1.0.0</version>
+	<licence>agpl</licence>
+	<author>nc_nexus DEV</author>
+	<namespace>NexusDevAi</namespace>
+	<category>tools</category>
+	<dependencies>
+		<nextcloud min-version="33" max-version="40"/>
+	</dependencies>
+</info>

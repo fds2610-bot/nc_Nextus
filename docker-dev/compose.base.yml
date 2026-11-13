@@ -21,6 +21,8 @@ services:
     volumes:
       - nc_data:/var/www/html
       - ../nc_nexus:/custom_apps/nc_nexus:ro
+      # Dummy-KI-Anbieter (TaskProcessing Text zu Text) nur für DEV/E2E
+      - ./apps/nexus_dev_ai:/custom_apps/nexus_dev_ai:ro
       - ./hooks:/docker-entrypoint-hooks.d:ro
       - ./opcache-dev.ini:/usr/local/etc/php/conf.d/zzz-opcache-dev.ini:ro
       - ./apache-dev.conf:/etc/apache2/conf-enabled/zz-dev.conf:ro

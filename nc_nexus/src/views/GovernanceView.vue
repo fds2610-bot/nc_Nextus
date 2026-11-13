@@ -192,6 +192,27 @@
 			</div>
 		</section>
 
+		<section v-if="aiConfig" class="nx-view__section" data-test="ai-config">
+			<div class="nx-view__section-head">
+				<h3>{{ t('nc_nexus', 'AI assistance') }}</h3>
+			</div>
+			<p class="nx-view__hint">
+				{{ t('nc_nexus', 'Summaries, contradiction checks and drafts of decision templates at the project. They run with the AI service set up in the Nextcloud administration (Artificial intelligence); results are marked as proposals and every request is logged.') }}
+			</p>
+			<div class="gov__ai">
+				<NcCheckboxRadioSwitch :model-value="aiConfig.enabled"
+					type="switch"
+					:disabled="!aiConfig.canManage"
+					data-test="ai-enabled"
+					@update:model-value="storeAi">
+					{{ t('nc_nexus', 'Offer AI assistance') }}
+				</NcCheckboxRadioSwitch>
+				<span class="nx-chip" :class="aiConfig.provider ? 'nx-chip--accepted' : 'nx-chip--draft'" data-test="ai-provider">
+					{{ aiConfig.provider ? t('nc_nexus', 'Service: {name}', { name: aiConfig.provider }) : t('nc_nexus', 'No AI service set up') }}
+				</span>
+			</div>
+		</section>
+
 		<section v-if="settings" class="nx-view__section" data-test="project-classes">
 			<div class="nx-view__section-head">
 				<h3>{{ t('nc_nexus', 'Project classes') }}</h3>
@@ -248,25 +269,26 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { n, t } from '@nextcloud/l10n'
 import NcAvatar from '@nextcloud/vue/components/NcAvatar'
 import NcButton from '@nextcloud/vue/components/NcButton'
+import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import BodyDialog from '../components/BodyDialog.vue'
 import GateProcess from '../components/GateProcess.vue'
 import GateSetDialog from '../components/GateSetDialog.vue'
 import RightDialog from '../components/RightDialog.vue'
 import { loadState } from '@nextcloud/initial-state'
-import { errorMessage, getSettings, governance, saveSettings } from '../api.js'
+import { errorMessage, getAiConfig, getSettings, governance, saveAiConfig, saveSettings } from '../api.js'
 import NxNumberInput from '../components/NxNumberInput.vue'
 import { bodyTypeLabel, checkLabel, formatMoney, formatNumber, gateLabel, typeLabel } from '../labels.js'
 
 export default {
 	name: 'GovernanceView',
-	components: { BodyDialog, GateProcess, GateSetDialog, NcAvatar, NcButton, NcIconSvgWrapper, NxNumberInput, RightDialog },
+	components: { BodyDialog, GateProcess, GateSetDialog, NcAvatar, NcButton, NcCheckboxRadioSwitch, NcIconSvgWrapper, NxNumberInput, RightDialog },
 	emits: ['changed'],
 	setup() {
 		return { mdiAccountGroup, mdiChevronDown, mdiChevronRight, mdiPencil, mdiPlus, mdiSourceBranch, n, t, bodyTypeLabel, checkLabel, gateLabel, typeLabel, gates: ['g2', 'g3', 'g4', 'g5', 'g6', 'change'], classes: loadState('nc_nexus', 'project_classes', []) }
 	},
 	data() {
-		return { canManage: false, bodies: [], rights: [], retired: 0, gateSets: [], checks: [], open: new Set(), bodyDialog: null, rightDialog: null, setDialog: null, settings: null, settingsSaved: '' }
+		return { canManage: false, bodies: [], rights: [], retired: 0, gateSets: [], checks: [], open: new Set(), bodyDialog: null, rightDialog: null, setDialog: null, settings: null, settingsSaved: '', aiConfig: null }
 	},
 	computed: {
 		settingsDirty() {
@@ -289,6 +311,9 @@ export default {
 				if (!this.settings) {
 					await this.loadSettings()
 				}
+				if (!this.aiConfig) {
+					this.aiConfig = await getAiConfig()
+				}
 				// Dialog mit aktuellem Gremium versorgen (Mitglieder)
 				if (this.bodyDialog?.body) {
 					this.bodyDialog = { body: this.bodies.find(b => b.id === this.bodyDialog.body.id) ?? null }
@@ -309,6 +334,13 @@ export default {
 			const result = await getSettings()
 			this.settings = { ...result.values }
 			this.settingsSaved = JSON.stringify(this.settings)
+		},
+		async storeAi(enabled) {
+			try {
+				this.aiConfig = await saveAiConfig(enabled)
+			} catch (e) {
+				showError(errorMessage(e))
+			}
 		},
 		async storeSettings() {
 			try {
@@ -449,6 +481,13 @@ export default {
 		cursor: default;
 		opacity: 1;
 	}
+}
+
+.gov__ai {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 24px;
 }
 
 .gov__thresholds {
