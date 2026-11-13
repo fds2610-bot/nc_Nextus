@@ -46,8 +46,12 @@ class OcsClient {
 			$data = json_decode((string)$response->getBody(), true);
 		} catch (\Throwable $e) {
 			$this->logger->info('nc_nexus: planning tool request failed: ' . $e->getMessage(), ['app' => Application::APP_ID, 'exception' => $e]);
-			if (in_array(strtolower((string)parse_url($url, PHP_URL_HOST)), ['localhost', '127.0.0.1', '::1', '[::1]'], true)) {
-				throw new ValidationException('“localhost” is this server itself. Enter the address under which the other Nextcloud can be reached from here.');
+			$host = strtolower((string)parse_url($url, PHP_URL_HOST));
+			if (in_array($host, ['localhost', '127.0.0.1', '::1', '[::1]'], true)) {
+				// Verbindung gescheitert: auf diesem Server lauscht unter dem Port nichts. Typisch für Docker,
+				// dort ist der Port nur auf dem Host freigegeben, nicht im Container dieser Nextcloud.
+				$port = parse_url($url, PHP_URL_PORT);
+				throw new ValidationException('No connection to %1$s. “localhost” is the server of this Nextcloud – nothing answers there on this port. With Docker the port is only published on the host; enter e.g. http://host.docker.internal:%2$s instead.', [$host . ($port ? ':' . $port : ''), (string)($port ?: 80)]);
 			}
 			if ($e instanceof LocalServerException) {
 				// Nextcloud lässt Ziele im lokalen Netz nur mit allow_local_remote_servers zu

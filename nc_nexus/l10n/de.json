@@ -990,6 +990,7 @@
         "No completed project with baseline and recorded actual effort in the time window yet.": "Im Zeitfenster gibt es noch kein abgeschlossenes Projekt mit Baseline und erfasstem Ist-Aufwand.",
         "No completed projects yet.": "Noch keine abgeschlossenen Projekte.",
         "No conflicts detected.": "Keine Konflikte erkannt.",
+        "No connection to %1$s. “localhost” is the server of this Nextcloud – nothing answers there on this port. With Docker the port is only published on the host; enter e.g. http://host.docker.internal:%2$s instead.": "Keine Verbindung zu %1$s. „localhost“ ist der Server dieser Nextcloud – dort antwortet unter diesem Port nichts. Bei Docker ist der Port nur auf dem Host freigegeben; tragen Sie stattdessen z. B. http://host.docker.internal:%2$s ein.",
         "no cost estimate": "ohne Kostenschätzung",
         "No decision possible without more information; assign an analysis with a due date.": "Ohne weitere Informationen keine Entscheidung möglich; Analyse mit Frist beauftragen.",
         "No decision without data: which required information is missing where, which deadlines are overdue – with the data owner who has to act.": "Keine Entscheidung ohne Daten: welche Pflichtangaben wo fehlen, welche Fristen überschritten sind – mit dem Daten-Owner, der handeln muss.",
@@ -1785,8 +1786,7 @@
         "– link existing project –": "– bestehendes Projekt verknüpfen –",
         "– none –": "– keine –",
         "– not yet –": "– noch nicht –",
-        "– top level –": "– oberste Ebene –",
-        "“localhost” is this server itself. Enter the address under which the other Nextcloud can be reached from here.": "„localhost“ ist dieser Server selbst. Tragen Sie die Adresse ein, unter der die andere Nextcloud von hier aus erreichbar ist."
+        "– top level –": "– oberste Ebene –"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }
