@@ -55,9 +55,10 @@ interface IPlanningProvider {
 
 	/**
 	 * Vorgänge des Projekts in einheitlicher Form; status „done“ = erledigt, Datumsangaben als
-	 * JJJJ-MM-TT.
+	 * JJJJ-MM-TT. Optional `demand`: Aufwand je Rolle in Personentagen (PlanDemand), Personen
+	 * bereits auf Rollen verdichtet, ohne Rolle = „“.
 	 *
-	 * @return list<array{title: string, start_date: ?string, end_date: ?string, status: string, progress: float|int, milestone?: bool}>
+	 * @return list<array{title: string, start_date: ?string, end_date: ?string, status: string, progress: float|int, milestone?: bool, demand?: list<array{role: string, days: float}>}>
 	 * @throws ValidationException
 	 */
 	public function tasks(string $userId, string $externalId): array;

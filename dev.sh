@@ -16,6 +16,7 @@
 #   ls        alle nc_nexus-Umgebungen auflisten
 #   e2e ...   E2E-Tests (Playwright über ~/projects/e2e-runner) gegen die Umgebung ausführen,
 #             weitere Argumente gehen an playwright test, z. B. ./dev.sh e2e --db pgsql specs/demands.spec.js
+#   e2e-restore DIR  Sicherung eines abgebrochenen E2E-Laufs einspielen (Ordner nennt e2e bei Fehlern)
 #   reset-data  alle App-Daten (nx_*-Tabellen) und Nexus-Benachrichtigungen löschen; Startmodelle
 #             (Kriterien, Gate-Sets, KPIs) legt die App beim nächsten Aufruf neu an
 #
@@ -311,36 +312,67 @@ reset_data() {
 	echo "App-Daten gelöscht ($(db_tables | wc -l) Tabellen geleert)"
 }
 
+# Sicherungen eines E2E-Laufs liegen in einem eigenen Ordner (nur für den Nutzer lesbar). Er wird
+# nur gelöscht, wenn alles wiederhergestellt ist; sonst bleibt er für `./dev.sh e2e-restore <ordner>`
+# (z. B. wenn der Stack während des Laufs gestoppt wurde).
+E2E_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/nc-nexus"
+
+e2e_restore() { # $1 = Sicherungsordner
+	local dir=$1 ok=0
+	[ -d "$dir" ] || die "Sicherungsordner $dir nicht gefunden"
+	occ status >/dev/null 2>&1 || { echo "WARNUNG: Umgebung läuft nicht – Sicherungen bleiben in $dir; nach ./dev.sh up: ./dev.sh e2e-restore $dir" >&2; return 1; }
+	if [ -f "$dir/snapshot" ]; then
+		if snapshot_restore "$dir/snapshot" "$(cat "$dir/started" 2>/dev/null || echo 0)"; then
+			echo "E2E-Testdaten entfernt (App-Daten auf den Stand vor dem Lauf zurückgesetzt)"
+			rm -f "$dir/snapshot"
+		else
+			echo "WARNUNG: App-Daten konnten nicht zurückgesetzt werden" >&2
+			ok=1
+		fi
+	fi
+	if [ -f "$dir/config.json" ]; then
+		if config_restore "$dir/config.json"; then
+			echo "App-Konfiguration wiederhergestellt"
+			rm -f "$dir/config.json"
+		else
+			echo "WARNUNG: App-Konfiguration konnte nicht wiederhergestellt werden" >&2
+			ok=1
+		fi
+	fi
+	if [ -f "$dir/credentials" ]; then
+		if creds_restore "$dir/credentials"; then
+			echo "Zugangsdaten (Credential-Store) wiederhergestellt"
+			rm -f "$dir/credentials"
+		else
+			echo "WARNUNG: Zugangsdaten konnten nicht wiederhergestellt werden" >&2
+			ok=1
+		fi
+	fi
+	if [ "$ok" = 0 ]; then
+		rm -rf "$dir"
+	else
+		echo "Sicherungen bleiben in $dir – nach Behebung: ./dev.sh e2e-restore $dir" >&2
+	fi
+	return "$ok"
+}
+
 e2e() {
-	local snap='' conf='' creds='' rc=0 started
-	started=$(date +%s)
+	local dir='' rc=0
 	if [ -z "${NX_E2E_KEEP:-}" ]; then
-		conf=$(mktemp)
-		config_save "$conf" || { rm -f "$conf"; die "Sicherung der App-Konfiguration vor den E2E-Tests fehlgeschlagen"; }
-		creds=$(mktemp)
-		chmod 600 "$creds"
-		creds_save "$creds" || { rm -f "$conf" "$creds"; die "Sicherung der Zugangsdaten vor den E2E-Tests fehlgeschlagen"; }
-		snap=$(mktemp)
-		snapshot_save "$snap" || { rm -f "$snap"; die "Sicherung der App-Daten vor den E2E-Tests fehlgeschlagen"; }
-		[ "$NX_DB" = sqlite ] || [ -s "$snap" ] || { rm -f "$snap"; die "Sicherung der App-Daten ist leer"; }
+		mkdir -p "$E2E_STATE" && chmod 700 "$E2E_STATE"
+		dir=$(mktemp -d "$E2E_STATE/e2e-$NX_PROJECT-XXXXXX")
+		date +%s >"$dir/started"
+		config_save "$dir/config.json" || { rm -rf "$dir"; die "Sicherung der App-Konfiguration vor den E2E-Tests fehlgeschlagen"; }
+		creds_save "$dir/credentials" || { rm -rf "$dir"; die "Sicherung der Zugangsdaten vor den E2E-Tests fehlgeschlagen"; }
+		# sqlite: Kopie liegt im Container, die leere Datei ist nur die Markierung
+		: >"$dir/snapshot"
+		snapshot_save "$dir/snapshot" || { rm -rf "$dir"; die "Sicherung der App-Daten vor den E2E-Tests fehlgeschlagen"; }
+		[ "$NX_DB" = sqlite ] || [ -s "$dir/snapshot" ] || { rm -rf "$dir"; die "Sicherung der App-Daten ist leer"; }
 	fi
 	trap 'rc=130' INT
 	BASE_URL="http://host.docker.internal:$NX_PORT" E2E_PASSWORD="$E2E_PASSWORD" sh "$ROOT/nc_nexus/tests/e2e/run.sh" "${ARGS[@]}" || rc=$?
-	if [ -n "$snap" ]; then
-		if snapshot_restore "$snap" "$started"; then
-			echo "E2E-Testdaten entfernt (App-Daten auf den Stand vor dem Lauf zurückgesetzt)"
-		else
-			echo "WARNUNG: App-Daten konnten nicht zurückgesetzt werden" >&2
-		fi
-		rm -f "$snap"
-	fi
-	if [ -n "$conf" ]; then
-		config_restore "$conf" && echo "App-Konfiguration wiederhergestellt" || echo "WARNUNG: App-Konfiguration konnte nicht wiederhergestellt werden" >&2
-		rm -f "$conf"
-	fi
-	if [ -n "$creds" ]; then
-		creds_restore "$creds" && echo "Zugangsdaten (Credential-Store) wiederhergestellt" || echo "WARNUNG: Zugangsdaten konnten nicht wiederhergestellt werden" >&2
-		rm -f "$creds"
+	if [ -n "$dir" ]; then
+		e2e_restore "$dir" || [ "$rc" != 0 ] || rc=1
 	fi
 	return "$rc"
 }
@@ -362,6 +394,7 @@ shell) dc exec --user www-data nextcloud bash ;;
 info) info ;;
 ls) docker compose ls -a --filter name=nc-nexus- ;;
 e2e) e2e ;;
+e2e-restore) [ ${#ARGS[@]} -eq 1 ] || die "Nutzung: ./dev.sh e2e-restore <sicherungsordner>"; e2e_restore "${ARGS[0]}" ;;
 reset-data) reset_data ;;
 *) usage ;;
 esac

@@ -131,17 +131,51 @@
 				</div>
 			</div>
 		</section>
+		<section v-if="roles" class="nx-view__section" data-test="role-pool">
+			<div class="nx-view__section-head">
+				<h3>{{ t('nc_nexus', 'Role → pool') }}</h3>
+			</div>
+			<p class="nx-view__hint">
+				{{ t('nc_nexus', 'Planning tools plan people or roles, the governance plans pools. Assign each role from the plans to a pool; the effort of a project can then be taken over as resource needs. People are summarized to roles before saving (MS Project: resource group; generic resources with their name). Effort without role (Gantt, OpenProject) can be assigned as a whole.') }}
+			</p>
+			<p v-if="!roles.roles.length" class="tools__hint" data-test="role-pool-empty">
+				{{ t('nc_nexus', 'No plan with effort is connected yet.') }}
+			</p>
+			<div v-else class="nx-view__table">
+				<div v-for="r in roles.roles"
+					:key="r.provider + '|' + r.role"
+					class="roles__row"
+					:data-test="'role-' + r.provider + '-' + (r.role || '-')">
+					<span class="roles__tool">{{ r.providerName }}</span>
+					<b :class="{ 'roles__none': r.role === '' }">{{ r.role || t('nc_nexus', 'without role') }}</b>
+					<span class="tools__hint">{{ n('nc_nexus', '%n project', '%n projects', r.projects) }} · {{ t('nc_nexus', '{n} PD', { n: r.days.toLocaleString(undefined, { maximumFractionDigits: 1 }) }) }}</span>
+					<select class="nx-input"
+						:value="r.poolId ?? ''"
+						:aria-label="t('nc_nexus', 'Pool for {role}', { role: r.role || t('nc_nexus', 'without role') })"
+						:disabled="busy"
+						data-test="role-pool-select"
+						@change="saveRole(r, $event.target.value)">
+						<option value="">
+							{{ t('nc_nexus', '– not assigned –') }}
+						</option>
+						<option v-for="p in roles.pools" :key="p.id" :value="p.id">
+							{{ p.name }}
+						</option>
+					</select>
+				</div>
+			</div>
+		</section>
 	</div>
 </template>
 
 <script>
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import { t } from '@nextcloud/l10n'
+import { n, t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import NcIconSvgWrapper from '@nextcloud/vue/components/NcIconSvgWrapper'
 import { mdiChartGantt, mdiClipboardTextOutline, mdiFileDelimitedOutline } from '@mdi/js'
-import { errorMessage, getPlanningConfig, savePlanningConfig, testGanttConnection } from '../api.js'
+import { errorMessage, getPlanningConfig, getPlanningRoles, savePlanningConfig, savePlanningRole, testGanttConnection } from '../api.js'
 
 const FIELDS = ['ganttUrl', 'ganttUser', 'openprojectUrl', 'mspdiImport', 'mspdiExport']
 
@@ -149,10 +183,10 @@ export default {
 	name: 'PlanningToolsView',
 	components: { NcButton, NcCheckboxRadioSwitch, NcIconSvgWrapper },
 	setup() {
-		return { t, mdiChartGantt, mdiClipboardTextOutline, mdiFileDelimitedOutline }
+		return { n, t, mdiChartGantt, mdiClipboardTextOutline, mdiFileDelimitedOutline }
 	},
 	data() {
-		return { config: null, form: null, busy: false, testResult: null }
+		return { config: null, form: null, roles: null, busy: false, testResult: null }
 	},
 	computed: {
 		dirty() {
@@ -170,8 +204,22 @@ export default {
 		async load() {
 			try {
 				this.apply(await getPlanningConfig())
+				if (this.config.canManage) {
+					this.roles = await getPlanningRoles()
+				}
 			} catch (e) {
 				showError(errorMessage(e))
+			}
+		},
+		async saveRole(role, value) {
+			this.busy = true
+			try {
+				this.roles = await savePlanningRole(role.provider, role.role, value === '' ? null : Number(value))
+				showSuccess(t('nc_nexus', 'Assignment saved'))
+			} catch (e) {
+				showError(errorMessage(e))
+			} finally {
+				this.busy = false
 			}
 		},
 		async save() {
@@ -277,7 +325,38 @@ export default {
 	color: var(--color-error-text);
 }
 
+.roles__row {
+	display: grid;
+	grid-template-columns: 160px minmax(0, 1fr) 160px 280px;
+	gap: 12px;
+	align-items: center;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--color-border);
+
+	&:last-child {
+		border-bottom: none;
+	}
+
+	.nx-input {
+		width: 100%;
+	}
+}
+
+.roles__tool {
+	color: var(--color-text-maxcontrast);
+}
+
+.roles__none {
+	font-weight: normal;
+	font-style: italic;
+}
+
 @media (max-width: 1000px) {
+	.roles__row {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 4px;
+	}
+
 	.tools__row {
 		grid-template-columns: minmax(0, 1fr);
 		gap: 8px;

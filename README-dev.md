@@ -136,6 +136,9 @@ cd nc_nexus && npm run lint   # ESLint
 # gespeicherten Zugangsdaten (Credential-Store, nc_nexus::*) und spielt sie nach dem Lauf wieder
 # ein; Benachrichtigungen und KI-Aufträge des Laufs werden gelöscht. Während eines Laufs keine
 # Einstellungen auf der Instanz ändern. NX_E2E_KEEP=1 ./dev.sh e2e … behält die Testdaten.
+# Scheitert die Wiederherstellung (z. B. Stack während des Laufs gestoppt), bleiben die Sicherungen
+# unter ~/.local/state/nc-nexus/e2e-* liegen: nach ./dev.sh up mit ./dev.sh e2e-restore <ordner>
+# einspielen. Mehrere E2E-Läufe (auch anderer Projekte) nicht gleichzeitig starten – RAM.
 scripts/matrix.sh             # E2E über die ganze Matrix (DBs, NC 34, PHP 8.3)
 ```
 

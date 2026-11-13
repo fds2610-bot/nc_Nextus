@@ -149,6 +149,10 @@ export const actionLabel = (action) => ({
 	analysis: t('nc_nexus', 'Analysis completed'),
 	delete: t('nc_nexus', 'Deleted'),
 	ai_request: t('nc_nexus', 'AI assistance requested'),
+	planning_link: t('nc_nexus', 'Planning connection changed'),
+	planning_import: t('nc_nexus', 'Plan imported'),
+	planning_export: t('nc_nexus', 'Starting plan exported'),
+	planning_demand: t('nc_nexus', 'Resource needs taken from the plan'),
 })[action] || action
 
 export const formatDate = (ts) => ts ? new Date(ts * 1000).toLocaleString(getCanonicalLocale(), { dateStyle: 'medium', timeStyle: 'short' }) : ''

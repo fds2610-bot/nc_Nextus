@@ -797,7 +797,13 @@ export default {
 			this.businessCase = await getBusinessCase(this.id)
 			this.history = await demandHistory(this.id)
 		},
-		async onPlanning() {
+		async onPlanning(change) {
+			if (change?.needs) {
+				// Bedarf aus dem Plan übernommen: Ressourcenbedarf neu laden
+				this.setNeeds(await demandNeeds(this.id))
+				this.gate = await gateStatus(this.id)
+				this.$emit('changed')
+			}
 			this.history = await demandHistory(this.id)
 		},
 		async onBusinessCase(bc) {

@@ -175,4 +175,49 @@ class PlanningApiController extends BaseApiController {
 	public function saveConfig(): DataResponse {
 		return $this->handle(fn () => $this->planning->saveConfig($this->uid(), $this->payload()));
 	}
+
+	/**
+	 * Planbedarf (zugeordnete Rollen) als Ressourcenbedarf des Vorhabens übernehmen.
+	 *
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: übernommen, Planungsstand
+	 * 400: kein zugeordneter Planbedarf
+	 * 403: keine Berechtigung
+	 * 404: Antrag nicht gefunden
+	 */
+	#[NoAdminRequired]
+	public function applyDemand(int $id): DataResponse {
+		return $this->handle(fn () => $this->planning->applyDemand($this->uid(), $id));
+	}
+
+	/**
+	 * Rollen aus den Plänen und ihre Pool-Zuordnung (nur PMO).
+	 *
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: Rollen und Pools
+	 * 403: nicht PMO
+	 */
+	#[NoAdminRequired]
+	public function roles(): DataResponse {
+		return $this->handle(fn () => $this->planning->roles($this->uid()));
+	}
+
+	/**
+	 * Rolle einem Pool zuordnen oder die Zuordnung löschen (poolId leer).
+	 *
+	 * @param string $provider Kennung des Planungstools
+	 * @param string $role Rolle im Plan („“ = ohne Rolle)
+	 * @param int|null $poolId Pool
+	 * @return DataResponse<Http::STATUS_OK|Http::STATUS_CREATED|Http::STATUS_BAD_REQUEST|Http::STATUS_FORBIDDEN|Http::STATUS_NOT_FOUND, array<array-key, mixed>, array{}>
+	 *
+	 * 200: gespeichert, Rollen und Pools
+	 * 400: Pool oder Planungstool unbekannt
+	 * 403: nicht PMO
+	 */
+	#[NoAdminRequired]
+	public function saveRole(string $provider, string $role = '', ?int $poolId = null): DataResponse {
+		return $this->handle(fn () => $this->planning->saveRole($this->uid(), $provider, $role, $poolId));
+	}
 }

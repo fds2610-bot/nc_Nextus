@@ -89,7 +89,7 @@ class OpenProjectProvider implements IPlanningProvider, IPlanningCredentials {
 	 *
 	 * @param list<array<string, mixed>> $workPackages
 	 * @param list<int> $closedIds
-	 * @return list<array{title: string, start_date: ?string, end_date: ?string, status: string, progress: float, milestone: bool}>
+	 * @return list<array{title: string, start_date: ?string, end_date: ?string, status: string, progress: float, milestone: bool, demand: list<array{role: string, days: float}>}>
 	 */
 	public static function normalize(array $workPackages, array $closedIds): array {
 		$day = static fn ($v): ?string => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}/', $v) ? substr($v, 0, 10) : null;
@@ -100,6 +100,7 @@ class OpenProjectProvider implements IPlanningProvider, IPlanningCredentials {
 			$end = $milestone ? $start : $day($w['dueDate'] ?? null);
 			$closed = in_array((int)($w['id'] ?? 0), $closedIds, true);
 			$progress = (float)($w['percentageDone'] ?? $w['derivedPercentageDone'] ?? 0);
+			$days = PlanDemand::isoDays(is_string($w['estimatedTime'] ?? null) ? $w['estimatedTime'] : null);
 			$tasks[] = [
 				'title' => (string)($w['subject'] ?? ''),
 				'start_date' => $start ?? $end,
@@ -107,6 +108,8 @@ class OpenProjectProvider implements IPlanningProvider, IPlanningCredentials {
 				'status' => $closed ? 'done' : (string)($w['_links']['status']['title'] ?? ''),
 				'progress' => $closed ? 100.0 : $progress,
 				'milestone' => $milestone,
+				// geschätzter Aufwand ohne Rollenbezug (Zuständige sind Personen)
+				'demand' => $days > 0 ? [['role' => '', 'days' => $days]] : [],
 			];
 		}
 		return $tasks;

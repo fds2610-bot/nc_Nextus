@@ -30,6 +30,31 @@ class PlanningLinkMapper {
 		if ($r === false) {
 			return null;
 		}
+		return self::row($r);
+	}
+
+	/**
+	 * Alle Verknüpfungen (für die Rollenübersicht).
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	public function all(): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from(self::TABLE)->orderBy('id', 'ASC');
+		$result = $qb->executeQuery();
+		$rows = [];
+		while ($r = $result->fetch()) {
+			$rows[] = self::row($r);
+		}
+		$result->closeCursor();
+		return $rows;
+	}
+
+	/**
+	 * @param array<string, mixed> $r
+	 * @return array<string, mixed>
+	 */
+	private static function row(array $r): array {
 		return [
 			'id' => (int)$r['id'],
 			'demandId' => (int)$r['demand_id'],

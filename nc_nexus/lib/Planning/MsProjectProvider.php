@@ -62,7 +62,7 @@ class MsProjectProvider implements IPlanningProvider, IPlanningFileImport {
 	/**
 	 * MSPDI lesen: Sammelvorgänge, leere Zeilen und den Projekt-Vorgang (UID 0) überspringen.
 	 *
-	 * @return array{title: string, tasks: list<array{title: string, start_date: ?string, end_date: ?string, status: string, progress: float, milestone: bool}>}
+	 * @return array{title: string, tasks: list<array{title: string, start_date: ?string, end_date: ?string, status: string, progress: float, milestone: bool, demand: list<array{role: string, days: float}>}>}
 	 * @throws ValidationException
 	 */
 	public static function parse(string $content, string $fileName = ''): array {
@@ -87,6 +87,7 @@ class MsProjectProvider implements IPlanningProvider, IPlanningFileImport {
 		if ($title === '') {
 			$title = (string)preg_replace('/\.xml$/i', '', basename($fileName)) ?: 'MS Project';
 		}
+		$demand = self::assignments($root);
 		$tasks = [];
 		foreach (self::children($root, 'Tasks') as $list) {
 			foreach (self::children($list, 'Task') as $task) {
@@ -103,10 +104,47 @@ class MsProjectProvider implements IPlanningProvider, IPlanningFileImport {
 					'status' => $progress >= 100 ? 'done' : ($progress > 0 ? 'in_progress' : 'not_started'),
 					'progress' => $progress,
 					'milestone' => self::text($task, 'Milestone') === '1',
+					'demand' => $demand[self::text($task, 'UID') ?? ''] ?? [],
 				];
 			}
 		}
 		return ['title' => mb_substr(trim($title), 0, 200), 'tasks' => $tasks];
+	}
+
+	/**
+	 * Arbeit der Zuordnungen je Vorgang, verdichtet auf Rollen (Kapitel 07 §4.3): Rolle ist die
+	 * Ressourcengruppe; generische Ressourcen ohne Gruppe zählen mit ihrem Namen (sie sind
+	 * Rollen wie „Entwickler“). Personen ohne Gruppe werden nicht namentlich übernommen, sondern
+	 * zählen als „ohne Rolle“. Material- und Kostenressourcen zählen nicht.
+	 *
+	 * @return array<string, list<array{role: string, days: float}>> Vorgangs-UID => Bedarf
+	 */
+	private static function assignments(\DOMElement $root): array {
+		$roles = [];
+		foreach (self::children($root, 'Resources') as $list) {
+			foreach (self::children($list, 'Resource') as $r) {
+				$type = self::text($r, 'Type');
+				if ($type !== null && $type !== '1') {
+					continue;
+				}
+				$group = PlanDemand::role(self::text($r, 'Group') ?? '');
+				$role = $group !== '' ? $group : (self::text($r, 'IsGeneric') === '1' ? PlanDemand::role(self::text($r, 'Name') ?? '') : '');
+				$roles[self::text($r, 'UID') ?? ''] = $role;
+			}
+		}
+		$result = [];
+		foreach (self::children($root, 'Assignments') as $list) {
+			foreach (self::children($list, 'Assignment') as $a) {
+				$resource = self::text($a, 'ResourceUID') ?? '';
+				$task = self::text($a, 'TaskUID') ?? '';
+				$days = PlanDemand::isoDays(self::text($a, 'Work'));
+				if (!array_key_exists($resource, $roles) || $days <= 0) {
+					continue;
+				}
+				$result[$task][] = ['role' => $roles[$resource], 'days' => $days];
+			}
+		}
+		return $result;
 	}
 
 	/**

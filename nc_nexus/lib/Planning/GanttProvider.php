@@ -77,7 +77,7 @@ class GanttProvider implements IPlanningProvider {
 
 	/**
 	 * @param list<array<string, mixed>> $tasks Aufgaben aus IGanttApi oder der OCS-Schnittstelle
-	 * @return list<array{title: string, start_date: ?string, end_date: ?string, status: string, progress: float}>
+	 * @return list<array{title: string, start_date: ?string, end_date: ?string, status: string, progress: float, demand: list<array{role: string, days: float}>}>
 	 */
 	public static function normalize(array $tasks): array {
 		$day = static fn ($v): ?string => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}/', $v) ? substr($v, 0, 10) : null;
@@ -87,6 +87,8 @@ class GanttProvider implements IPlanningProvider {
 			'end_date' => $day($t['end_date'] ?? null),
 			'status' => (string)($t['status'] ?? ''),
 			'progress' => (float)($t['progress'] ?? $t['manual_progress'] ?? 0),
+			// IGanttApi v1 kennt keine Rollen: Aufwand (Personentage) zählt „ohne Rolle“
+			'demand' => is_numeric($t['work'] ?? null) && (float)$t['work'] > 0 ? [['role' => '', 'days' => (float)$t['work']]] : [],
 		], $tasks);
 	}
 

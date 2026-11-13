@@ -32,6 +32,57 @@
 					<span>{{ m.title }}</span>
 				</li>
 			</ul>
+			<div v-if="planning.link.demand" class="planning__demand" data-test="planning-demand">
+				<h4>{{ t('nc_nexus', 'Effort in the plan') }}</h4>
+				<table class="planning__table">
+					<thead>
+						<tr>
+							<th>{{ t('nc_nexus', 'Pool') }}</th>
+							<th class="planning__num">
+								{{ t('nc_nexus', 'Plan') }}
+							</th>
+							<th class="planning__num">
+								{{ t('nc_nexus', 'Resource needs') }}
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="p in planning.link.demand.pools" :key="p.poolId" data-test="planning-demand-pool">
+							<td>{{ p.pool }}</td>
+							<td class="planning__num">
+								{{ formatDays(p.total) }}
+							</td>
+							<td class="planning__num" :class="{ 'planning__diff': p.current !== p.total }">
+								{{ formatDays(p.current) }}
+							</td>
+						</tr>
+						<tr v-for="u in planning.link.demand.unmapped"
+							:key="'u' + u.role"
+							class="planning__unmapped"
+							data-test="planning-demand-unmapped">
+							<td>{{ t('nc_nexus', 'Unassigned: {role}', { role: roleLabel(u.role) }) }}</td>
+							<td class="planning__num">
+								{{ formatDays(u.total) }}
+							</td>
+							<td class="planning__num">
+								–
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<p v-if="planning.link.demand.unmapped.length" class="planning__muted">
+					{{ t('nc_nexus', 'Effort of roles without pool is not taken over. The portfolio office assigns roles to pools under Planning tools.') }}
+				</p>
+				<div v-if="planning.link.canApplyDemand" class="planning__actions">
+					<NcButton variant="secondary"
+						:disabled="busy"
+						data-test="planning-demand-apply"
+						@click="applyDemand">
+						{{ t('nc_nexus', 'Take over as resource needs') }}
+					</NcButton>
+					<span class="planning__muted">{{ t('nc_nexus', 'Replaces the resource needs of the project by the effort per pool and month from the plan.') }}</span>
+				</div>
+			</div>
 			<p class="planning__muted">
 				<template v-if="isFile">
 					{{ t('nc_nexus', 'Snapshot of the file {file} from {date}. Import the plan again to update the values.', { file: planning.link.summary?.fileName ?? '', date: formatDate(planning.link.syncedAt) }) }}
@@ -149,7 +200,7 @@
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
-import { connectPlanning, disconnectPlanning, errorMessage, exportPlanning, getPlanning, importPlanning, planningProjects, savePlanningCredentials } from '../api.js'
+import { applyPlanDemand, connectPlanning, disconnectPlanning, errorMessage, exportPlanning, getPlanning, importPlanning, planningProjects, savePlanningCredentials } from '../api.js'
 import { formatDate, formatIsoDay } from '../labels.js'
 
 export default {
@@ -276,6 +327,27 @@ export default {
 				this.busy = false
 			}
 		},
+		formatDays(days) {
+			return t('nc_nexus', '{n} PD', { n: Number(days).toLocaleString(undefined, { maximumFractionDigits: 1 }) })
+		},
+		roleLabel(role) {
+			return role === '' ? t('nc_nexus', 'without role') : role
+		},
+		async applyDemand() {
+			if (!window.confirm(t('nc_nexus', 'Replace the resource needs of this project by the effort from the plan?'))) {
+				return
+			}
+			this.busy = true
+			try {
+				this.planning = await applyPlanDemand(this.demandId)
+				showSuccess(t('nc_nexus', 'Resource needs taken from the plan'))
+				this.$emit('changed', { needs: true })
+			} catch (e) {
+				showError(errorMessage(e))
+			} finally {
+				this.busy = false
+			}
+		},
 		async unlink() {
 			try {
 				await disconnectPlanning(this.demandId)
@@ -327,6 +399,44 @@ export default {
 
 .planning__select.nx-input.nx-input {
 	width: 280px;
+}
+
+.planning__demand {
+	margin: 10px 0;
+
+	h4 {
+		margin: 0 0 4px;
+	}
+}
+
+.planning__table {
+	border-collapse: collapse;
+	min-width: 360px;
+
+	th,
+	td {
+		padding: 3px 12px 3px 0;
+		text-align: start;
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	th {
+		color: var(--color-text-maxcontrast);
+		font-weight: normal;
+	}
+
+	.planning__num {
+		text-align: end;
+		font-variant-numeric: tabular-nums;
+	}
+}
+
+.planning__diff {
+	font-weight: 600;
+}
+
+.planning__unmapped td:first-child {
+	font-style: italic;
 }
 
 .planning__file {

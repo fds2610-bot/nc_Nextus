@@ -11,4 +11,19 @@
 		<Task><UID>5</UID><IsNull>1</IsNull></Task>
 		<Task><UID>6</UID><Name>Inbetriebnahme</Name><Start>2027-03-31T17:00:00</Start><Finish>2027-03-31T17:00:00</Finish><PercentComplete>0</PercentComplete><Milestone>1</Milestone></Task>
 	</Tasks>
+	<Resources>
+		<Resource><UID>0</UID><Name>Nicht zugeordnet</Name></Resource>
+		<Resource><UID>1</UID><Name>Anna Schmidt</Name><Type>1</Type><Group>Entwicklung</Group></Resource>
+		<Resource><UID>2</UID><Name>Tester</Name><Type>1</Type><IsGeneric>1</IsGeneric></Resource>
+		<Resource><UID>3</UID><Name>Bernd Maier</Name><Type>1</Type></Resource>
+		<Resource><UID>4</UID><Name>Beton</Name><Type>0</Type></Resource>
+	</Resources>
+	<Assignments>
+		<Assignment><UID>1</UID><TaskUID>2</TaskUID><ResourceUID>1</ResourceUID><Work>PT64H0M0S</Work></Assignment>
+		<Assignment><UID>2</UID><TaskUID>3</TaskUID><ResourceUID>2</ResourceUID><Work>PT40H0M0S</Work></Assignment>
+		<Assignment><UID>3</UID><TaskUID>3</TaskUID><ResourceUID>3</ResourceUID><Work>PT16H0M0S</Work></Assignment>
+		<Assignment><UID>4</UID><TaskUID>3</TaskUID><ResourceUID>4</ResourceUID><Work>PT8H0M0S</Work></Assignment>
+		<Assignment><UID>5</UID><TaskUID>6</TaskUID><ResourceUID>1</ResourceUID><Work>PT8H0M0S</Work></Assignment>
+		<Assignment><UID>6</UID><TaskUID>4</TaskUID><ResourceUID>-65535</ResourceUID><Work>PT0H0M0S</Work></Assignment>
+	</Assignments>
 </Project>

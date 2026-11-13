@@ -304,10 +304,11 @@ class CapacityService {
 	 * Bedarf eines Antrags vollständig ersetzen (Liste aus Pool, Monat, Personentagen).
 	 *
 	 * @param list<array<string, mixed>> $rows
+	 * @param string $source estimate (Schätzung) oder plan (aus dem Planungstool übernommen)
 	 * @return list<ResourceNeed>
 	 * @throws NotFoundException|ForbiddenException|ValidationException
 	 */
-	public function replaceNeeds(string $userId, int $demandId, array $rows): array {
+	public function replaceNeeds(string $userId, int $demandId, array $rows, string $source = 'estimate'): array {
 		$demand = $this->demandService->findReadable($userId, $demandId);
 		if (!$this->demandService->canChange($userId, $demand)) {
 			throw new ForbiddenException('Only the requestor may change this demand');
@@ -345,7 +346,7 @@ class CapacityService {
 				$need->setPoolId($row['poolId']);
 				$need->setPeriod($row['period']);
 				$need->setPersonDays($row['personDays']);
-				$need->setSource('estimate');
+				$need->setSource($source);
 				$need->setUpdatedBy($userId);
 				$need->setUpdatedAt($now);
 				$result[] = $this->needs->insert($need);

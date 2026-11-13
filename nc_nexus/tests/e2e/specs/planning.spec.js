@@ -32,7 +32,8 @@ const releasedDemand = async (admin, own, t) => {
 	for (const step of [{ step: 'candidate' }, { step: 'g2', outcome: 'prioritized' }, { step: 'g3' }]) {
 		await call(admin, 'post', `/demands/${d.id}/gate`, step, 200)
 	}
-	return call(admin, 'get', `/demands/${d.id}`)
+	// Pool für Tests, die den Bedarf prüfen
+	return { ...await call(admin, 'get', `/demands/${d.id}`), e2ePool: pool }
 }
 
 test.describe('Planungs-Integration: MS Project und OpenProject', () => {
@@ -76,6 +77,62 @@ test.describe('Planungs-Integration: MS Project und OpenProject', () => {
 			await expect(panel.locator('[data-test="planning-import"]')).toBeVisible()
 		} finally {
 			await context.close()
+			await own.dispose()
+			await admin.dispose()
+		}
+	})
+
+	test('Rolle → Pool: Planbedarf zuordnen und als Ressourcenbedarf übernehmen', async ({ browser }) => {
+		test.setTimeout(150000)
+		const admin = await adminApi()
+		const own = await apiAs(E2E_USER)
+		const t = 'R' + Math.random().toString(36).slice(2, 6).toUpperCase()
+		const fs = require('fs')
+		try {
+			const demand = await releasedDemand(admin, own, t)
+			const pool = demand.e2ePool
+			const content = fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'plan.xml'), 'utf8')
+			let planning = await call(admin, 'post', `/demands/${demand.id}/planning/import`, { provider: 'mspdi', fileName: 'plan.xml', content }, 200)
+			// Personen sind auf Rollen verdichtet, nichts ist zugeordnet
+			expect(planning.link.demand.pools).toEqual([])
+			expect(planning.link.demand.unmapped.map(u => u.role)).toEqual(['', 'Entwicklung', 'Tester'])
+			expect(JSON.stringify(planning)).not.toContain('Schmidt')
+			expect(planning.link.canApplyDemand).toBe(false)
+			expect((await own.get('/ocs/v2.php/apps/nc_nexus/api/v1/planning/roles')).status()).toBe(403)
+			expect((await own.put('/ocs/v2.php/apps/nc_nexus/api/v1/planning/roles', { data: { provider: 'mspdi', role: 'Entwicklung', poolId: pool.id } })).status()).toBe(403)
+
+			const { context, page } = await loginAs(browser, ADMIN_USER, ADMIN_PASSWORD)
+			try {
+				// PMO ordnet die Rolle im Bereich Planungstools zu (dev.sh e2e stellt die Tabellen wieder her)
+				await openDemands(page)
+				await page.locator('[data-test="nav-planning-tools"]').click()
+				const row = page.locator('[data-test="role-pool"] [data-test="role-mspdi-Entwicklung"]')
+				await expect(row).toContainText('9')
+				await row.locator('[data-test="role-pool-select"]').selectOption(String(pool.id))
+				await expect.poll(async () => (await call(admin, 'get', '/planning/roles')).roles.find(r => r.provider === 'mspdi' && r.role === 'Entwicklung').poolId).toBe(pool.id)
+
+				// am Vorhaben: Plan gegen Ressourcenbedarf, Übernahme ersetzt den Bedarf
+				await openDemands(page)
+				await page.locator('[data-test="nav-all"]').click()
+				await page.locator(`[data-test="demand-${demand.key}"]`).click()
+				const box = page.locator('[data-test="planning-demand"]')
+				await expect(box.locator('[data-test="planning-demand-pool"]')).toContainText(`E2E-Pool ${t}`)
+				await expect(box.locator('[data-test="planning-demand-pool"]')).toContainText('9')
+				await expect(box.locator('[data-test="planning-demand-unmapped"]')).toHaveCount(2)
+				page.once('dialog', d => d.accept())
+				await box.locator('[data-test="planning-demand-apply"]').click()
+				await expect.poll(async () => (await call(admin, 'get', `/demands/${demand.id}/needs`)).map(n => [n.poolId, n.period, n.personDays, n.source])).toEqual([
+					[pool.id, '2026-11', 8, 'plan'],
+					[pool.id, '2027-03', 1, 'plan'],
+				])
+				// Ressourcenbedarf im Dialog ist neu geladen, keine ungespeicherten Änderungen
+				await expect(box.locator('[data-test="planning-demand-pool"] td').nth(2)).toContainText('9')
+				const history = await call(admin, 'get', `/demands/${demand.id}/history`)
+				expect(history.some(h => h.action === 'planning_demand')).toBe(true)
+			} finally {
+				await context.close()
+			}
+		} finally {
 			await own.dispose()
 			await admin.dispose()
 		}

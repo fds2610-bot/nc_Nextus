@@ -6,7 +6,9 @@ namespace OCA\Nexus\Service;
 
 use OCA\Nexus\Db\Demand;
 use OCA\Nexus\Db\PlanningLinkMapper;
+use OCA\Nexus\Db\PoolMapper;
 use OCA\Nexus\Db\ResourceNeedMapper;
+use OCA\Nexus\Db\Rows;
 use OCA\Nexus\Exception\ForbiddenException;
 use OCA\Nexus\Exception\NotFoundException;
 use OCA\Nexus\Exception\ValidationException;
@@ -15,6 +17,7 @@ use OCA\Nexus\Planning\IPlanningFileImport;
 use OCA\Nexus\Planning\GanttProvider;
 use OCA\Nexus\Planning\IPlanningProvider;
 use OCA\Nexus\Planning\MsProjectProvider;
+use OCA\Nexus\Planning\PlanDemand;
 use OCA\Nexus\Planning\PlanningConfig;
 use OCA\Nexus\Planning\PlanningProviderRegistry;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -31,6 +34,7 @@ class PlanningService {
 	public const LINKABLE = ['released', 'in_execution', 'paused', 'completed'];
 	/** angezeigte Meilensteine je Vorhaben */
 	private const MAX_MILESTONES = 12;
+	private const MAP = 'nx_role_pool_map';
 
 	public function __construct(
 		private PlanningLinkMapper $links,
@@ -40,6 +44,9 @@ class PlanningService {
 		private MsProjectProvider $msProject,
 		private ProjectService $projects,
 		private ResourceNeedMapper $needs,
+		private PoolMapper $pools,
+		private CapacityService $capacity,
+		private Rows $rows,
 		private DemandService $demands,
 		private PermissionService $permissions,
 		private AuditService $audit,
@@ -76,6 +83,9 @@ class PlanningService {
 			}
 			$link['providerName'] = $provider?->getName() ?? (string)$link['provider'];
 			$link['capabilities'] = $provider?->getCapabilities() ?? [];
+			$link['demand'] = $this->planDemand($link, $demand);
+			$link['canApplyDemand'] = $link['demand'] !== null && $link['demand']['pools'] !== [] && $this->demands->canChange($userId, $demand);
+			unset($link['summary']['demand']);
 		}
 		return [
 			'available' => $providers !== [],
@@ -236,6 +246,165 @@ class PlanningService {
 	}
 
 	/**
+	 * Planbedarf über das Rollen-Mapping in Pools übersetzt, verglichen mit dem Ressourcenbedarf
+	 * des Vorhabens; null, wenn der Plan keinen Aufwand enthält.
+	 *
+	 * @param array<string, mixed> $link
+	 * @return array<string, mixed>|null
+	 */
+	private function planDemand(array $link, Demand $demand): ?array {
+		$rows = $link['summary']['demand'] ?? [];
+		if (!is_array($rows) || $rows === []) {
+			return null;
+		}
+		$mapped = PlanDemand::map($rows, $this->mapping((string)$link['provider']));
+		$current = [];
+		foreach ($this->needs->findForDemand($demand->getId()) as $need) {
+			if ($need->getUpdatedAt() >= $demand->getCreatedAt()) {
+				$current[$need->getPoolId()] = ($current[$need->getPoolId()] ?? 0) + $need->getPersonDays();
+			}
+		}
+		$names = $this->poolNames();
+		$pools = [];
+		foreach ($mapped['pools'] as $poolId => $periods) {
+			$pools[] = [
+				'poolId' => $poolId,
+				'pool' => $names[$poolId] ?? '#' . $poolId,
+				'periods' => $periods,
+				'total' => round(array_sum($periods), 1),
+				'current' => round($current[$poolId] ?? 0, 1),
+			];
+		}
+		usort($pools, static fn (array $a, array $b) => strcmp($a['pool'], $b['pool']));
+		$unmapped = [];
+		foreach ($mapped['unmapped'] as $role => $days) {
+			$unmapped[] = ['role' => (string)$role, 'total' => $days];
+		}
+		return [
+			'periods' => $mapped['periods'],
+			'pools' => $pools,
+			'unmapped' => $unmapped,
+			'total' => round(array_sum(array_column($pools, 'total')) + array_sum(array_column($unmapped, 'total')), 1),
+		];
+	}
+
+	/**
+	 * Planbedarf (nur zugeordnete Rollen) als Ressourcenbedarf des Vorhabens übernehmen; ersetzt
+	 * den bisherigen Bedarf.
+	 *
+	 * @return array<string, mixed>
+	 * @throws NotFoundException|ForbiddenException|ValidationException
+	 */
+	public function applyDemand(string $userId, int $demandId): array {
+		$demand = $this->demands->findReadable($userId, $demandId);
+		$link = $this->link($demand);
+		$plan = $link !== null ? $this->planDemand($link, $demand) : null;
+		if ($plan === null || $plan['pools'] === []) {
+			throw new ValidationException('The plan contains no effort for roles assigned to a pool');
+		}
+		$rows = [];
+		foreach ($plan['pools'] as $pool) {
+			foreach ($pool['periods'] as $period => $days) {
+				$rows[] = ['poolId' => $pool['poolId'], 'period' => $period, 'personDays' => $days];
+			}
+		}
+		$this->capacity->replaceNeeds($userId, $demandId, $rows, 'plan');
+		$this->audit->log(DemandService::ENTITY, $demandId, 'planning_demand', $userId, null);
+		return $this->get($userId, $demandId);
+	}
+
+	/**
+	 * Rollen aus allen verknüpften Plänen und ihre Pool-Zuordnung (Bereich „Planungstools“).
+	 *
+	 * @return array<string, mixed>
+	 * @throws ForbiddenException
+	 */
+	public function roles(string $userId): array {
+		$this->requireManage($userId);
+		$found = [];
+		foreach ($this->links->all() as $link) {
+			foreach ($link['summary']['demand'] ?? [] as $d) {
+				$key = $link['provider'] . "\n" . $d['role'];
+				$found[$key]['projects'][$link['demandId']] = true;
+				$found[$key]['days'] = ($found[$key]['days'] ?? 0) + (float)$d['days'];
+			}
+		}
+		$mapped = [];
+		foreach ($this->rows->where(self::MAP) as $m) {
+			$mapped[$m['provider'] . "\n" . $m['externalRoleRef']] = (int)$m['poolId'];
+		}
+		$result = [];
+		foreach (array_unique([...array_keys($found), ...array_keys($mapped)]) as $key) {
+			[$providerId, $role] = explode("\n", (string)$key, 2);
+			$provider = $this->registry->get($providerId);
+			$result[] = [
+				'provider' => $providerId,
+				'providerName' => $provider?->getName() ?? $providerId,
+				'role' => $role,
+				'poolId' => $mapped[$key] ?? null,
+				'projects' => count($found[$key]['projects'] ?? []),
+				'days' => round($found[$key]['days'] ?? 0, 1),
+			];
+		}
+		usort($result, static fn (array $a, array $b) => [$a['providerName'], $a['role']] <=> [$b['providerName'], $b['role']]);
+		$pools = [];
+		foreach ($this->poolNames() as $id => $name) {
+			$pools[] = ['id' => $id, 'name' => $name];
+		}
+		return ['roles' => $result, 'pools' => $pools];
+	}
+
+	/**
+	 * Rolle einem Pool zuordnen; poolId null löscht die Zuordnung.
+	 *
+	 * @return array<string, mixed>
+	 * @throws ForbiddenException|ValidationException
+	 */
+	public function saveRole(string $userId, string $providerId, string $role, ?int $poolId): array {
+		$this->requireManage($userId);
+		$role = PlanDemand::role($role);
+		if ($providerId === '' || strlen($providerId) > 32) {
+			throw new ValidationException('Unknown planning tool');
+		}
+		if ($poolId !== null && !isset($this->poolNames()[$poolId])) {
+			throw new ValidationException('Pool not found');
+		}
+		$existing = $this->rows->where(self::MAP, ['provider' => $providerId, 'externalRoleRef' => $role])[0] ?? null;
+		$before = $existing !== null ? (int)$existing['poolId'] : null;
+		if ($before !== $poolId) {
+			if ($existing !== null) {
+				$this->rows->delete(self::MAP, (int)$existing['id']);
+			}
+			if ($poolId !== null) {
+				$this->rows->insert(self::MAP, ['provider' => $providerId, 'externalRoleRef' => $role, 'poolId' => $poolId, 'createdBy' => $userId, 'createdAt' => $this->time->getTime()]);
+			}
+			$this->audit->log('settings', 0, 'update', $userId, ['rolePool' => [$before === null ? null : $providerId . ':' . $role . ' → ' . $before, $poolId === null ? null : $providerId . ':' . $role . ' → ' . $poolId]]);
+		}
+		return $this->roles($userId);
+	}
+
+	/** @return array<string, int> Rolle => Pool-ID (gelöschte Pools zählen als nicht zugeordnet) */
+	private function mapping(string $providerId): array {
+		$pools = $this->poolNames();
+		$result = [];
+		foreach ($this->rows->where(self::MAP, ['provider' => $providerId]) as $m) {
+			if (isset($pools[(int)$m['poolId']])) {
+				$result[(string)$m['externalRoleRef']] = (int)$m['poolId'];
+			}
+		}
+		return $result;
+	}
+
+	/** @return array<int, string> aktive Pools, Name mit Kürzel */
+	private function poolNames(): array {
+		$names = [];
+		foreach ($this->pools->findAll() as $pool) {
+			$names[$pool->getId()] = $pool->getName() . ' (' . $pool->getCode() . ')';
+		}
+		return $names;
+	}
+
+	/**
 	 * Einstellungen der Planungstools für den Bereich „Planungstools“.
 	 *
 	 * @return array<string, mixed>
@@ -380,6 +549,7 @@ class PlanningService {
 			'end' => $end,
 			'overdue' => $overdue,
 			'milestones' => array_slice($milestones, 0, self::MAX_MILESTONES),
+			'demand' => PlanDemand::aggregate($tasks),
 		];
 	}
 
